@@ -1,0 +1,32 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Startseite - Chorgemeinschaft Teutonia Willstätt{% endblock %}
+
+{% block body %}
+<main>
+    <div class="container">
+        <h1>CHORGEMEINSCHAFT TEUTONIA WILLSTÄTT e.V.</h1>
+        <p class="lead">Willkommen auf unserer Website!</p>
+        
+        <div class="row mt-5">
+            <div class="col-md-8">
+                <img src="https://static.wixstatic.com/media/946f2a_3b0a87553f6f44ef826560f99af571da~mv2.jpg/v1/fill/w_966,h_648,al_c,q_85,enc_avif,quality_auto/chor_JPG.jpg" alt="Chor" class="img-fluid rounded mb-4">
+                <p>Die Chorgemeinschaft Teutonia Willstätt e.V. ist ein traditionsreicher Chor mit einer langen Geschichte. Wir sind stolz, eine vielfältige Gemeinschaft von Sängerinnen und Sängern zu sein.</p>
+            </div>
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Schnelllinks</h5>
+                        <ul class="list-unstyled">
+                            <li><a href="{{ path('page_chor') }}">Unser Chor</a></li>
+                            <li><a href="{{ path('page_concerts') }}">Konzerte und Aktivitäten</a></li>
+                            <li><a href="{{ path('page_events') }}">Unsere nächsten Termine</a></li>
+                            <li><a href="{{ path('page_social') }}">Geselliges</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+{% endblock %}
