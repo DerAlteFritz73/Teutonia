@@ -1,0 +1,121 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Beiträge - Chorgemeinschaft Teutonia Willstätt{% endblock %}
+
+{% block body %}
+<main>
+    <div class="container">
+        <h1>Beiträge</h1>
+
+        {% if posts is empty %}
+            <p class="lead text-muted">Es sind noch keine Beiträge vorhanden.</p>
+        {% else %}
+            {% set currentLayout = null %}
+            {% set sideCount = 0 %}
+
+            {% for post in posts %}
+                {% if post.layout == 'side_by_side' %}
+                    {# Handle side by side layout #}
+                    {% if currentLayout != 'side_by_side' or sideCount == 0 %}
+                        {% if currentLayout == 'side_by_side' and sideCount == 1 %}
+                            </div> {# Close the previous unclosed col-md-6 #}
+                        {% endif %}
+                        {% if sideCount > 0 %}
+                            </div> {# Close previous row #}
+                        {% endif %}
+                        <div class="row mt-5">
+                        {% set sideCount = 0 %}
+                    {% endif %}
+
+                    <div class="col-md-6 mb-4">
+                        {% if post.isMain %}
+                            <span class="badge bg-warning mb-2">★ Hauptbeitrag</span>
+                        {% endif %}
+                        <h3>{{ post.title }}</h3>
+                        {% if post.subtitle %}
+                            <h5 class="text-muted">{{ post.subtitle }}</h5>
+                        {% endif %}
+                        {% if post.paragraph %}
+                            <p>{{ post.paragraph|nl2br }}</p>
+                        {% endif %}
+                        {% if post.imagePath %}
+                            <img src="{{ asset(post.imagePath) }}" alt="{{ post.title }}" class="img-fluid rounded mt-3">
+                        {% endif %}
+                    </div>
+
+                    {% set currentLayout = 'side_by_side' %}
+                    {% set sideCount = sideCount + 1 %}
+
+                    {% if sideCount == 2 %}
+                        </div> {# Close row after 2 items #}
+                        {% set sideCount = 0 %}
+                    {% endif %}
+
+                {% else %}
+                    {# Handle single row layout #}
+                    {% if currentLayout == 'side_by_side' %}
+                        {% if sideCount == 1 %}
+                            </div> {# Close unclosed col-md-6 #}
+                        {% endif %}
+                        </div> {# Close row #}
+                        {% set sideCount = 0 %}
+                    {% endif %}
+
+                    <div class="row mt-5">
+                        <div class="col-12 mb-4">
+                            {% if post.isMain %}
+                                <span class="badge bg-warning mb-2">★ Hauptbeitrag</span>
+                            {% endif %}
+                            <h3>{{ post.title }}</h3>
+                            {% if post.subtitle %}
+                                <h5 class="text-muted">{{ post.subtitle }}</h5>
+                            {% endif %}
+                            {% if post.paragraph %}
+                                <p>{{ post.paragraph|nl2br }}</p>
+                            {% endif %}
+                            {% if post.imagePath %}
+                                <img src="{{ asset(post.imagePath) }}" alt="{{ post.title }}" class="img-fluid rounded mt-3">
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    {% set currentLayout = 'single_row' %}
+                {% endif %}
+            {% endfor %}
+
+            {# Close any open row at the end #}
+            {% if currentLayout == 'side_by_side' %}
+                {% if sideCount == 1 %}
+                    </div> {# Close unclosed col-md-6 #}
+                {% endif %}
+                </div> {# Close row #}
+            {% endif %}
+
+            {# Pagination #}
+            {% if totalPages > 1 %}
+                <nav aria-label="Pagination" class="mt-5">
+                    <ul class="pagination justify-content-center">
+                        {% if currentPage > 1 %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ path('page_posts', {page: currentPage - 1}) }}">&laquo; Zurück</a>
+                            </li>
+                        {% endif %}
+
+                        {% for page in 1..totalPages %}
+                            <li class="page-item{% if page == currentPage %} active{% endif %}">
+                                <a class="page-link" href="{{ path('page_posts', {page: page}) }}">{{ page }}</a>
+                            </li>
+                        {% endfor %}
+
+                        {% if currentPage < totalPages %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ path('page_posts', {page: currentPage + 1}) }}">Weiter &raquo;</a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            {% endif %}
+        {% endif %}
+    </div>
+</main>
+{% endblock %}

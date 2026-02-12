@@ -3,11 +3,13 @@
 {% block title %}Unser Repertoire - Chorgemeinschaft Teutonia Willstätt{% endblock %}
 
 {% block body %}
-<main>
-    <div class="container">
-        <h1>Unser Repertoire</h1>
-        <p class="lead">Die Lieder und Kompositionen, die wir singen</p>
-        <p>Weitere Informationen zu unserem Repertoire folgen in Kürze.</p>
+<main id="main-content">
+    <div class="container" id="page-container">
+        <h1 id="page-title">Unser Repertoire</h1>
+        <p class="lead" id="page-lead">Die Lieder und Kompositionen, die wir singen</p>
+        <p>breitgef¨chert Carl Orff, etc</p>
+
+        {% include 'components/posts_display.html.twig' %}
     </div>
 </main>
 {% endblock %}

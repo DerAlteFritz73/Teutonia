@@ -1,0 +1,49 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Admin - {{ parent() }}{% endblock %}
+
+{% block body %}
+<div class="container py-5">
+    <h1>Administration</h1>
+    <p class="lead">Verwaltung von Benutzern, Links und Terminen.</p>
+
+    <div class="row mt-4">
+        <div class="col-md-4 mb-4">
+            <div class="card text-white bg-primary h-100">
+                <div class="card-body">
+                    <h5 class="card-title">Benutzer</h5>
+                    <p class="display-4">{{ userCount }}</p>
+                    <a href="{{ path('admin_users') }}" class="btn btn-light">Verwalten</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-4">
+            <div class="card text-white bg-success h-100">
+                <div class="card-body">
+                    <h5 class="card-title">Proben-Links</h5>
+                    <p class="display-4">{{ linkCount }}</p>
+                    <a href="{{ path('admin_links') }}" class="btn btn-light">Verwalten</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-4">
+            <div class="card text-white bg-info h-100">
+                <div class="card-body">
+                    <h5 class="card-title">Termine</h5>
+                    <p class="display-4">{{ eventCount }}</p>
+                    <a href="{{ path('admin_events') }}" class="btn btn-light">Verwalten</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-4">
+            <div class="card text-white bg-warning h-100">
+                <div class="card-body">
+                    <h5 class="card-title">Beiträge</h5>
+                    <p class="display-4">{{ postCount }}</p>
+                    <a href="{{ path('admin_posts') }}" class="btn btn-light">Verwalten</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

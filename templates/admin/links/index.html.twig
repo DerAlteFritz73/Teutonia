@@ -1,0 +1,82 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Proben-Links verwalten - {{ parent() }}{% endblock %}
+
+{% block body %}
+<div class="container py-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Proben-Links</h1>
+        <a href="{{ path('admin_links_new') }}" class="btn btn-primary">
+            Neuer Link
+        </a>
+    </div>
+
+    {% for message in app.flashes('success') %}
+        <div class="alert alert-success">{{ message }}</div>
+    {% endfor %}
+
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Lied</th>
+                    <th>Typ</th>
+                    <th>Stimme</th>
+                    <th>URL</th>
+                    <th>Aktionen</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for link in links %}
+                    <tr>
+                        <td>{{ link.sortOrder }}</td>
+                        <td><strong>{{ link.song }}</strong></td>
+                        <td>
+                            {% if link.isPdf %}
+                                <span class="badge bg-danger">PDF</span>
+                            {% else %}
+                                <span class="badge bg-success">MP3</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if link.voicePart == 'sopran' %}
+                                <span class="badge bg-primary">Sopran</span>
+                            {% elseif link.voicePart == 'alt' %}
+                                <span class="badge bg-success">Alt</span>
+                            {% elseif link.voicePart == 'tenor' %}
+                                <span class="badge bg-warning">Tenor</span>
+                            {% elseif link.voicePart == 'bass' %}
+                                <span class="badge bg-dark">Bass</span>
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="{{ link.url }}" target="_blank" class="text-truncate d-inline-block" style="max-width: 150px;">
+                                {{ link.url }}
+                            </a>
+                        </td>
+                        <td>
+                            <a href="{{ path('admin_links_edit', {id: link.id}) }}" class="btn btn-sm btn-outline-primary">
+                                Bearbeiten
+                            </a>
+                            <form action="{{ path('admin_links_delete', {id: link.id}) }}" method="post" class="d-inline"
+                                  onsubmit="return confirm('Wirklich löschen?')">
+                                <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ link.id) }}">
+                                <button type="submit" class="btn btn-sm btn-outline-danger">Löschen</button>
+                            </form>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="6" class="text-muted">Keine Links vorhanden.</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <a href="{{ path('admin_dashboard') }}" class="btn btn-secondary">Zurück</a>
+</div>
+{% endblock %}

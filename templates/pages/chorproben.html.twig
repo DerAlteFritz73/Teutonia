@@ -3,14 +3,20 @@
 {% block title %}Chorproben - Chorgemeinschaft Teutonia Willstätt{% endblock %}
 
 {% block body %}
-<main>
-    <div class="container">
-        <h1>Chorproben</h1>
-        <p class="lead">Informationen zu unseren Probenzeiten</p>
-        <p>Weitere Informationen zu unseren Chorproben folgen in Kürze.</p>
+<main id="main-content">
+    <div class="container" id="page-container">
+        <h1 id="page-title">Chorproben</h1>
+        <p class="lead" id="page-lead">Informationen zu unseren Probenzeiten</p>
+
         
+        <p>Montags um 20 Uhr in ......</p>
+        Photos Proben und Gelage
+
+        Nach der Probe werden die Kehlen geölt
         <h3>Interessiert?</h3>
         <p>Wenn Sie Interesse haben, uns zu besuchen, kontaktieren Sie bitte <strong>Martina Oertel</strong> unter Tel. 07851/481125 oder <a href="mailto:chor.teutonia@web.de">chor.teutonia@web.de</a></p>
+
+        {% include 'components/posts_display.html.twig' %}
     </div>
 </main>
 {% endblock %}

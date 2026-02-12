@@ -1,0 +1,243 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Beiträge verwalten - {{ parent() }}{% endblock %}
+
+{% block body %}
+<div class="container py-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Beiträge</h1>
+        <div class="d-flex align-items-center gap-2">
+            <select class="form-select" id="page-filter" style="width: auto;">
+                <option value="all"{% if filterPage == 'all' %} selected{% endif %}>Alle Seiten</option>
+                <option value="unser-chor"{% if filterPage == 'unser-chor' %} selected{% endif %}>Unser Chor</option>
+                <option value="konzerte-und-aktivitaeten"{% if filterPage == 'konzerte-und-aktivitaeten' %} selected{% endif %}>Konzerte und Aktivitäten</option>
+                <option value="historie"{% if filterPage == 'historie' %} selected{% endif %}>Historie</option>
+                <option value="chorproben"{% if filterPage == 'chorproben' %} selected{% endif %}>Chorproben</option>
+                <option value="unser-repertoire"{% if filterPage == 'unser-repertoire' %} selected{% endif %}>Unser Repertoire</option>
+                <option value="unsere-naechsten-termine"{% if filterPage == 'unsere-naechsten-termine' %} selected{% endif %}>Unsere nächsten Termine</option>
+                <option value="geselliges"{% if filterPage == 'geselliges' %} selected{% endif %}>Geselliges</option>
+                <option value="archiv"{% if filterPage == 'archiv' %} selected{% endif %}>Archiv</option>
+                <option value="beitraege"{% if filterPage == 'beitraege' %} selected{% endif %}>Beiträge (Übersichtsseite)</option>
+            </select>
+            <a href="#" class="btn btn-outline-primary" id="goto-page-btn" style="white-space: nowrap;">
+                <i class="bi bi-box-arrow-up-right"></i> Zur Seite gehen
+            </a>
+            <a href="{{ path('admin_dashboard') }}" class="btn btn-secondary">Zurück</a>
+            <a href="{{ path('admin_posts_new') }}" class="btn btn-primary">Neuer Beitrag</a>
+        </div>
+    </div>
+
+    {% for message in app.flashes('success') %}
+        <div class="alert alert-success">{{ message }}</div>
+    {% endfor %}
+
+    {% for message in app.flashes('error') %}
+        <div class="alert alert-danger">{{ message }}</div>
+    {% endfor %}
+
+    <div class="alert alert-info">
+        <i class="bi bi-info-circle"></i> <strong>Tipp:</strong> Ziehen Sie die Beiträge mit dem <i class="bi bi-grip-vertical"></i> Symbol, um die Reihenfolge zu ändern.
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th style="width: 30px;"></th>
+                    <th>Bild</th>
+                    <th>Titel</th>
+                    <th>Seite</th>
+                    <th>Layout</th>
+                    <th>Hauptbeitrag</th>
+                    <th>Erstellt am</th>
+                    <th>Aktionen</th>
+                </tr>
+            </thead>
+            <tbody id="sortable-posts">
+                {% for post in posts %}
+                    <tr data-id="{{ post.id }}"{% if post.isMain %} class="table-warning align-middle"{% else %} class="align-middle"{% endif %} style="cursor: move;">
+                        <td class="text-center">
+                            <i class="bi bi-grip-vertical text-muted" style="cursor: grab;"></i>
+                        </td>
+                        <td>
+                            {% if post.imagePath %}
+                                <div style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; overflow: hidden;">
+                                    <img src="{{ asset(post.imagePath) }}" alt="{{ post.title }}" style="max-width: 60px; max-height: 60px; object-fit: contain;{% if post.imageRotation %} transform: rotate({{ post.imageRotation }}deg);{% endif %}" class="rounded">
+                                </div>
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <strong>{{ post.title }}</strong>
+                            {% if post.subtitle %}
+                                <br><small class="text-muted">{{ post.subtitle }}</small>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <small class="text-muted">{{ post.page|replace({'-': ' '})|title }}</small>
+                        </td>
+                        <td>
+                            {% if post.layout == 'side_by_side' %}
+                                <span class="badge bg-info">2 nebeneinander</span>
+                            {% else %}
+                                <span class="badge bg-secondary">1 pro Zeile</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center">
+                            <input type="checkbox" class="form-check-input" {% if post.isMain %}checked{% endif %} disabled style="cursor: default; opacity: 1;">
+                        </td>
+                        <td>{{ post.createdAt|date('d.m.Y H:i') }}</td>
+                        <td>
+                            <a href="{{ path('admin_posts_edit', {id: post.id}) }}" class="btn btn-sm btn-outline-primary">
+                                Bearbeiten
+                            </a>
+                            <form action="{{ path('admin_posts_delete', {id: post.id}) }}" method="post" class="d-inline"
+                                  onsubmit="return confirm('Wirklich löschen?')">
+                                <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ post.id) }}">
+                                <button type="submit" class="btn btn-sm btn-outline-danger">Löschen</button>
+                            </form>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="7" class="text-muted">Keine Beiträge vorhanden.</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% if totalPages > 1 %}
+        <nav aria-label="Pagination" class="mt-4">
+            <ul class="pagination justify-content-center">
+                {% for page in 1..totalPages %}
+                    <li class="page-item{% if page == currentPage %} active{% endif %}">
+                        <a class="page-link" href="{{ path('admin_posts', {page: page, filter_page: filterPage != 'all' ? filterPage : null}) }}">{{ page }}</a>
+                    </li>
+                {% endfor %}
+            </ul>
+        </nav>
+    {% endif %}
+</div>
+
+{# SortableJS Library #}
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const tbody = document.getElementById('sortable-posts');
+
+    if (!tbody) {
+        console.log('Sortable tbody not found');
+        return;
+    }
+
+    // Initialize SortableJS
+    const sortable = new Sortable(tbody, {
+        animation: 150,
+        handle: 'tr',
+        ghostClass: 'table-primary',
+        dragClass: 'opacity-50',
+        onEnd: function(evt) {
+            // Get the new order
+            const rows = tbody.querySelectorAll('tr[data-id]');
+            const order = [];
+
+            rows.forEach((row, index) => {
+                const postId = row.getAttribute('data-id');
+                if (postId) {
+                    order.push(parseInt(postId));
+                }
+            });
+
+            console.log('New order:', order);
+
+            // Send AJAX request to update the order
+            fetch('{{ path('admin_posts_reorder') }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ order: order })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    console.log('Order updated successfully');
+                    // Show a brief success indicator
+                    const alertDiv = document.createElement('div');
+                    alertDiv.className = 'alert alert-success alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x mt-3';
+                    alertDiv.style.zIndex = '9999';
+                    alertDiv.innerHTML = '<i class="bi bi-check-circle"></i> Reihenfolge gespeichert! <button type="button" class="btn-close" data-bs-dismiss="alert"></button>';
+                    document.body.appendChild(alertDiv);
+
+                    setTimeout(() => alertDiv.remove(), 2000);
+                } else {
+                    alert('Fehler beim Speichern der Reihenfolge: ' + (data.message || 'Unbekannter Fehler'));
+                }
+            })
+            .catch(error => {
+                console.error('Error updating order:', error);
+                alert('Fehler beim Speichern der Reihenfolge');
+            });
+        }
+    });
+
+    // Page filter dropdown handler
+    const pageFilter = document.getElementById('page-filter');
+    const gotoPageBtn = document.getElementById('goto-page-btn');
+
+    // Page URL mapping
+    const pageMap = {
+        'unser-chor': '{{ path('page_chor') }}',
+        'konzerte-und-aktivitaeten': '{{ path('page_concerts') }}',
+        'historie': '{{ path('page_history') }}',
+        'chorproben': '{{ path('page_rehearsals') }}',
+        'unser-repertoire': '{{ path('page_repertoire') }}',
+        'unsere-naechsten-termine': '{{ path('page_events') }}',
+        'geselliges': '{{ path('page_social') }}',
+        'archiv': '{{ path('page_archive') }}',
+        'beitraege': '{{ path('page_posts') }}'
+    };
+
+    // Function to update goto button
+    function updateGotoButton() {
+        const selectedPage = pageFilter.value;
+        if (selectedPage === 'all' || !pageMap[selectedPage]) {
+            gotoPageBtn.style.display = 'none';
+        } else {
+            gotoPageBtn.style.display = 'inline-block';
+            gotoPageBtn.href = pageMap[selectedPage];
+        }
+    }
+
+    if (pageFilter && gotoPageBtn) {
+        // Set initial state
+        updateGotoButton();
+
+        // Update button when dropdown changes
+        pageFilter.addEventListener('change', function() {
+            const filterValue = this.value;
+
+            // Update goto button
+            updateGotoButton();
+
+            // Update URL for filter
+            const currentUrl = new URL(window.location.href);
+
+            if (filterValue === 'all') {
+                currentUrl.searchParams.delete('filter_page');
+            } else {
+                currentUrl.searchParams.set('filter_page', filterValue);
+            }
+
+            // Reset to page 1 when changing filter
+            currentUrl.searchParams.delete('page');
+
+            window.location.href = currentUrl.toString();
+        });
+    }
+});
+</script>
+{% endblock %}

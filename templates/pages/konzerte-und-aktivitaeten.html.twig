@@ -3,25 +3,13 @@
 {% block title %}Konzerte und Aktivitäten - Chorgemeinschaft Teutonia Willstätt{% endblock %}
 
 {% block body %}
-<main>
-    <div class="container">
-        <h1>Konzerte und Aktivitäten</h1>
-        
-        <p class="lead">Jedes Jahr veranstalten wir 2 Konzerte:</p>
-        
-        <div class="row mt-5">
-            <div class="col-md-6 mb-4">
-                <h3>Serenadenkonzert im Juli</h3>
-                <p>Im Juli findet unser Serenadenkonzert im Foyer der Hanauerlandhalle statt.</p>
-                <img src="https://static.wixstatic.com/media/946f2a_247772da222b45c1bd98f6a4bde5acad~mv2.jpg/v1/crop/x_38,y_0,w_709,h_498/fill/w_622,h_426,al_c,q_80,usm_0.66_1.00_0.01,enc_avif,quality_auto/chorxx_JPG.jpg" alt="Serenadenkonzert" class="img-fluid rounded mt-3">
-            </div>
-            
-            <div class="col-md-6 mb-4">
-                <h3>Weihnachtskonzert am 2. Advent</h3>
-                <p>Am 2. Advent veranstalten wir unser Weihnachtskonzert in der Kirche in Willstätt.</p>
-                <img src="https://static.wixstatic.com/media/946f2a_984599f11bf44c7e9c0d41c8596fc658~mv2.jpg/v1/fill/w_286,h_398,al_c,q_80,usm_0.66_1.00_0.01,enc_avif,quality_auto/weihnacht_JPG.jpg" alt="Weihnachtskonzert" class="img-fluid rounded mt-3">
-            </div>
-        </div>
+<main id="main-content">
+    <div class="container" id="page-container">
+        <h1 id="page-title">Konzerte und Aktivitäten</h1>
+
+        <p class="lead" id="page-lead">Unser Chor entfaltet eine vielfältige und lebendige Konzerttätigkeit.</p>
+
+        {% include 'components/posts_display.html.twig' %}
     </div>
 </main>
 {% endblock %}
