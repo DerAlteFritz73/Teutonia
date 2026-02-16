@@ -18,3 +18,13 @@
 /public/assets/
 /assets/vendor/
 ###< symfony/asset-mapper ###
+
+# Test and debug files
+test_*.php
+debug_*.php
+check_*.php
+verify_*.php
+dropbox_debug.json
+
+# IDE/Editor files
+.claude/
