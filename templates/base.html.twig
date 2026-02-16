@@ -12,11 +12,16 @@
         {% block javascripts %}
             {% block importmap %}{{ importmap('app') }}{% endblock %}
         {% endblock %}
+        <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+        <meta http-equiv="Pragma" content="no-cache">
+        <meta http-equiv="Expires" content="0">
         <style>
             html, body { height: 100%; }
             body { display: flex; flex-direction: column; min-height: 100vh; }
             main { flex: 1 0 auto; padding-top: 1rem; }
             footer { flex-shrink: 0; }
+            /* Hide empty paragraphs from Quill editor */
+            p:empty, p:has(br:only-child) { display: none; }
         </style>
     </head>
     <body>
