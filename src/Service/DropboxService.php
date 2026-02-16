@@ -301,7 +301,56 @@ class DropboxService
             }
         }
 
+        // Sort the tree alphabetically
+        $tree = $this->sortTree($tree);
+
         return $tree;
+    }
+
+    /**
+     * Sort the tree structure alphabetically (folders and files)
+     */
+    private function sortTree(array $tree): array
+    {
+        // Sort root files if they exist
+        if (isset($tree['_root_files'])) {
+            usort($tree['_root_files'], function($a, $b) {
+                return strcasecmp($a['name'], $b['name']);
+            });
+        }
+
+        // Separate folders from special keys
+        $folders = [];
+        $special = [];
+
+        foreach ($tree as $key => $value) {
+            if ($key === '_root_files' || !is_array($value) || !isset($value['_type'])) {
+                $special[$key] = $value;
+            } else {
+                $folders[$key] = $value;
+            }
+        }
+
+        // Sort folders alphabetically by key
+        uksort($folders, 'strcasecmp');
+
+        // Sort files and subfolders within each folder
+        foreach ($folders as $folderName => &$folderData) {
+            // Sort files in this folder
+            if (isset($folderData['_files'])) {
+                usort($folderData['_files'], function($a, $b) {
+                    return strcasecmp($a['name'], $b['name']);
+                });
+            }
+
+            // Recursively sort subfolders
+            if (isset($folderData['_subfolders']) && !empty($folderData['_subfolders'])) {
+                $folderData['_subfolders'] = $this->sortTree($folderData['_subfolders']);
+            }
+        }
+
+        // Merge back: special keys first, then sorted folders
+        return array_merge($special, $folders);
     }
 
     /**

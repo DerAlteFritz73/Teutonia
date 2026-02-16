@@ -4,6 +4,7 @@ namespace App\Controller;
 
 use App\Repository\EventRepository;
 use App\Repository\PracticeLinkRepository;
+use App\Service\DropboxService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -18,12 +19,13 @@ class MemberController extends AbstractController
     }
 
     #[Route('/aktuelle-proben', name: 'member_proben')]
-    public function proben(PracticeLinkRepository $practiceLinkRepository): Response
+    public function proben(DropboxService $dropboxService): Response
     {
-        $songGroups = $practiceLinkRepository->findAllGroupedBySong();
+        // Get Dropbox file structure from "Aktuelle Proben" folder
+        $dropboxFiles = $dropboxService->getFileStructure('/Chorgemeinschaft Teutonia/Aktuelle Proben');
 
         return $this->render('member/proben.html.twig', [
-            'songGroups' => $songGroups,
+            'dropboxFiles' => $dropboxFiles,
         ]);
     }
 

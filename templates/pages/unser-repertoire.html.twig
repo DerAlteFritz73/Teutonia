@@ -36,7 +36,7 @@
                                 <span class="badge bg-secondary ms-2">{{ dropboxFiles._root_files|length }}</span>
                             </button>
                         </h2>
-                        <div id="folder-root" class="accordion-collapse collapse show">
+                        <div id="folder-root" class="accordion-collapse collapse show" data-bs-parent="#repertoireAccordion">
                             <div class="accordion-body">
                                 <div class="list-group">
                                     {% for file in dropboxFiles._root_files %}
@@ -76,7 +76,7 @@
                                     {% endif %}
                                 </button>
                             </h2>
-                            <div id="{{ folderId }}" class="accordion-collapse collapse {% if isFirstFolder %}show{% endif %}">
+                            <div id="{{ folderId }}" class="accordion-collapse collapse {% if isFirstFolder %}show{% endif %}" data-bs-parent="#repertoireAccordion">
                                 <div class="accordion-body">
                                     {% if folderData._files is not empty %}
                                         <div class="list-group">

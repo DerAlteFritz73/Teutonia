@@ -3,93 +3,314 @@
 {% block title %}Aktuelle Proben - {{ parent() }}{% endblock %}
 
 {% block body %}
-<div class="container py-5">
-    <h1>Aktuelle Proben</h1>
-    <p class="lead">Hier findest du alle Noten und Übungsdateien für die aktuellen Proben.</p>
+<main id="main-content">
+    <div class="container py-5" id="page-container">
+        <h1 id="page-title">Aktuelle Proben</h1>
+        <p class="lead" id="page-lead">Hier findest du alle Noten und Übungsdateien für die aktuellen Proben.</p>
 
-    {% if songGroups|length > 0 %}
-        <div class="accordion mt-4" id="songsAccordion">
-            {% for song, links in songGroups %}
-                {% set songId = 'song-' ~ loop.index %}
-                {% set pdfLinks = links|filter(link => link.isPdf) %}
-                {% set mp3Links = links|filter(link => link.isMp3) %}
-                <div class="accordion-item">
-                    <h2 class="accordion-header">
-                        <button class="accordion-button {% if not loop.first %}collapsed{% endif %}" type="button" data-bs-toggle="collapse" data-bs-target="#{{ songId }}">
-                            <strong>{{ song }}</strong>
-                            <span class="badge bg-secondary ms-2">{{ links|length }} Dateien</span>
-                        </button>
-                    </h2>
-                    <div id="{{ songId }}" class="accordion-collapse collapse {% if loop.first %}show{% endif %}" data-bs-parent="#songsAccordion">
-                        <div class="accordion-body">
-                            <div class="row">
-                                {% if pdfLinks|length > 0 %}
-                                <div class="col-md-4 mb-3">
-                                    <h6 class="text-muted">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-file-earmark-pdf me-1" viewBox="0 0 16 16">
-                                            <path d="M14 14V4.5L9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2M9.5 3A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h5.5z"/>
-                                            <path d="M4.603 14.087a.8.8 0 0 1-.438-.42c-.195-.388-.13-.776.08-1.102.198-.307.526-.568.897-.787a7.7 7.7 0 0 1 1.482-.645 20 20 0 0 0 1.062-2.227 7.3 7.3 0 0 1-.43-1.295c-.086-.4-.119-.796-.046-1.136.075-.354.274-.672.65-.823.192-.077.4-.12.602-.077a.7.7 0 0 1 .477.365c.088.164.12.356.127.538.007.188-.012.396-.047.614-.084.51-.27 1.134-.52 1.794a11 11 0 0 0 .98 1.686 5.8 5.8 0 0 1 1.334.05c.364.066.734.195.96.465.12.144.193.32.2.518.007.192-.047.382-.138.563a1.04 1.04 0 0 1-.354.416.86.86 0 0 1-.51.138c-.331-.014-.654-.196-.933-.417a5.7 5.7 0 0 1-.911-.95 11.7 11.7 0 0 0-1.997.406 11.3 11.3 0 0 1-1.02 1.51c-.292.35-.609.656-.927.787a.8.8 0 0 1-.58.029z"/>
-                                        </svg>
-                                        Noten
-                                    </h6>
-                                    {% for link in pdfLinks %}
-                                        <a href="{{ link.url }}" target="_blank" class="btn btn-outline-danger btn-sm mb-1 w-100">
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" class="bi bi-file-pdf me-1" viewBox="0 0 16 16">
-                                                <path d="M4 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2zm0 1h8a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1"/>
-                                            </svg>
-                                            PDF öffnen
-                                        </a>
+        {# Dropbox Files Section #}
+        {% if dropboxFiles is defined and dropboxFiles is not empty %}
+        <section class="dropbox-files-section mt-4">
+            <div class="accordion" id="probenAccordion">
+                {% set folderIndex = 0 %}
+
+                {# Display root files if any #}
+                {% if dropboxFiles._root_files is defined and dropboxFiles._root_files is not empty %}
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#folder-root" aria-expanded="true">
+                                <i class="bi bi-folder2-open me-2"></i>
+                                Allgemeine Dateien
+                                <span class="badge bg-secondary ms-2">{{ dropboxFiles._root_files|length }}</span>
+                            </button>
+                        </h2>
+                        <div id="folder-root" class="accordion-collapse collapse show" data-bs-parent="#probenAccordion">
+                            <div class="accordion-body">
+                                <div class="list-group">
+                                    {% for file in dropboxFiles._root_files %}
+                                        {% include 'components/dropbox_file_item.html.twig' with {'file': file} %}
                                     {% endfor %}
                                 </div>
-                                {% endif %}
-                                {% if mp3Links|length > 0 %}
-                                <div class="col-md-8">
-                                    <h6 class="text-muted">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-music-note-list me-1" viewBox="0 0 16 16">
-                                            <path d="M12 13c0 1.105-1.12 2-2.5 2S7 14.105 7 13s1.12-2 2.5-2 2.5.895 2.5 2"/>
-                                            <path fill-rule="evenodd" d="M12 3v10h-1V3z"/>
-                                            <path d="M11 2.82a1 1 0 0 1 .804-.98l3-.6A1 1 0 0 1 16 2.22V4l-5 1z"/>
-                                            <path fill-rule="evenodd" d="M0 11.5a.5.5 0 0 1 .5-.5H4a.5.5 0 0 1 0 1H.5a.5.5 0 0 1-.5-.5m0-4A.5.5 0 0 1 .5 7H8a.5.5 0 0 1 0 1H.5a.5.5 0 0 1-.5-.5m0-4A.5.5 0 0 1 .5 3H8a.5.5 0 0 1 0 1H.5a.5.5 0 0 1-.5-.5"/>
-                                        </svg>
-                                        Übungsdateien
-                                    </h6>
-                                    <div class="d-flex flex-wrap gap-2">
-                                        {% for link in mp3Links %}
-                                            {% set voiceClass = 'secondary' %}
-                                            {% set voiceLabel = link.title %}
-                                            {% if link.voicePart == 'sopran' %}
-                                                {% set voiceClass = 'primary' %}
-                                                {% set voiceLabel = 'Sopran' %}
-                                            {% elseif link.voicePart == 'alt' %}
-                                                {% set voiceClass = 'success' %}
-                                                {% set voiceLabel = 'Alt' %}
-                                            {% elseif link.voicePart == 'tenor' %}
-                                                {% set voiceClass = 'warning' %}
-                                                {% set voiceLabel = 'Tenor' %}
-                                            {% elseif link.voicePart == 'bass' %}
-                                                {% set voiceClass = 'dark' %}
-                                                {% set voiceLabel = 'Bass' %}
-                                            {% endif %}
-                                            <a href="{{ link.url }}" target="_blank" class="btn btn-{{ voiceClass }} btn-sm">
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" class="bi bi-play-fill me-1" viewBox="0 0 16 16">
-                                                    <path d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393"/>
-                                                </svg>
-                                                {{ voiceLabel }}
-                                            </a>
-                                        {% endfor %}
-                                    </div>
-                                </div>
-                                {% endif %}
                             </div>
                         </div>
                     </div>
+                {% endif %}
+
+                {# Display folders #}
+                {% for folderName, folderData in dropboxFiles %}
+                    {% if folderName != '_root_files' and folderData._type is defined and folderData._type == 'folder' %}
+                        {% set folderIndex = folderIndex + 1 %}
+                        {% set folderId = 'folder-' ~ folderIndex %}
+                        {% set isFirstFolder = folderIndex == 1 and dropboxFiles._root_files is not defined %}
+
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button {% if not isFirstFolder %}collapsed{% endif %}" type="button"
+                                        data-bs-toggle="collapse" data-bs-target="#{{ folderId }}"
+                                        aria-expanded="{{ isFirstFolder ? 'true' : 'false' }}">
+                                    <i class="bi bi-folder2-open me-2"></i>
+                                    {{ folderName }}
+                                    {% set pdfCount = folderData|count_pdf_files %}
+                                    {% set audioCount = folderData|count_audio_files %}
+                                    {% if pdfCount > 0 %}
+                                        <span class="badge bg-danger ms-2" title="PDF-Dateien">
+                                            <i class="bi bi-file-pdf"></i> {{ pdfCount }}
+                                        </span>
+                                    {% endif %}
+                                    {% if audioCount > 0 %}
+                                        <span class="badge bg-success ms-2" title="Audio-Dateien">
+                                            <i class="bi bi-music-note"></i> {{ audioCount }}
+                                        </span>
+                                    {% endif %}
+                                </button>
+                            </h2>
+                            <div id="{{ folderId }}" class="accordion-collapse collapse {% if isFirstFolder %}show{% endif %}" data-bs-parent="#probenAccordion">
+                                <div class="accordion-body">
+                                    {% if folderData._files is not empty %}
+                                        <div class="list-group">
+                                            {% for file in folderData._files %}
+                                                {% include 'components/dropbox_file_item.html.twig' with {'file': file} %}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+
+                                    {# Display subfolders #}
+                                    {% if folderData._subfolders is defined and folderData._subfolders is not empty %}
+                                        <div class="ms-3 mt-3">
+                                            {% include 'components/dropbox_subfolder.html.twig' with {
+                                                'subfolders': folderData._subfolders,
+                                                'parentId': folderId
+                                            } %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+
+            {% if dropboxFiles is empty or (dropboxFiles._root_files is not defined and dropboxFiles|length == 0) %}
+                <div class="alert alert-info mt-4">
+                    <i class="bi bi-info-circle me-2"></i>
+                    Aktuell sind keine Übungsmaterialien verfügbar.
                 </div>
-            {% endfor %}
-        </div>
-    {% else %}
+            {% endif %}
+        </section>
+        {% else %}
         <div class="alert alert-info mt-4">
+            <i class="bi bi-info-circle me-2"></i>
             Aktuell sind keine Übungsmaterialien verfügbar.
         </div>
-    {% endif %}
+        {% endif %}
+    </div>
+</main>
+
+<!-- PDF Viewer Modal -->
+<div class="modal fade" id="pdfViewerModal" tabindex="-1" aria-labelledby="pdfViewerModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-fullscreen-lg-down">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="pdfViewerModalLabel">
+                    <i class="bi bi-file-pdf-fill text-danger me-2"></i>
+                    <span id="pdfFileName"></span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-0" style="height: 80vh;">
+                <iframe id="pdfViewerFrame" style="width: 100%; height: 100%; border: none;"></iframe>
+            </div>
+            <div class="modal-footer">
+                <a id="pdfDownloadLink" href="#" download class="btn btn-primary">
+                    <i class="bi bi-download me-2"></i>Herunterladen
+                </a>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Schließen</button>
+            </div>
+        </div>
+    </div>
 </div>
+
+<!-- Audio Player Modal -->
+<div class="modal fade" id="audioPlayerModal" tabindex="-1" aria-labelledby="audioPlayerModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="audioPlayerModalLabel">
+                    <i class="bi bi-music-note-beamed text-primary me-2"></i>
+                    <span id="audioFileName"></span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <audio id="audioPlayer" controls class="w-100 mb-4" style="outline: none;">
+                    Ihr Browser unterstützt das Audio-Element nicht.
+                </audio>
+
+                <div class="card">
+                    <div class="card-body">
+                        <h6 class="card-title mb-3">
+                            <i class="bi bi-speedometer2 me-2"></i>Wiedergabegeschwindigkeit
+                        </h6>
+
+                        <div class="d-flex align-items-center gap-3 mb-3">
+                            <label for="speedSlider" class="form-label mb-0" style="min-width: 60px;">
+                                <span id="speedValue">1.0</span>x
+                            </label>
+                            <input type="range" class="form-range flex-grow-1" id="speedSlider"
+                                   min="0.25" max="2.0" step="0.05" value="1.0">
+                        </div>
+
+                        <div class="d-flex gap-2 flex-wrap">
+                            <button class="btn btn-sm btn-outline-secondary speed-preset" data-speed="0.5">0.5x</button>
+                            <button class="btn btn-sm btn-outline-secondary speed-preset" data-speed="0.75">0.75x</button>
+                            <button class="btn btn-sm btn-outline-primary speed-preset" data-speed="1">1.0x</button>
+                            <button class="btn btn-sm btn-outline-secondary speed-preset" data-speed="1.25">1.25x</button>
+                            <button class="btn btn-sm btn-outline-secondary speed-preset" data-speed="1.5">1.5x</button>
+                            <button class="btn btn-sm btn-outline-secondary speed-preset" data-speed="2">2.0x</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <a id="audioDownloadLink" href="#" download class="btn btn-primary">
+                    <i class="bi bi-download me-2"></i>Herunterladen
+                </a>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Schließen</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Handle Dropbox file viewing with PDF viewer and audio player
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Dropbox file viewer loaded');
+
+    const links = document.querySelectorAll('.dropbox-file-link');
+    const pdfModal = new bootstrap.Modal(document.getElementById('pdfViewerModal'));
+    const audioModal = new bootstrap.Modal(document.getElementById('audioPlayerModal'));
+    const audioPlayer = document.getElementById('audioPlayer');
+    const speedSlider = document.getElementById('speedSlider');
+    const speedValue = document.getElementById('speedValue');
+    const speedPresets = document.querySelectorAll('.speed-preset');
+
+    console.log('Found ' + links.length + ' Dropbox file links');
+
+    // Speed control functionality
+    speedSlider.addEventListener('input', function() {
+        const speed = parseFloat(this.value);
+        audioPlayer.playbackRate = speed;
+        speedValue.textContent = speed.toFixed(2);
+        updateSpeedPresetButtons(speed);
+    });
+
+    speedPresets.forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            const speed = parseFloat(this.dataset.speed);
+            speedSlider.value = speed;
+            audioPlayer.playbackRate = speed;
+            speedValue.textContent = speed.toFixed(2);
+            updateSpeedPresetButtons(speed);
+        });
+    });
+
+    function updateSpeedPresetButtons(speed) {
+        speedPresets.forEach(function(btn) {
+            const btnSpeed = parseFloat(btn.dataset.speed);
+            if (Math.abs(btnSpeed - speed) < 0.01) {
+                btn.classList.remove('btn-outline-secondary', 'btn-outline-primary');
+                btn.classList.add('btn-primary');
+            } else {
+                btn.classList.remove('btn-primary');
+                if (btnSpeed === 1.0) {
+                    btn.classList.add('btn-outline-primary');
+                } else {
+                    btn.classList.add('btn-outline-secondary');
+                }
+            }
+        });
+    }
+
+    // Reset playback speed when modal is closed
+    document.getElementById('audioPlayerModal').addEventListener('hidden.bs.modal', function() {
+        audioPlayer.pause();
+        audioPlayer.currentTime = 0;
+    });
+
+    // Handle file clicks
+    links.forEach(function(link) {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            console.log('File clicked:', this.dataset.filePath);
+
+            const filePath = this.dataset.filePath;
+            const fileName = this.dataset.fileName;
+            const fileType = this.dataset.fileType;
+            const spinner = this.querySelector('.spinner-border');
+
+            // Show loading spinner
+            if (spinner) {
+                spinner.classList.remove('d-none');
+            }
+
+            // Fetch temporary link from server
+            fetch('{{ path('api_dropbox_link') }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ path: filePath })
+            })
+            .then(response => {
+                console.log('Response status:', response.status);
+                return response.json();
+            })
+            .then(data => {
+                console.log('Response data:', data);
+
+                if (spinner) {
+                    spinner.classList.add('d-none');
+                }
+
+                if (data.link) {
+                    if (fileType === 'pdf') {
+                        // Open PDF in viewer
+                        document.getElementById('pdfFileName').textContent = fileName;
+                        document.getElementById('pdfViewerFrame').src = data.link;
+                        document.getElementById('pdfDownloadLink').href = data.link;
+                        document.getElementById('pdfDownloadLink').download = fileName;
+                        pdfModal.show();
+                    } else if (fileType === 'audio') {
+                        // Open audio in player
+                        document.getElementById('audioFileName').textContent = fileName;
+                        audioPlayer.src = data.link;
+                        document.getElementById('audioDownloadLink').href = data.link;
+                        document.getElementById('audioDownloadLink').download = fileName;
+
+                        // Reset speed controls
+                        speedSlider.value = 1.0;
+                        audioPlayer.playbackRate = 1.0;
+                        speedValue.textContent = '1.0';
+                        updateSpeedPresetButtons(1.0);
+
+                        audioModal.show();
+                    } else {
+                        // For other file types, open in new tab
+                        window.open(data.link, '_blank');
+                    }
+                } else {
+                    alert('Fehler beim Laden der Datei: ' + (data.error || 'Unbekannter Fehler'));
+                }
+            })
+            .catch(error => {
+                if (spinner) {
+                    spinner.classList.add('d-none');
+                }
+                console.error('Error:', error);
+                alert('Fehler beim Laden der Datei. Bitte versuchen Sie es erneut.');
+            });
+        });
+    });
+});
+</script>
 {% endblock %}
