@@ -3,6 +3,7 @@
 namespace App\Controller;
 
 use App\Repository\PostRepository;
+use App\Repository\SongKeywordRepository;
 use App\Service\DropboxService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -127,5 +128,72 @@ class PageController extends AbstractController
         }
 
         return new JsonResponse(['link' => $link]);
+    }
+
+    #[Route('/api/dropbox/view', name: 'api_dropbox_view', methods: ['GET'])]
+    #[IsGranted('ROLE_USER')]
+    public function viewDropboxFile(Request $request, DropboxService $dropboxService): Response
+    {
+        $path = $request->query->get('path');
+
+        if (!$path) {
+            throw $this->createNotFoundException('Path is required');
+        }
+
+        // Get temporary link from Dropbox
+        $link = $dropboxService->getTemporaryLink($path);
+
+        if (!$link) {
+            throw $this->createNotFoundException('Could not generate link');
+        }
+
+        // Fetch the file content from Dropbox
+        $fileContent = @file_get_contents($link);
+
+        if ($fileContent === false) {
+            throw $this->createNotFoundException('Could not fetch file');
+        }
+
+        // Determine content type based on file extension
+        $extension = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+        $contentType = match($extension) {
+            'pdf' => 'application/pdf',
+            'mp3' => 'audio/mpeg',
+            'mp4' => 'video/mp4',
+            'wav' => 'audio/wav',
+            'ogg' => 'audio/ogg',
+            'webm' => 'video/webm',
+            default => 'application/octet-stream'
+        };
+
+        // Create response with inline content disposition for PDFs
+        $response = new Response($fileContent);
+        $response->headers->set('Content-Type', $contentType);
+
+        if ($extension === 'pdf') {
+            // For PDFs, use inline disposition to show in browser
+            $response->headers->set('Content-Disposition', 'inline; filename="' . basename($path) . '"');
+        } else {
+            // For other files, allow default behavior
+            $response->headers->set('Content-Disposition', 'inline; filename="' . basename($path) . '"');
+        }
+
+        return $response;
+    }
+
+    #[Route('/api/wordcloud', name: 'api_wordcloud', methods: ['GET'])]
+    public function getWordCloudData(SongKeywordRepository $songKeywordRepository): JsonResponse
+    {
+        $composerData = $songKeywordRepository->getComposerFrequency('Noten');
+
+        // Format for word cloud library (array of {text, size})
+        $wordCloudData = array_map(function($item) {
+            return [
+                'text' => $item['composer'],
+                'size' => (int)$item['frequency']
+            ];
+        }, $composerData);
+
+        return new JsonResponse($wordCloudData);
     }
 }

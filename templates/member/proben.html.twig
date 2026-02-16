@@ -276,7 +276,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (fileType === 'pdf') {
                         // Open PDF in viewer
                         document.getElementById('pdfFileName').textContent = fileName;
-                        document.getElementById('pdfViewerFrame').src = data.link;
+                        document.getElementById('pdfViewerFrame').src = '{{ path('api_dropbox_view') }}?path=' + encodeURIComponent(filePath);
                         document.getElementById('pdfDownloadLink').href = data.link;
                         document.getElementById('pdfDownloadLink').download = fileName;
                         pdfModal.show();

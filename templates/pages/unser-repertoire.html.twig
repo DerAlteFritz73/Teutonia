@@ -7,7 +7,17 @@
     <div class="container" id="page-container">
         <h1 id="page-title">Unser Repertoire</h1>
         <p class="lead" id="page-lead">Die Lieder und Kompositionen, die wir singen</p>
-        <p>breitgef¨chert Carl Orff, etc</p>
+
+        {# Word Cloud Section - Visible to all #}
+        <section class="word-cloud-section mb-5">
+            <div class="card shadow-sm">
+                <div class="card-body p-0">
+                    <div id="wordcloud-container" style="height: 500px; position: relative; background: #f8f9fa;">
+                        <canvas id="wordcloud" style="width: 100%; height: 100%;"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
 
         {% include 'components/posts_display.html.twig' %}
 
@@ -197,7 +207,56 @@
     </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/wordcloud@1.2.2/src/wordcloud2.min.js"></script>
 <script>
+// Word Cloud
+document.addEventListener('DOMContentLoaded', function() {
+    // Fetch word cloud data
+    fetch('{{ path('api_wordcloud') }}')
+        .then(response => response.json())
+        .then(data => {
+            if (data && data.length > 0) {
+                // Transform data to wordcloud2.js format
+                const list = data.map(item => [item.text, item.size * 10]); // Multiply for better sizing
+
+                const canvas = document.getElementById('wordcloud');
+                const container = document.getElementById('wordcloud-container');
+
+                // Set high resolution canvas
+                const dpr = window.devicePixelRatio || 1;
+                canvas.width = container.offsetWidth * dpr;
+                canvas.height = container.offsetHeight * dpr;
+
+                WordCloud(canvas, {
+                    list: list,
+                    gridSize: 6,
+                    weightFactor: function (size) {
+                        // MUCH larger text - increased from /300 to /150 for 2x size
+                        return Math.pow(size, 0.9) * canvas.width / 150;
+                    },
+                    fontFamily: 'Arial, sans-serif, bold',
+                    fontWeight: 'bold',
+                    color: function() {
+                        // Random colors from Bootstrap color palette
+                        const colors = ['#0d6efd', '#6610f2', '#6f42c1', '#d63384', '#dc3545', '#fd7e14', '#ffc107', '#198754', '#20c997', '#0dcaf0'];
+                        return colors[Math.floor(Math.random() * colors.length)];
+                    },
+                    rotateRatio: 0.3,
+                    rotationSteps: 2,
+                    backgroundColor: '#f8f9fa',
+                    drawOutOfBound: false,
+                    shrinkToFit: true,
+                    minSize: 18
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Error loading word cloud:', error);
+            document.getElementById('wordcloud-container').innerHTML =
+                '<div class="alert alert-info">Komponisten-Wolke wird geladen...</div>';
+        });
+});
+
 // Handle Dropbox file viewing with PDF viewer and audio player
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Dropbox file viewer loaded');
@@ -292,7 +351,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (fileType === 'pdf') {
                         // Open PDF in viewer
                         document.getElementById('pdfFileName').textContent = fileName;
-                        document.getElementById('pdfViewerFrame').src = data.link;
+                        document.getElementById('pdfViewerFrame').src = '{{ path('api_dropbox_view') }}?path=' + encodeURIComponent(filePath);
                         document.getElementById('pdfDownloadLink').href = data.link;
                         document.getElementById('pdfDownloadLink').download = fileName;
                         pdfModal.show();
