@@ -1,0 +1,52 @@
+{# Component for displaying subfolders recursively as accordions #}
+<div class="accordion accordion-flush" id="accordion-{{ parentId }}">
+    {% for subfolderName, subfolderData in subfolders %}
+        {% if subfolderData._type is defined and subfolderData._type == 'folder' %}
+            {% set subfolderId = parentId ~ '-sub-' ~ loop.index %}
+
+            <div class="accordion-item border-start border-2 border-warning">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed bg-light" type="button"
+                            data-bs-toggle="collapse" data-bs-target="#{{ subfolderId }}"
+                            aria-expanded="false" aria-controls="{{ subfolderId }}">
+                        <i class="bi bi-folder me-2 text-warning"></i>
+                        {{ subfolderName }}
+                        {% set pdfCount = subfolderData|count_pdf_files %}
+                        {% set audioCount = subfolderData|count_audio_files %}
+                        {% if pdfCount > 0 %}
+                            <span class="badge bg-danger ms-2" title="PDF-Dateien">
+                                <i class="bi bi-file-pdf"></i> {{ pdfCount }}
+                            </span>
+                        {% endif %}
+                        {% if audioCount > 0 %}
+                            <span class="badge bg-success ms-2" title="Audio-Dateien">
+                                <i class="bi bi-music-note"></i> {{ audioCount }}
+                            </span>
+                        {% endif %}
+                    </button>
+                </h2>
+                <div id="{{ subfolderId }}" class="accordion-collapse collapse" data-bs-parent="#accordion-{{ parentId }}">
+                    <div class="accordion-body">
+                        {% if subfolderData._files is defined and subfolderData._files is not empty %}
+                            <div class="list-group mb-3">
+                                {% for file in subfolderData._files %}
+                                    {% include 'components/dropbox_file_item.html.twig' with {'file': file} %}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+
+                        {# Recursive call for deeper subfolders #}
+                        {% if subfolderData._subfolders is defined and subfolderData._subfolders is not empty %}
+                            <div class="ms-2 mt-3">
+                                {% include 'components/dropbox_subfolder.html.twig' with {
+                                    'subfolders': subfolderData._subfolders,
+                                    'parentId': subfolderId
+                                } %}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+    {% endfor %}
+</div>

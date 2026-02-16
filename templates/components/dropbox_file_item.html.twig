@@ -1,0 +1,36 @@
+{# Component for displaying a single Dropbox file #}
+<a href="#"
+   class="dropbox-file-link list-group-item list-group-item-action d-flex justify-content-between align-items-center"
+   data-file-path="{{ file.path }}"
+   data-file-name="{{ file.name }}"
+   data-file-type="{{ file.type }}">
+    <div class="d-flex align-items-center flex-grow-1">
+        {% if file.type == 'pdf' %}
+            <i class="bi bi-file-pdf-fill text-danger me-3 fs-4"></i>
+        {% elseif file.type == 'audio' %}
+            <i class="bi bi-file-music-fill text-primary me-3 fs-4"></i>
+        {% else %}
+            <i class="bi bi-file-play-fill text-info me-3 fs-4"></i>
+        {% endif %}
+
+        <div class="flex-grow-1">
+            <div class="fw-semibold">{{ file.name }}</div>
+            {% if file.size > 0 %}
+                <small class="text-muted">
+                    {{ file.size|format_bytes }}
+                </small>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="ms-3 d-flex align-items-center gap-2">
+        {% if file.type == 'pdf' %}
+            <span class="badge bg-danger">PDF</span>
+        {% elseif file.type == 'audio' %}
+            <span class="badge bg-primary">Audio</span>
+        {% else %}
+            <span class="badge bg-info">Video</span>
+        {% endif %}
+        <span class="spinner-border spinner-border-sm d-none" role="status"></span>
+    </div>
+</a>

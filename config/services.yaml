@@ -21,3 +21,10 @@ services:
 
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones
+
+    App\Service\DropboxService:
+        arguments:
+            $dropboxAccessToken: '%env(DROPBOX_ACCESS_TOKEN)%'
+            $dropboxRefreshToken: '%env(DROPBOX_REFRESH_TOKEN)%'
+            $dropboxAppKey: '%env(DROPBOX_APP_KEY)%'
+            $dropboxAppSecret: '%env(DROPBOX_APP_SECRET)%'
