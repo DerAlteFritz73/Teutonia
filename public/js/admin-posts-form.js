@@ -90,8 +90,16 @@ document.addEventListener('turbo:load', function () {
         updatePreviewPost();
     });
 
+    function quillToBr(html) {
+        return html
+            .replace(/<p><br\s*\/?><\/p>/gi, '<br>')
+            .replace(/<\/p>/gi, '<br>')
+            .replace(/<p>/gi, '')
+            .replace(/<br>$/, '');
+    }
+
     quill.on('text-change', function () {
-        paragraphInput.value = quill.root.innerHTML;
+        paragraphInput.value = quillToBr(quill.root.innerHTML);
         updatePreviewPost();
     });
 
@@ -101,7 +109,7 @@ document.addEventListener('turbo:load', function () {
     pageSelect.addEventListener('change', loadPagePreview);
 
     document.getElementById('post-form').addEventListener('submit', function () {
-        paragraphInput.value = quill.root.innerHTML;
+        paragraphInput.value = quillToBr(quill.root.innerHTML);
     });
 
     // ── Inline Image Editor ───────────────────────────────────────────────────
