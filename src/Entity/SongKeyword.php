@@ -49,7 +49,7 @@ class SongKeyword
 
     #[ORM\ManyToMany(targetEntity: Style::class, inversedBy: 'songKeywords')]
     #[ORM\JoinTable(name: 'song_style',
-        joinColumns: [new ORM\JoinColumn(name: 'song_id', referencedColumnName: 'id', onDelete: 'CASCADE')],
+        joinColumns: [new ORM\JoinColumn(name: 'song_keyword_id', referencedColumnName: 'id', onDelete: 'CASCADE')],
         inverseJoinColumns: [new ORM\JoinColumn(name: 'style_id', referencedColumnName: 'id', onDelete: 'CASCADE')]
     )]
     private Collection $styles;
