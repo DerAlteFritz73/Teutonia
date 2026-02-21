@@ -98,8 +98,13 @@ class SongKeywordRepository extends ServiceEntityRepository
         $like = '%' . $term . '%';
         $qb = $this->createQueryBuilder('s')
             ->leftJoin('s.styles', 'st')
+            ->leftJoin('s.children', 'c')
+            ->leftJoin('c.styles', 'cst')
             ->where('s.parent IS NULL')
-            ->andWhere('s.songName LIKE :q OR s.composer LIKE :q OR s.etikett LIKE :q OR st.name LIKE :q')
+            ->andWhere('
+                s.songName LIKE :q OR s.composer LIKE :q OR s.etikett LIKE :q OR st.name LIKE :q
+                OR c.songName LIKE :q OR c.composer LIKE :q OR c.etikett LIKE :q OR cst.name LIKE :q
+            ')
             ->setParameter('q', $like)
             ->groupBy('s.id');
         $this->applySongSort($qb, $sort, $dir);
@@ -115,8 +120,13 @@ class SongKeywordRepository extends ServiceEntityRepository
         return (int) $this->createQueryBuilder('s')
             ->select('COUNT(DISTINCT s.id)')
             ->leftJoin('s.styles', 'st')
+            ->leftJoin('s.children', 'c')
+            ->leftJoin('c.styles', 'cst')
             ->where('s.parent IS NULL')
-            ->andWhere('s.songName LIKE :q OR s.composer LIKE :q OR s.etikett LIKE :q OR st.name LIKE :q')
+            ->andWhere('
+                s.songName LIKE :q OR s.composer LIKE :q OR s.etikett LIKE :q OR st.name LIKE :q
+                OR c.songName LIKE :q OR c.composer LIKE :q OR c.etikett LIKE :q OR cst.name LIKE :q
+            ')
             ->setParameter('q', $like)
             ->getQuery()
             ->getSingleScalarResult();
