@@ -154,7 +154,7 @@ class AdminController extends AbstractController
             return new JsonResponse(['error' => 'Invalid CSRF token'], 403);
         }
 
-        $allowed = ['songName', 'composer', 'etikett', 'dropboxlink', 'letzteAuffuehrung'];
+        $allowed = ['songName', 'composer', 'etikett', 'dropboxlink'];
         $field   = $data['field'] ?? '';
         $value   = trim($data['value'] ?? '');
 
@@ -177,10 +177,6 @@ class AdminController extends AbstractController
                 break;
             case 'dropboxlink':
                 $song->setDropboxlink($value !== '' ? $value : null);
-                break;
-            case 'letzteAuffuehrung':
-                $date = $value !== '' ? \DateTime::createFromFormat('Y-m-d', $value) : null;
-                $song->setLetzteAuffuehrung($date ?: null);
                 break;
         }
 
