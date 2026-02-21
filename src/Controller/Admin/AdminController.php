@@ -45,7 +45,7 @@ class AdminController extends AbstractController
             'userCount'    => count($userRepository->findAll()),
             'eventCount'   => count($eventRepository->findAll()),
             'postCount'    => count($postRepository->findAll()),
-            'songCount'    => count($songRepository->findAll()),
+            'songCount'    => $songRepository->countAllIncludingMovements(),
             'konzertCount' => count($konzertRepository->findAll()),
         ]);
     }
@@ -81,6 +81,7 @@ class AdminController extends AbstractController
             'currentPage' => $page,
             'totalPages'  => $totalPages,
             'total'       => $total,
+            'totalAll'    => $songRepository->countAllIncludingMovements(),
             'sort'        => $sort,
             'dir'         => $dir,
         ]);
