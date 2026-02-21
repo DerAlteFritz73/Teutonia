@@ -1,0 +1,60 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Konzerte verwalten - {{ parent() }}{% endblock %}
+
+{% block body %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Konzerte <span class="badge bg-secondary fs-6">{{ konzerte|length }}</span></h1>
+        <div class="d-flex gap-2">
+            <a href="{{ path('admin_konzerte_new') }}" class="btn btn-primary">
+                <i class="bi bi-plus-lg me-1"></i>Neues Konzert
+            </a>
+            <a href="{{ path('admin_dashboard') }}" class="btn btn-secondary">Zurück</a>
+        </div>
+    </div>
+
+    {% for message in app.flashes('success') %}
+        <div class="alert alert-success alert-dismissible fade show">{{ message }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+    {% endfor %}
+
+    <div class="table-responsive">
+        <table class="table table-striped table-hover align-middle">
+            <thead class="table-dark">
+                <tr>
+                    <th>Datum</th>
+                    <th>Name</th>
+                    <th>Ort</th>
+                    <th style="width:80px">Lieder</th>
+                    <th class="text-end" style="width:120px">Aktionen</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for konzert in konzerte %}
+                <tr>
+                    <td class="text-nowrap fw-semibold">{{ konzert.date|date('d.m.Y') }}</td>
+                    <td>{{ konzert.name }}</td>
+                    <td class="text-muted">{{ konzert.location ?? '—' }}</td>
+                    <td>
+                        <span class="badge bg-secondary">{{ konzert.songs|length + konzert.customSongs|length }}</span>
+                    </td>
+                    <td class="text-end">
+                        <a href="{{ path('admin_konzerte_edit', {id: konzert.id}) }}"
+                           class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></a>
+                        <form action="{{ path('admin_konzerte_delete', {id: konzert.id}) }}" method="post"
+                              class="d-inline" onsubmit="return confirm('Konzert wirklich löschen?')">
+                            <input type="hidden" name="_token" value="{{ csrf_token('delete_konzert' ~ konzert.id) }}">
+                            <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                        </form>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5" class="text-center text-muted py-4">Noch keine Konzerte erfasst.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
