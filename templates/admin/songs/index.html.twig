@@ -161,7 +161,7 @@
                             <td>
                                 {% set latestDate = song.latestKonzertDate %}
                                 <span class="text-muted">
-                                    {{ latestDate ? months_de[latestDate|date('n') - 1] ~ ' ' ~ latestDate|date('Y') : '—' }}
+                                    {{ latestDate ? latestDate|date('d.m.Y') : '—' }}
                                 </span>
                             </td>
 
@@ -257,7 +257,7 @@
                         <td>
                             {% set latestDate = song.latestKonzertDate %}
                             <span class="text-muted">
-                                {{ latestDate ? months_de[latestDate|date('n') - 1] ~ ' ' ~ latestDate|date('Y') : '—' }}
+                                {{ latestDate ? latestDate|date('d.m.Y') : '—' }}
                             </span>
                         </td>
 
@@ -346,7 +346,7 @@
                             <td>
                                 {% set latestDate = child.latestKonzertDate %}
                                 <span class="text-muted">
-                                    {{ latestDate ? months_de[latestDate|date('n') - 1] ~ ' ' ~ latestDate|date('Y') : '—' }}
+                                    {{ latestDate ? latestDate|date('d.m.Y') : '—' }}
                                 </span>
                             </td>
 
