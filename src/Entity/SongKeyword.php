@@ -3,10 +3,14 @@
 namespace App\Entity;
 
 use App\Repository\SongKeywordRepository;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use DateTimeInterface;
 
 #[ORM\Entity(repositoryClass: SongKeywordRepository::class)]
+#[ORM\Table(name: 'song')]
 class SongKeyword
 {
     #[ORM\Id]
@@ -17,14 +21,48 @@ class SongKeyword
     #[ORM\Column(length: 255)]
     private ?string $songName = null;
 
-    #[ORM\Column(length: 255)]
+    #[ORM\Column(length: 255, nullable: true)]
     private ?string $composer = null;
 
     #[ORM\Column(type: Types::JSON, nullable: true)]
     private ?array $keywords = [];
 
+    #[ORM\Column(name: 'etikett', length: 20, nullable: true)]
+    private ?string $etikett = null;
+
     #[ORM\Column(length: 100)]
     private ?string $folder = null;
+
+    #[ORM\Column(length: 500, nullable: true)]
+    private ?string $dropboxlink = null;
+
+    #[ORM\Column(name: 'sort_order', options: ['default' => 0])]
+    private int $sortOrder = 0;
+
+    #[ORM\ManyToOne(targetEntity: self::class, inversedBy: 'children')]
+    #[ORM\JoinColumn(name: 'parent_id', nullable: true, onDelete: 'SET NULL')]
+    private ?self $parent = null;
+
+    #[ORM\OneToMany(mappedBy: 'parent', targetEntity: self::class)]
+    #[ORM\OrderBy(['sortOrder' => 'ASC', 'songName' => 'ASC'])]
+    private Collection $children;
+
+    #[ORM\ManyToMany(targetEntity: Style::class, inversedBy: 'songKeywords')]
+    #[ORM\JoinTable(name: 'song_style',
+        joinColumns: [new ORM\JoinColumn(name: 'song_id', referencedColumnName: 'id', onDelete: 'CASCADE')],
+        inverseJoinColumns: [new ORM\JoinColumn(name: 'style_id', referencedColumnName: 'id', onDelete: 'CASCADE')]
+    )]
+    private Collection $styles;
+
+    #[ORM\ManyToMany(targetEntity: Konzert::class, mappedBy: 'songs')]
+    private Collection $konzerte;
+
+    public function __construct()
+    {
+        $this->children = new ArrayCollection();
+        $this->styles   = new ArrayCollection();
+        $this->konzerte = new ArrayCollection();
+    }
 
     public function getId(): ?int
     {
@@ -47,7 +85,7 @@ class SongKeyword
         return $this->composer;
     }
 
-    public function setComposer(string $composer): static
+    public function setComposer(?string $composer): static
     {
         $this->composer = $composer;
         return $this;
@@ -64,6 +102,17 @@ class SongKeyword
         return $this;
     }
 
+    public function getEtikett(): ?string
+    {
+        return $this->etikett;
+    }
+
+    public function setEtikett(?string $etikett): static
+    {
+        $this->etikett = $etikett;
+        return $this;
+    }
+
     public function getFolder(): ?string
     {
         return $this->folder;
@@ -72,6 +121,60 @@ class SongKeyword
     public function setFolder(string $folder): static
     {
         $this->folder = $folder;
+        return $this;
+    }
+
+    public function getDropboxlink(): ?string
+    {
+        return $this->dropboxlink;
+    }
+
+    public function setDropboxlink(?string $dropboxlink): static
+    {
+        $this->dropboxlink = $dropboxlink;
+        return $this;
+    }
+
+    public function getSortOrder(): int { return $this->sortOrder; }
+    public function setSortOrder(int $sortOrder): static { $this->sortOrder = $sortOrder; return $this; }
+
+    public function getParent(): ?self { return $this->parent; }
+    public function setParent(?self $parent): static { $this->parent = $parent; return $this; }
+    public function getChildren(): Collection { return $this->children; }
+    public function hasChildren(): bool { return !$this->children->isEmpty(); }
+    public function isMovement(): bool { return $this->parent !== null; }
+
+    public function getStyles(): Collection
+    {
+        return $this->styles;
+    }
+
+    public function getKonzerte(): Collection
+    {
+        return $this->konzerte;
+    }
+
+    public function getLatestKonzertDate(): ?\DateTimeInterface
+    {
+        $dates = $this->konzerte
+            ->filter(fn($k) => $k->getDate() !== null)
+            ->map(fn($k) => $k->getDate())
+            ->toArray();
+
+        return empty($dates) ? null : max($dates);
+    }
+
+    public function addStyle(Style $style): static
+    {
+        if (!$this->styles->contains($style)) {
+            $this->styles->add($style);
+        }
+        return $this;
+    }
+
+    public function removeStyle(Style $style): static
+    {
+        $this->styles->removeElement($style);
         return $this;
     }
 }
