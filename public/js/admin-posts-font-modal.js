@@ -166,5 +166,8 @@ function initFontModal(fieldCap, field, modalId) {
         document.getElementById('post_font' + fieldCap + 'Underline').checked = selectedUnderline;
 
         bootstrap.Modal.getInstance(document.getElementById(modalId)).hide();
+
+        // Notify the page preview to re-render with new font settings
+        document.dispatchEvent(new CustomEvent('font:applied'));
     };
 }

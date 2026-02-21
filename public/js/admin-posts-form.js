@@ -97,6 +97,7 @@ document.addEventListener('turbo:load', function () {
 
     layoutSelect.addEventListener('change', updatePreviewPost);
     isMainCheckbox.addEventListener('change', updatePreviewPost);
+    document.addEventListener('font:applied', updatePreviewPost);
     pageSelect.addEventListener('change', loadPagePreview);
 
     document.getElementById('post-form').addEventListener('submit', function () {
@@ -493,6 +494,21 @@ document.addEventListener('turbo:load', function () {
         });
     }
 
+    function readFontStyle(fieldCap) {
+        const font      = document.getElementById('post_font' + fieldCap)?.value;
+        const size      = document.getElementById('post_font' + fieldCap + 'Size')?.value;
+        const bold      = document.getElementById('post_font' + fieldCap + 'Bold')?.checked;
+        const italic    = document.getElementById('post_font' + fieldCap + 'Italic')?.checked;
+        const underline = document.getElementById('post_font' + fieldCap + 'Underline')?.checked;
+        let style = '';
+        if (font && font !== 'default') style += 'font-family: ' + font + ';';
+        if (size)      style += ' font-size: ' + size + 'px;';
+        if (bold)      style += ' font-weight: bold;';
+        if (italic)    style += ' font-style: italic;';
+        if (underline) style += ' text-decoration: underline;';
+        return style.trim();
+    }
+
     function createPreviewPostHtml() {
         const title    = titleInput.value || 'Titel wird hier angezeigt...';
         const subtitle = subtitleInput.value;
@@ -511,8 +527,12 @@ document.addEventListener('turbo:load', function () {
         // Content inside the blue border
         html += '<div style="border: 3px solid #0d6efd; background-color: #e7f1ff; padding: 15px; border-radius: 8px;">';
 
-        html += `<h3>${escapeHtml(title)}</h3>`;
-        if (subtitle) html += `<h5 class="text-muted">${escapeHtml(subtitle)}</h5>`;
+        const titleStyle = readFontStyle('Title');
+        html += `<h3${titleStyle ? ' style="' + titleStyle + '"' : ''}>${escapeHtml(title)}</h3>`;
+        if (subtitle) {
+            const subtitleStyle = readFontStyle('Subtitle');
+            html += `<h5 class="text-muted"${subtitleStyle ? ' style="' + subtitleStyle + '"' : ''}>${escapeHtml(subtitle)}</h5>`;
+        }
 
         if (currentPreviewImage) {
             html += `<div class="mt-3" style="width: 100%; display: flex; align-items: center; justify-content: center;">`;
