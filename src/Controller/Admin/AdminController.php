@@ -515,7 +515,7 @@ class AdminController extends AbstractController
             $customJson = $request->request->get('custom_songs_json', '[]');
             $konzert->setCustomSongs(json_decode($customJson, true) ?: []);
             $orderJson = $request->request->get('song_order_json', '[]');
-            $konzert->setSongOrder(array_map('intval', json_decode($orderJson, true) ?: []));
+            $konzert->setSongOrder(json_decode($orderJson, true) ?: []);
             $em->persist($konzert);
             $em->flush();
             $this->addFlash('success', 'Konzert wurde erstellt.');
@@ -540,7 +540,7 @@ class AdminController extends AbstractController
             $customJson = $request->request->get('custom_songs_json', '[]');
             $konzert->setCustomSongs(json_decode($customJson, true) ?: []);
             $orderJson = $request->request->get('song_order_json', '[]');
-            $konzert->setSongOrder(array_map('intval', json_decode($orderJson, true) ?: []));
+            $konzert->setSongOrder(json_decode($orderJson, true) ?: []);
             $em->flush();
             $this->addFlash('success', 'Konzert wurde aktualisiert.');
             return $this->redirectToRoute('admin_konzerte_edit', ['id' => $konzert->getId()]);

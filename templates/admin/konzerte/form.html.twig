@@ -1,0 +1,614 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ isNew ? 'Neues Konzert' : 'Konzert bearbeiten' }} - {{ parent() }}{% endblock %}
+
+{% block body %}
+<div class="container-fluid py-4" style="max-width:1200px">
+    <h1>{{ isNew ? 'Neues Konzert' : konzert.name }}</h1>
+
+    {{ form_start(form, {attr: {class: 'mt-4', id: 'konzert-form'}}) }}
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-5">
+            {{ form_label(form.name) }}
+            {{ form_widget(form.name) }}
+            {{ form_errors(form.name) }}
+        </div>
+        <div class="col-md-3">
+            {{ form_label(form.date) }}
+            {{ form_widget(form.date) }}
+            {{ form_errors(form.date) }}
+        </div>
+        <div class="col-md-4">
+            {{ form_label(form.location) }}
+            {{ form_widget(form.location) }}
+        </div>
+    </div>
+
+    {# Hidden Symfony widget — data source & submission vehicle for linked songs #}
+    <div style="display:none">{{ form_widget(form.songs) }}</div>
+    {{ form_errors(form.songs) }}
+
+    {# Hidden input for custom songs (JSON) — populated by JS before submit #}
+    <input type="hidden" name="custom_songs_json" id="custom-songs-input" value="">
+    {# Hidden input for song order (JSON array of IDs) — populated by JS before submit #}
+    <input type="hidden" name="song_order_json" id="song-order-input" value="">
+
+    {# Existing custom songs from DB — read by JS on page load #}
+    <script>
+    window.KONZERT_CUSTOM  = {{ konzert.customSongs|json_encode|raw }};
+    window.KONZERT_ORDER   = {{ konzert.songOrder|json_encode|raw }};
+    window.SONG_PARENTS    = {{ songParents|json_encode|raw }};
+    </script>
+
+    {# ── Dual-list song picker ──────────────────────────────────────── #}
+    <div class="row g-2 align-items-stretch">
+
+        {# Left — available songs #}
+        <div class="col">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+                <span class="fw-semibold text-muted">Nicht verknüpft</span>
+                <span class="badge bg-secondary" id="left-count">0</span>
+            </div>
+            <input type="search" id="left-search" class="form-control form-control-sm mb-1"
+                   placeholder="Filtern…" autocomplete="off">
+            <div class="song-list-wrap">
+                <div class="song-list-header">
+                    <span class="col-composer">Komponist</span>
+                    <span class="col-title">Liedtitel</span>
+                </div>
+                <div class="song-list" id="left-list"></div>
+            </div>
+        </div>
+
+        {# Middle — action buttons #}
+        <div class="col-auto d-flex flex-column justify-content-center gap-2 px-2">
+            <button type="button" id="btn-link"
+                    class="btn btn-primary btn-sm"
+                    title="Zum Konzert hinzufügen">
+                <i class="bi bi-chevron-right"></i>
+            </button>
+            <button type="button" id="btn-unlink"
+                    class="btn btn-outline-secondary btn-sm"
+                    title="Aus Konzert entfernen">
+                <i class="bi bi-chevron-left"></i>
+            </button>
+        </div>
+
+        {# Right — songs in this concert (drag-to-reorder) #}
+        <div class="col">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+                <span class="fw-semibold text-primary">Im Konzert</span>
+                <span class="badge bg-primary" id="right-count">0</span>
+            </div>
+            <input type="search" id="right-search" class="form-control form-control-sm mb-1"
+                   placeholder="Filtern…" autocomplete="off">
+            <div class="song-list-wrap">
+                <div class="song-list-header">
+                    <span class="col-handle"></span>
+                    <span class="col-composer">Komponist</span>
+                    <span class="col-title">Liedtitel</span>
+                    <span class="col-del"></span>
+                </div>
+                <div class="song-list" id="right-list"></div>
+            </div>
+
+            {# Add free/custom entry #}
+            <div class="mt-2 p-2 border rounded" style="background:#fffbf0">
+                <div class="small fw-semibold text-warning-emphasis mb-1">
+                    <i class="bi bi-plus-circle me-1"></i>Freies Stück hinzufügen
+                </div>
+                <div class="d-flex gap-1">
+                    <input type="text" id="custom-composer" class="form-control form-control-sm"
+                           placeholder="Komponist (optional)" style="flex:0 0 38%">
+                    <input type="text" id="custom-title" class="form-control form-control-sm"
+                           placeholder="Titel *">
+                    <button type="button" id="btn-add-custom" class="btn btn-sm btn-warning text-nowrap">
+                        <i class="bi bi-plus-lg"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <p class="text-muted small mt-2">
+        Klick / <kbd>Strg</kbd>+Klick / <kbd>Shift</kbd>+Klick zum Auswählen &middot;
+        Doppelklick zum schnellen Verschieben &middot;
+        Rechte Liste: Drag &amp; Drop zum Umsortieren
+    </p>
+
+    <div class="d-flex gap-2 mt-3">
+        <button type="submit" form="konzert-form" class="btn btn-primary">
+            <i class="bi bi-check-lg me-1"></i>{{ isNew ? 'Erstellen' : 'Speichern' }}
+        </button>
+        <a href="{{ path('admin_konzerte') }}" class="btn btn-secondary">Abbrechen</a>
+    </div>
+
+    {{ form_end(form) }}
+</div>
+
+<style>
+.song-list-wrap {
+    border: 1px solid #dee2e6;
+    border-radius: .375rem;
+    overflow: hidden;
+}
+.song-list-header {
+    display: flex;
+    align-items: center;
+    background: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+    padding: 4px 8px;
+    font-size: .7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: #6c757d;
+    user-select: none;
+}
+.song-list {
+    height: 400px;
+    overflow-y: auto;
+}
+.song-row {
+    display: flex;
+    align-items: center;
+    padding: 5px 8px;
+    cursor: pointer;
+    user-select: none;
+    border-bottom: 1px solid #f2f2f2;
+    transition: background .08s;
+}
+.song-row:last-child       { border-bottom: none; }
+.song-row:hover            { background: #eef2ff; }
+.song-row.selected         { background: #0d6efd; color: #fff; }
+.song-row.selected .col-composer { color: rgba(255,255,255,.75); }
+.song-row.selected .col-handle   { color: rgba(255,255,255,.6); }
+
+/* Movement items in left list */
+.song-row.movement-item           { background: #f5f7ff; }
+.song-row.movement-item:hover     { background: #e8ecff; }
+.song-row.movement-item.selected  { background: #0d6efd; }
+.movement-indent                  { color: #6c757d; margin-right: 4px; font-size: .85rem; }
+
+/* Custom / free items */
+.song-row.custom-item             { background: #fffbf0; }
+.song-row.custom-item:hover       { background: #fff3cd; }
+.song-row.custom-item.selected    { background: #e0a800; color: #000; }
+.song-row.custom-item.selected .col-composer { color: rgba(0,0,0,.6); }
+.song-row.custom-item.selected .col-del { color: rgba(0,0,0,.5); }
+
+/* Column widths — must align between header and rows */
+.col-handle {
+    width: 20px; min-width: 20px;
+    text-align: center; color: #adb5bd; font-size: .8rem;
+    cursor: grab;
+}
+.col-handle:active { cursor: grabbing; }
+.col-composer {
+    width: 38%; min-width: 38%; max-width: 38%;
+    font-size: .8125rem; color: #6c757d;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    padding-right: 10px;
+}
+.col-title {
+    flex: 1; font-size: .8125rem;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.col-del {
+    width: 24px; min-width: 24px;
+    text-align: center;
+}
+.btn-del-custom {
+    background: none; border: none; padding: 0;
+    color: #adb5bd; line-height: 1; cursor: pointer; font-size: .85rem;
+}
+.btn-del-custom:hover { color: #dc3545; }
+
+/* Drag states */
+.song-row.dragging    { opacity: .35; }
+.song-row.drop-before { box-shadow: 0 -2px 0 0 #0d6efd; }
+.song-row.drop-after  { box-shadow: 0  2px 0 0 #0d6efd; }
+</style>
+
+<script>
+(function () {
+    // ── Parse helper ───────────────────────────────────────────────────
+    const hiddenSelect = document.getElementById('konzert_songs');
+
+    function parseSong(opt) {
+        const sep = opt.text.indexOf(' – ');
+        return {
+            type:     'song',
+            value:    opt.value,
+            composer: sep >= 0 ? opt.text.substring(0, sep) : '',
+            title:    sep >= 0 ? opt.text.substring(sep + 3) : opt.text,
+            linked:   opt.defaultSelected,
+        };
+    }
+
+    // ── Seed data ──────────────────────────────────────────────────────
+    const SONG_PARENTS = window.SONG_PARENTS || {}; // {childId: parentId}
+    const allSongs = Array.from(hiddenSelect.options).map(parseSong);
+
+    // Left: unlinked regular songs, sorted alpha
+    const unlinked = allSongs
+        .filter(s => !s.linked)
+        .sort((a, b) => a.title.localeCompare(b.title, 'de'));
+
+    // Right: restore full order (songs + custom pieces interleaved)
+    const SAVED_ORDER = window.KONZERT_ORDER || [];
+    const CUSTOM_LIST = window.KONZERT_CUSTOM || [];
+    let customUid = 0;
+    const rightItems = [];
+
+    if (SAVED_ORDER.length > 0) {
+        const linkedIds    = new Set(allSongs.filter(s => s.linked).map(s => s.value));
+        const usedSongIds  = new Set();
+        const usedCustIdx  = new Set();
+
+        SAVED_ORDER.forEach(entry => {
+            if (typeof entry === 'number') {
+                const id = String(entry);
+                const song = allSongs.find(s => s.value === id);
+                if (song && linkedIds.has(id)) { rightItems.push(song); usedSongIds.add(id); }
+            } else if (typeof entry === 'string' && entry.charAt(0) === 'c') {
+                const idx = parseInt(entry.substring(1));
+                if (!isNaN(idx) && CUSTOM_LIST[idx]) {
+                    const c = CUSTOM_LIST[idx];
+                    rightItems.push({ type: 'custom', uid: 'c_' + (customUid++), composer: c.composer || '', title: c.title || '' });
+                    usedCustIdx.add(idx);
+                }
+            }
+        });
+        // Append any linked songs not yet in order
+        allSongs.filter(s => s.linked && !usedSongIds.has(s.value)).forEach(s => rightItems.push(s));
+        // Append any custom songs not yet in order
+        CUSTOM_LIST.forEach((c, i) => {
+            if (!usedCustIdx.has(i))
+                rightItems.push({ type: 'custom', uid: 'c_' + (customUid++), composer: c.composer || '', title: c.title || '' });
+        });
+    } else {
+        allSongs.filter(s => s.linked).sort((a, b) => a.title.localeCompare(b.title, 'de')).forEach(s => rightItems.push(s));
+        CUSTOM_LIST.forEach(c => {
+            rightItems.push({ type: 'custom', uid: 'c_' + (customUid++), composer: c.composer || '', title: c.title || '' });
+        });
+    }
+
+    // ── DOM refs ───────────────────────────────────────────────────────
+    const leftListEl    = document.getElementById('left-list');
+    const rightListEl   = document.getElementById('right-list');
+    const leftSearchEl  = document.getElementById('left-search');
+    const rightSearchEl = document.getElementById('right-search');
+    const leftCountEl   = document.getElementById('left-count');
+    const rightCountEl  = document.getElementById('right-count');
+
+    // ── Row factories ──────────────────────────────────────────────────
+    function makeLeftRow(song, isMovement, hasChildren) {
+        const row = document.createElement('div');
+        row.className = 'song-row' + (isMovement ? ' movement-item' : '');
+        row.dataset.value = song.value;
+
+        const c = document.createElement('span');
+        c.className = 'col-composer';
+        if (isMovement) {
+            c.innerHTML = '<span class="movement-indent">↳</span>' + escHtml(song.composer || '—');
+        } else {
+            c.textContent = song.composer || '—';
+        }
+
+        const t = document.createElement('span');
+        t.className = 'col-title';
+        if (isMovement) {
+            t.innerHTML = '<em>' + escHtml(song.title) + '</em>';
+        } else {
+            t.textContent = song.title;
+            if (hasChildren) {
+                const badge = document.createElement('span');
+                badge.className = 'badge bg-secondary rounded-pill ms-1';
+                badge.style.fontSize = '.6rem';
+                badge.textContent = Object.values(SONG_PARENTS).filter(pid => pid == song.value).length + ' Sätze';
+                t.appendChild(badge);
+            }
+        }
+
+        row.appendChild(c);
+        row.appendChild(t);
+        return row;
+    }
+
+    function makeRightRow(item) {
+        const row = document.createElement('div');
+        row.className = 'song-row' + (item.type === 'custom' ? ' custom-item' : '');
+        row.dataset.uid = item.type === 'custom' ? item.uid : item.value;
+        row.setAttribute('draggable', 'true');
+
+        // Grip handle
+        const h = document.createElement('span');
+        h.className = 'col-handle';
+        h.innerHTML = '<i class="bi bi-grip-vertical"></i>';
+        row.appendChild(h);
+
+        const c = document.createElement('span');
+        c.className = 'col-composer';
+        c.textContent = item.composer || '—';
+        row.appendChild(c);
+
+        const t = document.createElement('span');
+        t.className = 'col-title';
+        if (item.type === 'custom') {
+            t.innerHTML = '<em>' + escHtml(item.title) + '</em>';
+        } else {
+            t.textContent = item.title;
+        }
+        row.appendChild(t);
+
+        // Delete button (custom items only)
+        const del = document.createElement('span');
+        del.className = 'col-del';
+        if (item.type === 'custom') {
+            del.innerHTML = '<button type="button" class="btn-del-custom" title="Entfernen"><i class="bi bi-x-lg"></i></button>';
+            del.querySelector('button').addEventListener('click', e => {
+                e.stopPropagation();
+                const idx = rightItems.findIndex(x => x.type === 'custom' && x.uid === item.uid);
+                if (idx !== -1) rightItems.splice(idx, 1);
+                render();
+            });
+        }
+        row.appendChild(del);
+
+        return row;
+    }
+
+    function escHtml(s) {
+        return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    // ── Render ─────────────────────────────────────────────────────────
+    function render() {
+        const lq = leftSearchEl.value.toLowerCase().trim();
+        const rq = rightSearchEl.value.toLowerCase().trim();
+
+        const lSel = new Set(Array.from(leftListEl.querySelectorAll('.song-row.selected')).map(r => r.dataset.value));
+        const rSel = new Set(Array.from(rightListEl.querySelectorAll('.song-row.selected')).map(r => r.dataset.uid));
+
+        leftListEl.innerHTML  = '';
+        rightListEl.innerHTML = '';
+
+        // ── Grouped left list: top-level songs, movements indented under parent ──
+        const unlinkedSet = new Set(unlinked.map(s => s.value));
+        const childrenOf  = {}; // parentId -> [Song]
+        unlinked.forEach(s => {
+            const pid = SONG_PARENTS[s.value];
+            if (pid) {
+                if (!childrenOf[pid]) childrenOf[pid] = [];
+                childrenOf[pid].push(s);
+            }
+        });
+
+        const renderedLeft = new Set();
+
+        // First pass: top-level songs (no parent entry in SONG_PARENTS)
+        unlinked.forEach(s => {
+            if (renderedLeft.has(s.value)) return;
+            if (SONG_PARENTS[s.value]) return; // movement — skip for now
+
+            const kids     = childrenOf[s.value] || [];
+            const ownMatch = !lq || s.title.toLowerCase().includes(lq) || s.composer.toLowerCase().includes(lq);
+            const kidMatch = kids.some(c => !lq || c.title.toLowerCase().includes(lq) || c.composer.toLowerCase().includes(lq));
+            if (!ownMatch && !kidMatch) return;
+
+            const row = makeLeftRow(s, false, kids.length > 0);
+            if (lSel.has(s.value)) row.classList.add('selected');
+            leftListEl.appendChild(row);
+            renderedLeft.add(s.value);
+
+            kids.forEach(child => {
+                if (lq && !child.title.toLowerCase().includes(lq) && !child.composer.toLowerCase().includes(lq)) return;
+                const childRow = makeLeftRow(child, true, false);
+                if (lSel.has(child.value)) childRow.classList.add('selected');
+                leftListEl.appendChild(childRow);
+                renderedLeft.add(child.value);
+            });
+        });
+
+        // Second pass: orphaned movements whose parent is in the right list
+        unlinked.forEach(s => {
+            if (renderedLeft.has(s.value)) return;
+            if (lq && !s.title.toLowerCase().includes(lq) && !s.composer.toLowerCase().includes(lq)) return;
+            const row = makeLeftRow(s, true, false);
+            if (lSel.has(s.value)) row.classList.add('selected');
+            leftListEl.appendChild(row);
+        });
+
+        rightItems.forEach(item => {
+            const uid = item.type === 'custom' ? item.uid : item.value;
+            if (rq && !item.title.toLowerCase().includes(rq) && !item.composer.toLowerCase().includes(rq)) return;
+            const row = makeRightRow(item);
+            if (rSel.has(uid)) row.classList.add('selected');
+            rightListEl.appendChild(row);
+        });
+
+        leftCountEl.textContent  = unlinked.length;
+        rightCountEl.textContent = rightItems.length;
+    }
+
+    // ── Selection ──────────────────────────────────────────────────────
+    let lastLeft = null, lastRight = null;
+
+    function handleClick(listEl, e) {
+        const row = e.target.closest('.song-row');
+        if (!row || e.target.closest('.btn-del-custom')) return;
+
+        const rows = Array.from(listEl.querySelectorAll('.song-row'));
+        const lastSel = listEl === leftListEl ? lastLeft : lastRight;
+
+        if (e.ctrlKey || e.metaKey) {
+            row.classList.toggle('selected');
+        } else if (e.shiftKey && lastSel && listEl.contains(lastSel)) {
+            const a = rows.indexOf(lastSel), b = rows.indexOf(row);
+            const [lo, hi] = [Math.min(a, b), Math.max(a, b)];
+            rows.forEach((r, i) => r.classList.toggle('selected', i >= lo && i <= hi));
+        } else {
+            rows.forEach(r => r.classList.remove('selected'));
+            row.classList.add('selected');
+        }
+
+        if (listEl === leftListEl) lastLeft = row; else lastRight = row;
+    }
+
+    leftListEl.addEventListener('click',  e => handleClick(leftListEl,  e));
+    rightListEl.addEventListener('click', e => handleClick(rightListEl, e));
+
+    // ── Move left → right ──────────────────────────────────────────────
+    document.getElementById('btn-link').addEventListener('click', () => {
+        const sel = new Set(Array.from(leftListEl.querySelectorAll('.song-row.selected')).map(r => r.dataset.value));
+        if (!sel.size) return;
+        for (let i = unlinked.length - 1; i >= 0; i--) {
+            if (sel.has(unlinked[i].value)) rightItems.push(...unlinked.splice(i, 1));
+        }
+        render();
+    });
+
+    // ── Move right → left (only regular songs) ────────────────────────
+    document.getElementById('btn-unlink').addEventListener('click', () => {
+        const sel = new Set(Array.from(rightListEl.querySelectorAll('.song-row.selected')).map(r => r.dataset.uid));
+        if (!sel.size) return;
+        for (let i = rightItems.length - 1; i >= 0; i--) {
+            const item = rightItems[i];
+            const uid  = item.type === 'custom' ? item.uid : item.value;
+            if (!sel.has(uid)) continue;
+            rightItems.splice(i, 1);
+            if (item.type === 'song') {
+                // Put back into unlinked, maintaining alpha sort
+                const idx = unlinked.findIndex(u => u.title.localeCompare(item.title, 'de') > 0);
+                unlinked.splice(idx === -1 ? unlinked.length : idx, 0, item);
+            }
+            // custom items are simply removed
+        }
+        render();
+    });
+
+    // ── Double-click shortcut ──────────────────────────────────────────
+    leftListEl.addEventListener('dblclick', e => {
+        const row = e.target.closest('.song-row');
+        if (!row) return;
+        leftListEl.querySelectorAll('.song-row').forEach(r => r.classList.remove('selected'));
+        row.classList.add('selected');
+        document.getElementById('btn-link').click();
+    });
+    rightListEl.addEventListener('dblclick', e => {
+        const row = e.target.closest('.song-row');
+        if (!row || e.target.closest('.btn-del-custom')) return;
+        rightListEl.querySelectorAll('.song-row').forEach(r => r.classList.remove('selected'));
+        row.classList.add('selected');
+        document.getElementById('btn-unlink').click();
+    });
+
+    // ── Add custom item ────────────────────────────────────────────────
+    const customComposerEl = document.getElementById('custom-composer');
+    const customTitleEl    = document.getElementById('custom-title');
+
+    function addCustomItem() {
+        const title = customTitleEl.value.trim();
+        if (!title) { customTitleEl.focus(); customTitleEl.classList.add('is-invalid'); return; }
+        customTitleEl.classList.remove('is-invalid');
+
+        rightItems.push({
+            type:     'custom',
+            uid:      'c_' + (customUid++),
+            composer: customComposerEl.value.trim(),
+            title,
+        });
+
+        customComposerEl.value = '';
+        customTitleEl.value    = '';
+        customComposerEl.focus();
+        render();
+        // Scroll right list to bottom so new item is visible
+        rightListEl.scrollTop = rightListEl.scrollHeight;
+    }
+
+    document.getElementById('btn-add-custom').addEventListener('click', addCustomItem);
+    customTitleEl.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); addCustomItem(); } });
+
+    // ── Filter inputs ──────────────────────────────────────────────────
+    leftSearchEl.addEventListener('input',  render);
+    rightSearchEl.addEventListener('input', render);
+
+    // ── Drag & drop (right list) ───────────────────────────────────────
+    let dragUid = null;
+
+    rightListEl.addEventListener('dragstart', e => {
+        const row = e.target.closest('.song-row');
+        if (!row) { e.preventDefault(); return; }
+        dragUid = row.dataset.uid;
+        e.dataTransfer.effectAllowed = 'move';
+        setTimeout(() => row.classList.add('dragging'), 0);
+    });
+
+    rightListEl.addEventListener('dragend', () => {
+        rightListEl.querySelectorAll('.dragging').forEach(r => r.classList.remove('dragging'));
+        clearIndicators();
+        dragUid = null;
+    });
+
+    rightListEl.addEventListener('dragover', e => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        clearIndicators();
+        const row = e.target.closest('.song-row');
+        if (!row || row.dataset.uid === dragUid) return;
+        const mid = row.getBoundingClientRect().top + row.getBoundingClientRect().height / 2;
+        row.classList.add(e.clientY < mid ? 'drop-before' : 'drop-after');
+    });
+
+    rightListEl.addEventListener('dragleave', e => {
+        if (!rightListEl.contains(e.relatedTarget)) clearIndicators();
+    });
+
+    rightListEl.addEventListener('drop', e => {
+        e.preventDefault();
+        const targetRow = e.target.closest('.song-row');
+        clearIndicators();
+        if (!dragUid || !targetRow || targetRow.dataset.uid === dragUid) { render(); return; }
+
+        const fromIdx = rightItems.findIndex(x => (x.type === 'custom' ? x.uid : x.value) === dragUid);
+        const [moved]  = rightItems.splice(fromIdx, 1);
+        const toIdx    = rightItems.findIndex(x => (x.type === 'custom' ? x.uid : x.value) === targetRow.dataset.uid);
+        const mid      = targetRow.getBoundingClientRect().top + targetRow.getBoundingClientRect().height / 2;
+        rightItems.splice(e.clientY < mid ? toIdx : toIdx + 1, 0, moved);
+        render();
+    });
+
+    function clearIndicators() {
+        rightListEl.querySelectorAll('.drop-before, .drop-after')
+            .forEach(r => r.classList.remove('drop-before', 'drop-after'));
+    }
+
+    // ── Sync to hidden inputs before submit ────────────────────────────
+    document.getElementById('konzert-form').addEventListener('submit', () => {
+        // Regular songs → hidden Symfony select
+        const linkedValues = new Set(rightItems.filter(x => x.type === 'song').map(x => x.value));
+        hiddenSelect.querySelectorAll('option').forEach(o => { o.selected = linkedValues.has(o.value); });
+
+        // Custom songs → hidden JSON input (ordered list)
+        const customs = rightItems.filter(x => x.type === 'custom');
+        document.getElementById('custom-songs-input').value = JSON.stringify(
+            customs.map(x => ({ composer: x.composer, title: x.title }))
+        );
+
+        // Unified order: int for songs, "c{idx}" for custom pieces
+        const customIdxMap = new Map(customs.map((x, i) => [x.uid, i]));
+        const unifiedOrder = rightItems.map(x =>
+            x.type === 'song' ? parseInt(x.value) : 'c' + customIdxMap.get(x.uid)
+        );
+        document.getElementById('song-order-input').value = JSON.stringify(unifiedOrder);
+    });
+
+    // ── Initial render ─────────────────────────────────────────────────
+    render();
+}());
+</script>
+{% endblock %}
