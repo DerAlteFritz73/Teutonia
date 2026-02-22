@@ -19,7 +19,10 @@
 <main id="main-content">
     <div class="container" id="page-container">
         <h1 id="page-title">Unser Repertoire</h1>
-        <p class="lead" id="page-lead">Die Lieder und Kompositionen, die wir singen</p>
+        <div class="d-flex align-items-center gap-3 mb-3">
+            <button type="button" class="btn btn-primary flex-shrink-0" onclick="loadWordCloud()">Entdecke hier</button>
+            <p class="lead mb-0" id="page-lead">Die Lieder und Kompositionen, die wir singen</p>
+        </div>
 
         {# Word Cloud Section - Visible to all #}
         <section class="word-cloud-section mb-5">
@@ -35,7 +38,7 @@
         {# ── Style Ellipses ─────────────────────────────────────────────── #}
         {% set displayStyles = styles|filter(s => s.repertoireSongs|length > 0) %}
         {% if displayStyles|length > 0 %}
-        <section class="styles-section mt-2 mb-5">
+        <section class="styles-section mt-2 mb-5" id="styles-section">
 
             <div class="row g-4 justify-content-center">
                 {% for style in displayStyles %}
