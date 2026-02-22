@@ -2,7 +2,20 @@
 
 {% block title %}Unser Repertoire - Chorgemeinschaft Teutonia Willstätt{% endblock %}
 
+{% block stylesheets %}
+    {{ parent() }}
+    <link rel="stylesheet" href="{{ asset('css/repertoire.css') }}">
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script src="https://cdn.jsdelivr.net/npm/wordcloud@1.2.2/src/wordcloud2.min.js"></script>
+    <script>window.REPERTOIRE_CONFIG = { wordcloudUrl: '{{ path('api_wordcloud') }}' };</script>
+    <script src="{{ asset('js/repertoire.js') }}"></script>
+{% endblock %}
+
 {% block body %}
+<!-- template: templates/pages/unser-repertoire.html.twig -->
 <main id="main-content">
     <div class="container" id="page-container">
         <h1 id="page-title">Unser Repertoire</h1>
@@ -19,373 +32,86 @@
             </div>
         </section>
 
-        {% include 'components/posts_display.html.twig' %}
+        {# ── Style Ellipses ─────────────────────────────────────────────── #}
+        {% set displayStyles = styles|filter(s => s.repertoireSongs|length > 0) %}
+        {% if displayStyles|length > 0 %}
+        <section class="styles-section mt-2 mb-5">
 
-        {# Dropbox Files Section - Restricted to members and admins #}
-        {% if is_granted('ROLE_USER') and dropboxFiles is defined and dropboxFiles is not empty %}
-        <section class="dropbox-files-section mt-5">
-            <h2 class="mb-4">
-                <i class="bi bi-folder-fill me-2"></i>
-                Noten und Aufnahmen
-            </h2>
-            <p class="text-muted mb-4">
-                <i class="bi bi-info-circle me-1"></i>
-                Hier finden Sie unsere Noten (PDF) und Aufnahmen (MP3) nach Kategorien sortiert.
-            </p>
-
-            <div class="accordion" id="repertoireAccordion">
-                {% set folderIndex = 0 %}
-
-                {# Display root files if any #}
-                {% if dropboxFiles._root_files is defined and dropboxFiles._root_files is not empty %}
-                    <div class="accordion-item">
-                        <h2 class="accordion-header">
-                            <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#folder-root" aria-expanded="true">
-                                <i class="bi bi-folder2-open me-2"></i>
-                                Allgemeine Dateien
-                                <span class="badge bg-secondary ms-2">{{ dropboxFiles._root_files|length }}</span>
-                            </button>
-                        </h2>
-                        <div id="folder-root" class="accordion-collapse collapse show" data-bs-parent="#repertoireAccordion">
-                            <div class="accordion-body">
-                                <div class="list-group">
-                                    {% for file in dropboxFiles._root_files %}
-                                        {% include 'components/dropbox_file_item.html.twig' with {'file': file} %}
-                                    {% endfor %}
-                                </div>
+            <div class="row g-4 justify-content-center">
+                {% for style in displayStyles %}
+                    {% set visibleSongs = style.repertoireSongs %}
+                    <div class="col-sm-6 col-lg-4 d-flex flex-column align-items-center">
+                        <div class="ellipse-wrapper">
+                            <div class="style-ellipse"
+                                 style="background: linear-gradient(135deg, {{ style.color ?? '#6c757d' }}, {{ style.color2 ?? style.color ?? '#495057' }})">
+                                <span>{{ style.name }}</span>
+                                {% if style.image %}
+                                    <img src="{{ asset('images/styles/' ~ style.image) }}"
+                                         class="style-img pos-{{ style.imagePosition ?? 'top-right' }}"
+                                         data-full="{{ asset('images/styles/' ~ style.image) }}"
+                                         alt="{{ style.name }}"
+                                         style="cursor:zoom-in;"
+                                         data-bs-toggle="modal" data-bs-target="#style-lightbox">
+                                {% endif %}
                             </div>
                         </div>
-                    </div>
-                {% endif %}
-
-                {# Display folders #}
-                {% for folderName, folderData in dropboxFiles %}
-                    {% if folderName != '_root_files' and folderData._type is defined and folderData._type == 'folder' %}
-                        {% set folderIndex = folderIndex + 1 %}
-                        {% set folderId = 'folder-' ~ folderIndex %}
-                        {% set isFirstFolder = folderIndex == 1 and dropboxFiles._root_files is not defined %}
-
-                        <div class="accordion-item">
-                            <h2 class="accordion-header">
-                                <button class="accordion-button {% if not isFirstFolder %}collapsed{% endif %}" type="button"
-                                        data-bs-toggle="collapse" data-bs-target="#{{ folderId }}"
-                                        aria-expanded="{{ isFirstFolder ? 'true' : 'false' }}">
-                                    <i class="bi bi-folder2-open me-2"></i>
-                                    {{ folderName }}
-                                    {% set pdfCount = folderData|count_pdf_files %}
-                                    {% set audioCount = folderData|count_audio_files %}
-                                    {% if pdfCount > 0 %}
-                                        <span class="badge bg-danger ms-2" title="PDF-Dateien">
-                                            <i class="bi bi-file-pdf"></i> {{ pdfCount }}
-                                        </span>
-                                    {% endif %}
-                                    {% if audioCount > 0 %}
-                                        <span class="badge bg-success ms-2" title="Audio-Dateien">
-                                            <i class="bi bi-music-note"></i> {{ audioCount }}
-                                        </span>
-                                    {% endif %}
-                                </button>
-                            </h2>
-                            <div id="{{ folderId }}" class="accordion-collapse collapse {% if isFirstFolder %}show{% endif %}" data-bs-parent="#repertoireAccordion">
-                                <div class="accordion-body">
-                                    {% if folderData._files is not empty %}
-                                        <div class="list-group">
-                                            {% for file in folderData._files %}
-                                                {% include 'components/dropbox_file_item.html.twig' with {'file': file} %}
+                        <ul class="style-songs list-unstyled w-100 px-3 mt-1">
+                            {% for song in visibleSongs %}
+                                {% if song.parent is null %}
+                                <li>
+                                    <i class="bi bi-music-note me-1 text-muted"></i>{% if song.composer %}{{ song.composer }} – {% endif %}{{ song.songName }}
+                                    {% if song.children|length > 0 %}
+                                        <ul class="list-unstyled ms-3 mt-1 mb-1">
+                                            {% for movement in song.children %}
+                                                <li class="text-muted small">
+                                                    <i class="bi bi-chevron-right me-1" style="font-size:0.7em;vertical-align:middle"></i>{{ movement.songName }}
+                                                </li>
                                             {% endfor %}
-                                        </div>
+                                        </ul>
                                     {% endif %}
-
-                                    {# Display subfolders #}
-                                    {% if folderData._subfolders is defined and folderData._subfolders is not empty %}
-                                        <div class="ms-3 mt-3">
-                                            {% include 'components/dropbox_subfolder.html.twig' with {
-                                                'subfolders': folderData._subfolders,
-                                                'parentId': folderId
-                                            } %}
-                                        </div>
-                                    {% endif %}
-                                </div>
-                            </div>
-                        </div>
-                    {% endif %}
+                                </li>
+                                {% endif %}
+                            {% endfor %}
+                        </ul>
+                    </div>
                 {% endfor %}
-            </div>
-
-            {% if dropboxFiles is empty or (dropboxFiles._root_files is not defined and dropboxFiles|length == 0) %}
-                <div class="alert alert-info">
-                    <i class="bi bi-info-circle me-2"></i>
-                    Keine Dateien gefunden. Bitte überprüfen Sie die Dropbox-Konfiguration.
-                </div>
-            {% endif %}
-        </section>
-        {% elseif not is_granted('ROLE_USER') %}
-        <section class="mt-5">
-            <div class="alert alert-warning">
-                <i class="bi bi-lock-fill me-2"></i>
-                <strong>Mitgliederbereich</strong><br>
-                Die Noten und Aufnahmen sind nur für Chormitglieder zugänglich.
-                Bitte <a href="{{ path('app_login') }}" class="alert-link">melden Sie sich an</a>, um auf diese Inhalte zuzugreifen.
             </div>
         </section>
         {% endif %}
+
+        {% include 'components/posts_display.html.twig' %}
+
     </div>
 </main>
 
-<!-- PDF Viewer Modal -->
-<div class="modal fade" id="pdfViewerModal" tabindex="-1" aria-labelledby="pdfViewerModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-xl modal-fullscreen-lg-down">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="pdfViewerModalLabel">
-                    <i class="bi bi-file-pdf-fill text-danger me-2"></i>
-                    <span id="pdfFileName"></span>
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+{# Lightbox modal for style images #}
+<div class="modal fade" id="style-lightbox" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width:min(90vw,900px)">
+        <div class="modal-content bg-dark border-0 shadow-lg">
+            <div class="modal-header border-0 pb-0 pt-2 px-3">
+                <button type="button" class="btn-close btn-close-white ms-auto" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body p-0" style="height: 80vh;">
-                <iframe id="pdfViewerFrame" style="width: 100%; height: 100%; border: none;"></iframe>
-            </div>
-            <div class="modal-footer">
-                <a id="pdfDownloadLink" href="#" download class="btn btn-primary">
-                    <i class="bi bi-download me-2"></i>Herunterladen
-                </a>
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Schließen</button>
+            <div class="modal-body text-center p-3">
+                <img id="style-lightbox-img" src="" alt="" class="img-fluid" style="max-height:80vh; object-fit:contain;">
             </div>
         </div>
     </div>
 </div>
 
-<!-- Audio Player Modal -->
-<div class="modal fade" id="audioPlayerModal" tabindex="-1" aria-labelledby="audioPlayerModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="audioPlayerModalLabel">
-                    <i class="bi bi-music-note-beamed text-primary me-2"></i>
-                    <span id="audioFileName"></span>
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <audio id="audioPlayer" controls class="w-100 mb-4" style="outline: none;">
-                    Ihr Browser unterstützt das Audio-Element nicht.
-                </audio>
-
-                <div class="card">
-                    <div class="card-body">
-                        <h6 class="card-title mb-3">
-                            <i class="bi bi-speedometer2 me-2"></i>Wiedergabegeschwindigkeit
-                        </h6>
-
-                        <div class="d-flex align-items-center gap-3 mb-3">
-                            <label for="speedSlider" class="form-label mb-0" style="min-width: 60px;">
-                                <span id="speedValue">1.0</span>x
-                            </label>
-                            <input type="range" class="form-range flex-grow-1" id="speedSlider"
-                                   min="0.25" max="2.0" step="0.05" value="1.0">
-                        </div>
-
-                        <div class="d-flex gap-2 flex-wrap">
-                            <button class="btn btn-sm btn-outline-secondary speed-preset" data-speed="0.5">0.5x</button>
-                            <button class="btn btn-sm btn-outline-secondary speed-preset" data-speed="0.75">0.75x</button>
-                            <button class="btn btn-sm btn-outline-primary speed-preset" data-speed="1">1.0x</button>
-                            <button class="btn btn-sm btn-outline-secondary speed-preset" data-speed="1.25">1.25x</button>
-                            <button class="btn btn-sm btn-outline-secondary speed-preset" data-speed="1.5">1.5x</button>
-                            <button class="btn btn-sm btn-outline-secondary speed-preset" data-speed="2">2.0x</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <a id="audioDownloadLink" href="#" download class="btn btn-primary">
-                    <i class="bi bi-download me-2"></i>Herunterladen
-                </a>
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Schließen</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/wordcloud@1.2.2/src/wordcloud2.min.js"></script>
 <script>
-// Word Cloud
-document.addEventListener('DOMContentLoaded', function() {
-    // Fetch word cloud data
-    fetch('{{ path('api_wordcloud') }}')
-        .then(response => response.json())
-        .then(data => {
-            if (data && data.length > 0) {
-                // Transform data to wordcloud2.js format
-                const list = data.map(item => [item.text, item.size * 10]); // Multiply for better sizing
-
-                const canvas = document.getElementById('wordcloud');
-                const container = document.getElementById('wordcloud-container');
-
-                // Set high resolution canvas
-                const dpr = window.devicePixelRatio || 1;
-                canvas.width = container.offsetWidth * dpr;
-                canvas.height = container.offsetHeight * dpr;
-
-                WordCloud(canvas, {
-                    list: list,
-                    gridSize: 6,
-                    weightFactor: function (size) {
-                        // MUCH larger text - increased from /300 to /150 for 2x size
-                        return Math.pow(size, 0.9) * canvas.width / 150;
-                    },
-                    fontFamily: 'Arial, sans-serif, bold',
-                    fontWeight: 'bold',
-                    color: function() {
-                        // Random colors from Bootstrap color palette
-                        const colors = ['#0d6efd', '#6610f2', '#6f42c1', '#d63384', '#dc3545', '#fd7e14', '#ffc107', '#198754', '#20c997', '#0dcaf0'];
-                        return colors[Math.floor(Math.random() * colors.length)];
-                    },
-                    rotateRatio: 0.3,
-                    rotationSteps: 2,
-                    backgroundColor: '#f8f9fa',
-                    drawOutOfBound: false,
-                    shrinkToFit: true,
-                    minSize: 18
-                });
-            }
-        })
-        .catch(error => {
-            console.error('Error loading word cloud:', error);
-            document.getElementById('wordcloud-container').innerHTML =
-                '<div class="alert alert-info">Komponisten-Wolke wird geladen...</div>';
-        });
-});
-
-// Handle Dropbox file viewing with PDF viewer and audio player
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('Dropbox file viewer loaded');
-
-    const links = document.querySelectorAll('.dropbox-file-link');
-    const pdfModal = new bootstrap.Modal(document.getElementById('pdfViewerModal'));
-    const audioModal = new bootstrap.Modal(document.getElementById('audioPlayerModal'));
-    const audioPlayer = document.getElementById('audioPlayer');
-    const speedSlider = document.getElementById('speedSlider');
-    const speedValue = document.getElementById('speedValue');
-    const speedPresets = document.querySelectorAll('.speed-preset');
-
-    console.log('Found ' + links.length + ' Dropbox file links');
-
-    // Speed control functionality
-    speedSlider.addEventListener('input', function() {
-        const speed = parseFloat(this.value);
-        audioPlayer.playbackRate = speed;
-        speedValue.textContent = speed.toFixed(2);
-        updateSpeedPresetButtons(speed);
+(function () {
+    const modal   = document.getElementById('style-lightbox');
+    const lightImg = document.getElementById('style-lightbox-img');
+    modal.addEventListener('show.bs.modal', function (e) {
+        const trigger = e.relatedTarget;
+        if (trigger) {
+            lightImg.src = trigger.dataset.full;
+            lightImg.alt = trigger.alt;
+        }
     });
-
-    speedPresets.forEach(function(btn) {
-        btn.addEventListener('click', function() {
-            const speed = parseFloat(this.dataset.speed);
-            speedSlider.value = speed;
-            audioPlayer.playbackRate = speed;
-            speedValue.textContent = speed.toFixed(2);
-            updateSpeedPresetButtons(speed);
-        });
+    modal.addEventListener('hidden.bs.modal', function () {
+        lightImg.src = '';
     });
-
-    function updateSpeedPresetButtons(speed) {
-        speedPresets.forEach(function(btn) {
-            const btnSpeed = parseFloat(btn.dataset.speed);
-            if (Math.abs(btnSpeed - speed) < 0.01) {
-                btn.classList.remove('btn-outline-secondary', 'btn-outline-primary');
-                btn.classList.add('btn-primary');
-            } else {
-                btn.classList.remove('btn-primary');
-                if (btnSpeed === 1.0) {
-                    btn.classList.add('btn-outline-primary');
-                } else {
-                    btn.classList.add('btn-outline-secondary');
-                }
-            }
-        });
-    }
-
-    // Reset playback speed when modal is closed
-    document.getElementById('audioPlayerModal').addEventListener('hidden.bs.modal', function() {
-        audioPlayer.pause();
-        audioPlayer.currentTime = 0;
-    });
-
-    // Handle file clicks
-    links.forEach(function(link) {
-        link.addEventListener('click', function(e) {
-            e.preventDefault();
-            console.log('File clicked:', this.dataset.filePath);
-
-            const filePath = this.dataset.filePath;
-            const fileName = this.dataset.fileName;
-            const fileType = this.dataset.fileType;
-            const spinner = this.querySelector('.spinner-border');
-
-            // Show loading spinner
-            if (spinner) {
-                spinner.classList.remove('d-none');
-            }
-
-            // Fetch temporary link from server
-            fetch('{{ path('api_dropbox_link') }}', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ path: filePath })
-            })
-            .then(response => {
-                console.log('Response status:', response.status);
-                return response.json();
-            })
-            .then(data => {
-                console.log('Response data:', data);
-
-                if (spinner) {
-                    spinner.classList.add('d-none');
-                }
-
-                if (data.link) {
-                    if (fileType === 'pdf') {
-                        // Open PDF in viewer
-                        document.getElementById('pdfFileName').textContent = fileName;
-                        document.getElementById('pdfViewerFrame').src = '{{ path('api_dropbox_view') }}?path=' + encodeURIComponent(filePath);
-                        document.getElementById('pdfDownloadLink').href = data.link;
-                        document.getElementById('pdfDownloadLink').download = fileName;
-                        pdfModal.show();
-                    } else if (fileType === 'audio') {
-                        // Open audio in player
-                        document.getElementById('audioFileName').textContent = fileName;
-                        audioPlayer.src = data.link;
-                        document.getElementById('audioDownloadLink').href = data.link;
-                        document.getElementById('audioDownloadLink').download = fileName;
-
-                        // Reset speed controls
-                        speedSlider.value = 1.0;
-                        audioPlayer.playbackRate = 1.0;
-                        speedValue.textContent = '1.0';
-                        updateSpeedPresetButtons(1.0);
-
-                        audioModal.show();
-                    } else {
-                        // For other file types, open in new tab
-                        window.open(data.link, '_blank');
-                    }
-                } else {
-                    alert('Fehler beim Laden der Datei: ' + (data.error || 'Unbekannter Fehler'));
-                }
-            })
-            .catch(error => {
-                if (spinner) {
-                    spinner.classList.add('d-none');
-                }
-                console.error('Error:', error);
-                alert('Fehler beim Laden der Datei. Bitte versuchen Sie es erneut.');
-            });
-        });
-    });
-});
+}());
 </script>
 {% endblock %}

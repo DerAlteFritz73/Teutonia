@@ -9,6 +9,7 @@ class DropboxService
 {
     private Client $client;
     private const ALLOWED_EXTENSIONS = ['pdf', 'mp3', 'mp4', 'wav', 'ogg', 'flac', 'm4a', 'aac', 'wma', 'webm', 'avi', 'mov', 'mkv'];
+    private const EXCLUDED_FOLDERS = ['-= Scans - Originale =-'];
 
     private string $refreshToken;
     private string $appKey;
@@ -246,6 +247,13 @@ class DropboxService
             $pathParts = explode('/', $relativePath);
             $fileName = array_pop($pathParts);
 
+            // Skip files inside excluded folders
+            foreach ($pathParts as $part) {
+                if (in_array($part, self::EXCLUDED_FOLDERS)) {
+                    continue 2;
+                }
+            }
+
             // Navigate through the tree structure
             $current = &$tree;
             foreach ($pathParts as $folder) {
@@ -379,6 +387,89 @@ class DropboxService
         }
 
         return 'video';
+    }
+
+    /**
+     * Get the list of files for a specific song folder path, read from local cache.
+     * Falls back to a live Dropbox call if the cache is missing.
+     *
+     * @param string $folderPath Full Dropbox path, e.g. /Chorgemeinschaft Teutonia/Noten/Cohen - Hallelujah
+     * @return array  Array of file entries with keys: name, path, size, type
+     */
+    public function getFilesForFolder(string $folderPath): array
+    {
+        $basePath  = '/Chorgemeinschaft Teutonia';
+        $cacheFile = sys_get_temp_dir() . '/dropbox_cache_' . md5($basePath) . '.json';
+
+        if (file_exists($cacheFile)) {
+            $tree = json_decode(file_get_contents($cacheFile), true) ?: [];
+        } else {
+            // Warm the cache and try again
+            $tree = $this->getFileStructure($basePath);
+        }
+
+        // Strip base prefix and split into path segments
+        $relative = ltrim(str_replace($basePath, '', $folderPath), '/');
+        $parts    = explode('/', $relative);
+
+        // Navigate: first segment is a top-level key, subsequent ones are _subfolders
+        $node = $tree;
+        foreach ($parts as $i => $part) {
+            if ($i === 0) {
+                $node = $node[$part] ?? null;
+            } else {
+                $node = ($node['_subfolders'] ?? [])[$part] ?? null;
+            }
+            if ($node === null) {
+                return [];
+            }
+        }
+
+        return $node['_files'] ?? [];
+    }
+
+    /**
+     * List the immediate subfolder names inside a Dropbox path (non-recursive, fast).
+     *
+     * @return string[] Folder names (not full paths)
+     */
+    public function listSubfolders(string $path): array
+    {
+        $fetch = function () use ($path): array {
+            $result  = $this->client->listFolder($path, false);
+            $folders = [];
+            foreach ($result['entries'] as $entry) {
+                if ($entry['.tag'] === 'folder') {
+                    $folders[] = $entry['name'];
+                }
+            }
+            while ($result['has_more'] ?? false) {
+                $result = $this->client->listFolderContinue($result['cursor']);
+                foreach ($result['entries'] as $entry) {
+                    if ($entry['.tag'] === 'folder') {
+                        $folders[] = $entry['name'];
+                    }
+                }
+            }
+            return $folders;
+        };
+
+        try {
+            return $fetch();
+        } catch (\Exception $e) {
+            if ($this->isAuthError($e)) {
+                error_log('Dropbox: auth error listing subfolders, refreshing token…');
+                $this->refreshAccessToken();
+                try {
+                    return $fetch();
+                } catch (\Exception $e2) {
+                    error_log('Dropbox: error listing subfolders after retry: ' . $e2->getMessage());
+                    return [];
+                }
+            }
+            error_log('Dropbox: error listing subfolders for ' . $path . ': ' . $e->getMessage());
+            return [];
+        }
     }
 
     /**

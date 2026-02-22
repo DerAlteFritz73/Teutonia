@@ -3,6 +3,7 @@
 {% block title %}{{ isNew ? 'Neues Konzert' : 'Konzert bearbeiten' }} - {{ parent() }}{% endblock %}
 
 {% block body %}
+<!-- template: templates/admin/konzerte/form.html.twig -->
 <div class="container-fluid py-4" style="max-width:1200px">
     <h1>{{ isNew ? 'Neues Konzert' : konzert.name }}</h1>
 

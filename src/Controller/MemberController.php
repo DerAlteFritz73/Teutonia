@@ -6,10 +6,9 @@ use App\Entity\SongSuggestion;
 use App\Entity\SongSuggestionLike;
 use App\Form\SongSuggestionType;
 use App\Repository\EventRepository;
-use App\Repository\PracticeLinkRepository;
+use App\Repository\SongKeywordRepository;
 use App\Repository\SongSuggestionLikeRepository;
 use App\Repository\SongSuggestionRepository;
-use App\Service\DropboxService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -27,13 +26,14 @@ class MemberController extends AbstractController
     }
 
     #[Route('/aktuelle-proben', name: 'member_proben')]
-    public function proben(DropboxService $dropboxService): Response
+    public function proben(SongKeywordRepository $songRepo): Response
     {
-        // Get Dropbox file structure from "Aktuelle Proben" folder
-        $dropboxFiles = $dropboxService->getFileStructure('/Chorgemeinschaft Teutonia/Aktuelle Proben');
+        $aktuelleProben = $songRepo->findByFolderTopLevel('Aktuelle Proben');
+        $notenSongs     = $songRepo->findAllExcept('Aktuelle Proben');
 
         return $this->render('member/proben.html.twig', [
-            'dropboxFiles' => $dropboxFiles,
+            'aktuelleProben' => $aktuelleProben,
+            'notenSongs'     => $notenSongs,
         ]);
     }
 

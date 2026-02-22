@@ -3,47 +3,123 @@
 {% block title %}Admin - {{ parent() }}{% endblock %}
 
 {% block body %}
+<!-- template: templates/admin/dashboard.html.twig -->
 <div class="container py-5">
     <h1>Administration</h1>
     <p class="lead">Verwaltung von Benutzern, Links und Terminen.</p>
 
     <div class="row mt-4">
         <div class="col-md-4 mb-4">
-            <div class="card text-white bg-primary h-100">
+            <div class="card text-white bg-primary h-100 position-relative" style="cursor:pointer">
                 <div class="card-body">
                     <h5 class="card-title">Benutzer</h5>
                     <p class="display-4">{{ userCount }}</p>
-                    <a href="{{ path('admin_users') }}" class="btn btn-light">Verwalten</a>
+                    <a href="{{ path('admin_users') }}" class="btn btn-light stretched-link">Verwalten</a>
                 </div>
             </div>
         </div>
         <div class="col-md-4 mb-4">
-            <div class="card text-white bg-success h-100">
-                <div class="card-body">
-                    <h5 class="card-title">Proben-Links</h5>
-                    <p class="display-4">{{ linkCount }}</p>
-                    <a href="{{ path('admin_links') }}" class="btn btn-light">Verwalten</a>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4 mb-4">
-            <div class="card text-white bg-info h-100">
+            <div class="card text-white bg-info h-100 position-relative" style="cursor:pointer">
                 <div class="card-body">
                     <h5 class="card-title">Termine</h5>
                     <p class="display-4">{{ eventCount }}</p>
-                    <a href="{{ path('admin_events') }}" class="btn btn-light">Verwalten</a>
+                    <a href="{{ path('admin_events') }}" class="btn btn-light stretched-link">Verwalten</a>
                 </div>
             </div>
         </div>
         <div class="col-md-4 mb-4">
-            <div class="card text-white bg-warning h-100">
+            <div class="card text-white bg-warning h-100 position-relative" style="cursor:pointer">
                 <div class="card-body">
                     <h5 class="card-title">Beiträge</h5>
                     <p class="display-4">{{ postCount }}</p>
-                    <a href="{{ path('admin_posts') }}" class="btn btn-light">Verwalten</a>
+                    <a href="{{ path('admin_posts') }}" class="btn btn-light stretched-link">Verwalten</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-4">
+            <div class="card text-white bg-success h-100 position-relative" style="cursor:pointer">
+                <div class="card-body">
+                    <h5 class="card-title">Lieder</h5>
+                    <p class="display-4">{{ songCount }}</p>
+                    <a href="{{ path('admin_songs') }}" class="btn btn-light stretched-link">Verwalten</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-4">
+            <div class="card text-white h-100 position-relative" style="background:linear-gradient(135deg,#6f42c1,#d63384);cursor:pointer">
+                <div class="card-body">
+                    <h5 class="card-title">Stile</h5>
+                    <p class="card-text">Musikstile verwalten &amp; Ellipsen für Répertoire konfigurieren</p>
+                    <a href="{{ path('admin_styles') }}" class="btn btn-light stretched-link">Verwalten</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-4">
+            <div class="card text-white h-100 position-relative" style="background:linear-gradient(135deg,#b8860b,#e67e22);cursor:pointer">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="bi bi-music-note-beamed me-1"></i>Konzerte</h5>
+                    <p class="display-4">{{ konzertCount }}</p>
+                    <a href="{{ path('admin_konzerte') }}" class="btn btn-light stretched-link">Verwalten</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-4">
+            <div class="card text-white bg-dark h-100 position-relative" style="cursor:pointer">
+                <div class="card-body">
+                    <h5 class="card-title">Datenbank</h5>
+                    <p class="card-text">MariaDB verwalten</p>
+                    <a href="/phpmyadmin" target="_blank" class="btn btn-light stretched-link">PHPMyAdmin öffnen</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-4">
+            <div class="card h-100 position-relative" style="border-color:#0061ff;cursor:pointer" id="card-dropbox-dash">
+                <div class="card-body">
+                    <h5 class="card-title" style="color:#0061ff"><i class="bi bi-cloud-arrow-down me-1"></i>Dropbox</h5>
+                    <p class="card-text text-muted small">Dropbox-Ordner mit Lied-Einträgen abgleichen und fehlende Verknüpfungen automatisch setzen.</p>
+                    <button id="btn-sync-dropbox-dash" class="btn btn-outline-primary btn-sm">
+                        Jetzt synchronisieren
+                    </button>
+                    <div id="sync-dash-result" class="mt-2 small"></div>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+<div class="modal fade" id="syncModalDash" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-cloud-arrow-down me-2"></i>Dropbox-Synchronisation</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="syncModalDashBody">
+                <div class="text-center py-3">
+                    <div class="spinner-border text-primary" role="status"></div>
+                    <p class="mt-2 mb-0">Verbindung zu Dropbox…</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Schließen</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('card-dropbox-dash').addEventListener('click', function(e) {
+    if (!e.target.closest('button')) {
+        document.getElementById('btn-sync-dropbox-dash').click();
+    }
+});
+</script>
+
+<script>
+window.DASHBOARD_CONFIG = {
+    csrfToken: '{{ csrf_token('sync_dropbox') }}',
+    syncUrl:   '{{ path('admin_songs_sync_dropbox') }}'
+};
+</script>
+<script src="{{ asset('js/admin-dashboard.js') }}"></script>
 {% endblock %}

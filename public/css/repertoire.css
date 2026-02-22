@@ -1,0 +1,42 @@
+.style-ellipse {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 210px;
+    min-height: 88px;
+    border-radius: 50%;
+    padding: 22px 52px;
+    position: relative;
+    color: #fff;
+    font-size: 1.15rem;
+    font-weight: 700;
+    text-shadow: 0 1px 4px rgba(0,0,0,.35);
+    box-shadow: 0 4px 20px rgba(0,0,0,.18);
+}
+.ellipse-wrapper {
+    padding: 44px;
+    display: inline-block;
+}
+.style-img {
+    position: absolute;
+    width: 68px;
+    height: 68px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid #fff;
+    box-shadow: 0 3px 12px rgba(0,0,0,.28);
+}
+.pos-top-left     { top: -28px; left: 14px; }
+.pos-top          { top: -34px; left: 50%; transform: translateX(-50%); }
+.pos-top-right    { top: -28px; right: 14px; }
+.pos-right        { top: 50%; right: -34px; transform: translateY(-50%); }
+.pos-bottom-right { bottom: -28px; right: 14px; }
+.pos-bottom       { bottom: -34px; left: 50%; transform: translateX(-50%); }
+.pos-bottom-left  { bottom: -28px; left: 14px; }
+.pos-left         { top: 50%; left: -34px; transform: translateY(-50%); }
+.style-songs li {
+    padding: 5px 0;
+    border-bottom: 1px solid rgba(0,0,0,.07);
+    font-size: .95rem;
+}
+.style-songs li:last-child { border-bottom: none; }

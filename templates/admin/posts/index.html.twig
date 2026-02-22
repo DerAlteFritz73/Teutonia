@@ -3,12 +3,14 @@
 {% block title %}Beiträge verwalten - {{ parent() }}{% endblock %}
 
 {% block body %}
+<!-- template: templates/admin/posts/index.html.twig -->
 <div class="container py-5">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1>Beiträge</h1>
         <div class="d-flex align-items-center gap-2">
-            <select class="form-select" id="page-filter" style="width: auto;">
-                <option value="all"{% if filterPage == 'all' %} selected{% endif %}>Alle Seiten</option>
+            <form method="get" id="filter-form" class="d-inline-flex">
+            <select class="form-select" id="page-filter" name="filter_page"
+                    onchange="this.form.submit()" style="width: auto;">
                 <option value="unser-chor"{% if filterPage == 'unser-chor' %} selected{% endif %}>Unser Chor</option>
                 <option value="konzerte-und-aktivitaeten"{% if filterPage == 'konzerte-und-aktivitaeten' %} selected{% endif %}>Konzerte und Aktivitäten</option>
                 <option value="historie"{% if filterPage == 'historie' %} selected{% endif %}>Historie</option>
@@ -18,7 +20,9 @@
                 <option value="geselliges"{% if filterPage == 'geselliges' %} selected{% endif %}>Geselliges</option>
                 <option value="archiv"{% if filterPage == 'archiv' %} selected{% endif %}>Archiv</option>
                 <option value="beitraege"{% if filterPage == 'beitraege' %} selected{% endif %}>Beiträge (Übersichtsseite)</option>
+                <option value="all"{% if filterPage == 'all' %} selected{% endif %}>Alle Seiten</option>
             </select>
+            </form>
             <a href="#" class="btn btn-outline-primary" id="goto-page-btn" style="white-space: nowrap;">
                 <i class="bi bi-box-arrow-up-right"></i> Zur Seite gehen
             </a>
@@ -197,60 +201,49 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Page filter dropdown handler
-    const pageFilter = document.getElementById('page-filter');
+    // Page filter – goto button
+    const pageFilter  = document.getElementById('page-filter');
     const gotoPageBtn = document.getElementById('goto-page-btn');
 
-    // Page URL mapping
     const pageMap = {
-        'unser-chor': '{{ path('page_chor') }}',
-        'konzerte-und-aktivitaeten': '{{ path('page_concerts') }}',
-        'historie': '{{ path('page_history') }}',
-        'chorproben': '{{ path('page_rehearsals') }}',
-        'unser-repertoire': '{{ path('page_repertoire') }}',
+        'unser-chor':               '{{ path('page_chor') }}',
+        'konzerte-und-aktivitaeten':'{{ path('page_concerts') }}',
+        'historie':                 '{{ path('page_history') }}',
+        'chorproben':               '{{ path('page_rehearsals') }}',
+        'unser-repertoire':         '{{ path('page_repertoire') }}',
         'unsere-naechsten-termine': '{{ path('page_events') }}',
-        'geselliges': '{{ path('page_social') }}',
-        'archiv': '{{ path('page_archive') }}',
-        'beitraege': '{{ path('page_posts') }}'
+        'geselliges':               '{{ path('page_social') }}',
+        'archiv':                   '{{ path('page_archive') }}',
+        'beitraege':                '{{ path('page_posts') }}'
     };
 
-    // Function to update goto button
     function updateGotoButton() {
-        const selectedPage = pageFilter.value;
-        if (selectedPage === 'all' || !pageMap[selectedPage]) {
+        const v = pageFilter.value;
+        if (v === 'all' || !pageMap[v]) {
             gotoPageBtn.style.display = 'none';
         } else {
             gotoPageBtn.style.display = 'inline-block';
-            gotoPageBtn.href = pageMap[selectedPage];
+            gotoPageBtn.href = pageMap[v];
         }
     }
 
     if (pageFilter && gotoPageBtn) {
-        // Set initial state
         updateGotoButton();
-
-        // Update button when dropdown changes
-        pageFilter.addEventListener('change', function() {
-            const filterValue = this.value;
-
-            // Update goto button
-            updateGotoButton();
-
-            // Update URL for filter
-            const currentUrl = new URL(window.location.href);
-
-            if (filterValue === 'all') {
-                currentUrl.searchParams.delete('filter_page');
-            } else {
-                currentUrl.searchParams.set('filter_page', filterValue);
-            }
-
-            // Reset to page 1 when changing filter
-            currentUrl.searchParams.delete('page');
-
-            window.location.href = currentUrl.toString();
-        });
+        pageFilter.addEventListener('change', updateGotoButton);
     }
+
+    // Image size tooltips
+    document.querySelectorAll('tbody img').forEach(function (img) {
+        function attach() {
+            img.setAttribute('title', img.naturalWidth + ' × ' + img.naturalHeight + ' px');
+            new bootstrap.Tooltip(img, { placement: 'right' });
+        }
+        if (img.complete && img.naturalWidth) {
+            attach();
+        } else {
+            img.addEventListener('load', attach);
+        }
+    });
 });
 </script>
 {% endblock %}

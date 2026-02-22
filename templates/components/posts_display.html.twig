@@ -1,3 +1,4 @@
+<!-- template: templates/components/posts_display.html.twig -->
 {# This template displays posts with proper layout handling #}
 <div id="posts-container">
 {% if posts is defined and posts is not empty %}
@@ -29,7 +30,7 @@
                     </div>
                 {% endif %}
                 {% if post.paragraph %}
-                    <div class="mt-3"{% if post.fontParagraph or post.fontParagraphSize or post.fontParagraphBold or post.fontParagraphItalic or post.fontParagraphUnderline %} style="{% if post.fontParagraph and post.fontParagraph != 'default' %}font-family: {{ post.fontParagraph }};{% endif %}{% if post.fontParagraphSize %} font-size: {{ post.fontParagraphSize }}px;{% endif %}{% if post.fontParagraphBold %} font-weight: bold;{% endif %}{% if post.fontParagraphItalic %} font-style: italic;{% endif %}{% if post.fontParagraphUnderline %} text-decoration: underline;{% endif %}"{% endif %}>{{ post.paragraph|raw }}</div>
+                    <div class="mt-3 post-paragraph"{% if post.fontParagraph or post.fontParagraphSize or post.fontParagraphBold or post.fontParagraphItalic or post.fontParagraphUnderline %} style="{% if post.fontParagraph and post.fontParagraph != 'default' %}font-family: {{ post.fontParagraph }};{% endif %}{% if post.fontParagraphSize %} font-size: {{ post.fontParagraphSize }}px;{% endif %}{% if post.fontParagraphBold %} font-weight: bold;{% endif %}{% if post.fontParagraphItalic %} font-style: italic;{% endif %}{% if post.fontParagraphUnderline %} text-decoration: underline;{% endif %}"{% endif %}>{{ post.paragraph|raw }}</div>
                 {% endif %}
             </div>
 
@@ -63,7 +64,7 @@
                         </div>
                     {% endif %}
                     {% if post.paragraph %}
-                        <div class="mt-3"{% if post.fontParagraph or post.fontParagraphSize or post.fontParagraphBold or post.fontParagraphItalic or post.fontParagraphUnderline %} style="{% if post.fontParagraph and post.fontParagraph != 'default' %}font-family: {{ post.fontParagraph }};{% endif %}{% if post.fontParagraphSize %} font-size: {{ post.fontParagraphSize }}px;{% endif %}{% if post.fontParagraphBold %} font-weight: bold;{% endif %}{% if post.fontParagraphItalic %} font-style: italic;{% endif %}{% if post.fontParagraphUnderline %} text-decoration: underline;{% endif %}"{% endif %}>{{ post.paragraph|raw }}</div>
+                        <div class="mt-3 post-paragraph"{% if post.fontParagraph or post.fontParagraphSize or post.fontParagraphBold or post.fontParagraphItalic or post.fontParagraphUnderline %} style="{% if post.fontParagraph and post.fontParagraph != 'default' %}font-family: {{ post.fontParagraph }};{% endif %}{% if post.fontParagraphSize %} font-size: {{ post.fontParagraphSize }}px;{% endif %}{% if post.fontParagraphBold %} font-weight: bold;{% endif %}{% if post.fontParagraphItalic %} font-style: italic;{% endif %}{% if post.fontParagraphUnderline %} text-decoration: underline;{% endif %}"{% endif %}>{{ post.paragraph|raw }}</div>
                     {% endif %}
                 </div>
             </div>

@@ -1,0 +1,129 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ isNew ? 'Neues Lied' : 'Lied bearbeiten' }} - {{ parent() }}{% endblock %}
+
+{% block body %}
+<!-- template: templates/admin/songs/form.html.twig -->
+<div class="container py-5" style="max-width: 860px;">
+    <h1>{{ isNew ? 'Neues Lied' : song.songName }}</h1>
+
+    {% for message in app.flashes('success') %}
+        <div class="alert alert-success alert-dismissible fade show">{{ message }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+    {% endfor %}
+    {% for message in app.flashes('error') %}
+        <div class="alert alert-danger alert-dismissible fade show">{{ message }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+    {% endfor %}
+
+    {{ form_start(form, {attr: {novalidate: 'novalidate', id: 'song-edit-form'}}) }}
+
+    <div class="card mb-4">
+        <div class="card-header fw-semibold">Grunddaten</div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-8">
+                    {{ form_row(form.songName) }}
+                </div>
+                <div class="col-md-4">
+                    {{ form_row(form.etikett) }}
+                </div>
+                <div class="col-md-6">
+                    {{ form_row(form.composer) }}
+                </div>
+                <div class="col-md-6">
+                    {{ form_label(form.parent) }}
+                    <input type="search" id="parent-search" class="form-control form-control-sm mb-1"
+                           placeholder="Filtern…" autocomplete="off">
+                    {{ form_widget(form.parent) }}
+                    {{ form_errors(form.parent) }}
+                    {% if not isNew and song.children|length > 0 %}
+                        <div class="mt-1 small text-muted">
+                            <i class="bi bi-diagram-3 me-1"></i>
+                            Übergeordnetes Stück mit {{ song.children|length }} Satz/Sätzen —
+                            ein Satz kann kein eigenes übergeordnetes Stück haben.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header fw-semibold">Dropbox</div>
+        <div class="card-body">
+            {{ form_row(form.dropboxlink) }}
+            <small class="text-muted">
+                Vollständiger Pfad zum Ordner in Dropbox, z.B.
+                <code>/Chorgemeinschaft Teutonia/Noten/Cohen - Hallelujah</code>
+            </small>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header fw-semibold">Stile</div>
+        <div class="card-body">
+            <div class="row row-cols-2 row-cols-md-3 g-2">
+                {% for child in form.styles %}
+                    <div class="col">
+                        <div class="form-check">
+                            {{ form_widget(child, {attr: {class: 'form-check-input'}}) }}
+                            {{ form_label(child, null, {label_attr: {class: 'form-check-label'}}) }}
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    {{ form_end(form) }}
+
+    <div class="d-flex gap-2">
+        <button type="submit" form="song-edit-form" class="btn btn-primary">
+            <i class="bi bi-floppy me-1"></i>Speichern
+        </button>
+        <a href="{{ path('admin_songs') }}" class="btn btn-secondary">Abbrechen</a>
+        {% if not isNew %}
+            <form action="{{ path('admin_songs_delete', {id: song.id}) }}" method="post"
+                  class="ms-auto" onsubmit="return confirm('Lied wirklich löschen?')">
+                <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ song.id) }}">
+                <button class="btn btn-outline-danger">
+                    <i class="bi bi-trash me-1"></i>Löschen
+                </button>
+            </form>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+(function () {
+    const search = document.getElementById('parent-search');
+    const select = document.getElementById('song_keyword_parent');
+    if (!search || !select) return;
+
+    const allOptions = Array.from(select.options).map(o => ({ el: o, text: o.text.toLowerCase() }));
+
+    search.addEventListener('input', function () {
+        const q = this.value.toLowerCase().trim();
+        allOptions.forEach(opt => { opt.el.hidden = q !== '' && !opt.text.includes(q); });
+    });
+
+    search.addEventListener('keydown', e => { if (e.key === 'Enter') e.preventDefault(); });
+
+    // Auto-fill composer from selected parent
+    const composerInput = document.getElementById('song_keyword_composer');
+    if (composerInput) {
+        select.addEventListener('change', function () {
+            const opt = this.options[this.selectedIndex];
+            if (!opt || !opt.value) return;
+
+            const composer = opt.dataset.composer;
+            if (composer) composerInput.value = composer;
+
+            const styleIds = JSON.parse(opt.dataset.styles || '[]');
+            document.querySelectorAll('[id^="song_keyword_styles_"]').forEach(cb => {
+                cb.checked = styleIds.includes(parseInt(cb.value));
+            });
+        });
+    }
+}());
+</script>
+{% endblock %}

@@ -2,9 +2,9 @@
 
 {% block title %}Lieder verwalten - {{ parent() }}{% endblock %}
 
-{% macro sort_th(label, field, sort, dir, search, cssStyle) %}
+{% macro sort_th(label, field, sort, dir, search, cssStyle, extraAttrs) %}
     {% set nextDir = (sort == field and dir == 'ASC') ? 'DESC' : 'ASC' %}
-    <th{% if cssStyle %} style="{{ cssStyle }}"{% endif %}>
+    <th{% if cssStyle %} style="{{ cssStyle }}"{% endif %}{% if extraAttrs %} {{ extraAttrs|raw }}{% endif %}>
         <a href="{{ path('admin_songs', {sort: field, dir: nextDir, q: search, page: 1}) }}"
            class="text-white text-decoration-none d-flex align-items-center gap-1 user-select-none">
             {{- label -}}
@@ -18,8 +18,10 @@
 {% endmacro %}
 
 {% block body %}
+<!-- template: templates/admin/songs/index.html.twig -->
 {% set months_de = ['Jan.','Feb.','Mär.','Apr.','Mai','Jun.','Jul.','Aug.','Sep.','Okt.','Nov.','Dez.'] %}
 <link rel="stylesheet" href="{{ asset('css/admin-songs.css') }}">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/footable-v3/compiled/footable.core.standalone.min.css">
 
 <div class="container-fluid py-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
@@ -87,12 +89,13 @@
         <table class="table table-striped table-hover table-sm align-middle" id="songs-table">
             <thead class="table-dark">
                 <tr>
-                    {{ _self.sort_th('Etikett',          'etikett',           sort, dir, search, 'width:115px') }}
-                    {{ _self.sort_th('Liedtitel',         'songName',          sort, dir, search) }}
-                    {{ _self.sort_th('Komponist',         'composer',          sort, dir, search, 'width:190px') }}
-                    <th>Stile</th>
-                    {{ _self.sort_th('Letztes Konzert', 'latestKonzert', sort, dir, search, 'width:130px') }}
-                    {{ _self.sort_th('Dropbox',           'dropboxlink',       sort, dir, search, 'width:40px') }}
+                    <th data-toggle="true" style="width:26px;padding:0;"></th>
+                    {{ _self.sort_th('Etikett',         'etikett',       sort, dir, search, 'width:115px', 'data-breakpoints="xs sm" data-title="Etikett" data-type="html"') }}
+                    {{ _self.sort_th('Liedtitel',        'songName',      sort, dir, search, null,         'data-title="Liedtitel"') }}
+                    {{ _self.sort_th('Komponist',        'composer',      sort, dir, search, 'width:190px','data-title="Komponist"') }}
+                    <th data-breakpoints="xs sm" data-title="Stile" data-type="html">Stile</th>
+                    {{ _self.sort_th('Letztes Konzert', 'latestKonzert', sort, dir, search, 'width:130px', 'data-breakpoints="xs sm" data-title="Letztes Konzert" data-type="html"') }}
+                    {{ _self.sort_th('Dropbox',          'dropboxlink',   sort, dir, search, 'width:40px',  'data-breakpoints="xs sm" data-title="Dropbox" data-type="html"') }}
                     <th class="text-end" style="width:80px">Aktionen</th>
                 </tr>
             </thead>
@@ -205,6 +208,7 @@
                         'extrabox': 'bg-secondary text-white'
                     }[prefix] ?? 'bg-light text-dark border' %}
                     <tr data-id="{{ song.id }}">
+                        <td></td>
                         {# Etikett #}
                         <td class="editable-cell" data-field="etikett">
                             <span class="display-val">
@@ -308,6 +312,7 @@
                             style="background:#f0f3ff; display:none;"
                             draggable="true">
 
+                            <td></td>
                             <td class="editable-cell" data-field="etikett">
                                 <span class="drag-handle" title="Verschieben"><i class="bi bi-grip-vertical"></i></span>
                                 <span class="text-primary opacity-50 ps-1">↳</span>
@@ -380,7 +385,7 @@
                     {% endfor %}
                 {% else %}
                     <tr>
-                        <td colspan="7" class="text-center text-muted py-4">
+                        <td colspan="8" class="text-center text-muted py-4">
                             Keine Lieder gefunden{% if search %} für „{{ search }}"{% endif %}.
                         </td>
                     </tr>
@@ -451,10 +456,23 @@ document.querySelectorAll('.btn-expand-movements').forEach(btn => {
         const rows  = document.querySelectorAll('.movement-parent-' + parentId);
         const chev  = document.getElementById('chev-' + parentId);
         const open  = rows[0] && rows[0].style.display !== 'none';
-        rows.forEach(r => { r.style.display = open ? 'none' : ''; });
+        rows.forEach(r => {
+            r.style.display = open ? 'none' : '';
+            if (open) {
+                const det = r.nextElementSibling;
+                if (det && det.classList.contains('footable-detail-row')) det.style.display = 'none';
+            }
+        });
         chev.className = open ? 'bi bi-chevron-right text-muted' : 'bi bi-chevron-down text-primary';
     });
 });
 </script>
 <script src="{{ asset('js/admin-songs.js') }}"></script>
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.slim.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/footable-v3/compiled/footable.core.min.js"></script>
+<script>
+jQuery(function ($) {
+    $('#songs-table').footable();
+});
+</script>
 {% endblock %}

@@ -1,107 +1,216 @@
 {% extends 'base.html.twig' %}
 
+{% macro etikett_badge(etikett) %}
+    {% if etikett %}
+        {% set prefix = etikett|split(' ')|first|lower %}
+        {% set class = {
+            'blau':     'bg-primary text-white',
+            'gelb':     'bg-warning text-dark',
+            'rosa':     'bg-danger-subtle text-danger-emphasis border border-danger-subtle',
+            'extrabox': 'bg-secondary text-white'
+        }[prefix] ?? 'bg-light text-dark border' %}
+        <span class="badge {{ class }} ms-2 fw-normal">{{ etikett }}</span>
+    {% endif %}
+{% endmacro %}
+
 {% block title %}Aktuelle Proben - {{ parent() }}{% endblock %}
 
 {% block body %}
+<!-- template: templates/member/proben.html.twig -->
 <main id="main-content">
     <div class="container py-5" id="page-container">
         <h1 id="page-title">Aktuelle Proben</h1>
         <p class="lead" id="page-lead">Hier findest du alle Noten und Übungsdateien für die aktuellen Proben.</p>
 
-        {# Dropbox Files Section #}
-        {% if dropboxFiles is defined and dropboxFiles is not empty %}
-        <section class="dropbox-files-section mt-4">
+        {# Aktuelle Proben Section #}
+        {% if aktuelleProben is not empty %}
+        <section class="mb-5">
             <div class="accordion" id="probenAccordion">
-                {% set folderIndex = 0 %}
-
-                {# Display root files if any #}
-                {% if dropboxFiles._root_files is defined and dropboxFiles._root_files is not empty %}
+                {% for song in aktuelleProben %}
+                    {% set folderId = 'proben-' ~ loop.index %}
+                    {% set hasMovements = song.children|length > 0 %}
                     <div class="accordion-item">
                         <h2 class="accordion-header">
-                            <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#folder-root" aria-expanded="true">
+                            <button class="accordion-button {% if not loop.first %}collapsed{% endif %} accordion-btn-files"
+                                    type="button"
+                                    data-bs-toggle="collapse"
+                                    data-bs-target="#{{ folderId }}"
+                                    aria-expanded="{{ loop.first ? 'true' : 'false' }}"
+                                    {% if song.dropboxlink %}data-dropbox-path="{{ song.dropboxlink }}"{% endif %}>
                                 <i class="bi bi-folder2-open me-2"></i>
-                                Allgemeine Dateien
-                                <span class="badge bg-secondary ms-2">{{ dropboxFiles._root_files|length }}</span>
+                                {{ song.songName }}
+                                {% if hasMovements %}
+                                    <span class="badge bg-secondary ms-2 fw-normal">{{ song.children|length }} Sätze</span>
+                                {% endif %}
+                                <span class="ms-auto d-flex gap-1 file-badges-{{ folderId }}"></span>
                             </button>
                         </h2>
-                        <div id="folder-root" class="accordion-collapse collapse show" data-bs-parent="#probenAccordion">
+                        <div id="{{ folderId }}" class="accordion-collapse collapse {% if loop.first %}show{% endif %}"
+                             data-bs-parent="#probenAccordion">
                             <div class="accordion-body">
-                                <div class="list-group">
-                                    {% for file in dropboxFiles._root_files %}
-                                        {% include 'components/dropbox_file_item.html.twig' with {'file': file} %}
-                                    {% endfor %}
-                                </div>
+                                {% if song.dropboxlink %}
+                                    <div class="list-group song-files-container mb-3" data-dropbox-path="{{ song.dropboxlink }}">
+                                        <div class="text-center text-muted py-3 file-loading-spinner">
+                                            <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                                            Lade Dateien…
+                                        </div>
+                                    </div>
+                                {% endif %}
+                                {% if hasMovements %}
+                                    <div class="accordion" id="{{ folderId }}-movements">
+                                        {% for movement in song.children %}
+                                            {% set movId = folderId ~ '-mov-' ~ loop.index %}
+                                            <div class="accordion-item border-start border-3 border-primary">
+                                                <h2 class="accordion-header">
+                                                    <button class="accordion-button collapsed accordion-btn-files py-2"
+                                                            type="button"
+                                                            data-bs-toggle="collapse"
+                                                            data-bs-target="#{{ movId }}"
+                                                            {% if movement.dropboxlink %}data-dropbox-path="{{ movement.dropboxlink }}"{% endif %}>
+                                                        <i class="bi bi-music-note me-2 text-primary"></i>
+                                                        {{ movement.songName }}
+                                                        <span class="ms-auto d-flex gap-1 file-badges-{{ movId }}"></span>
+                                                    </button>
+                                                </h2>
+                                                <div id="{{ movId }}" class="accordion-collapse collapse">
+                                                    <div class="accordion-body py-2">
+                                                        {% if movement.dropboxlink %}
+                                                            <div class="list-group song-files-container" data-dropbox-path="{{ movement.dropboxlink }}">
+                                                                <div class="text-center text-muted py-3 file-loading-spinner">
+                                                                    <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                                                                    Lade Dateien…
+                                                                </div>
+                                                            </div>
+                                                        {% else %}
+                                                            <p class="text-muted mb-0 small"><i class="bi bi-info-circle me-1"></i>Keine Dateien verfügbar.</p>
+                                                        {% endif %}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
                             </div>
                         </div>
                     </div>
-                {% endif %}
-
-                {# Display folders #}
-                {% for folderName, folderData in dropboxFiles %}
-                    {% if folderName != '_root_files' and folderData._type is defined and folderData._type == 'folder' %}
-                        {% set folderIndex = folderIndex + 1 %}
-                        {% set folderId = 'folder-' ~ folderIndex %}
-                        {% set isFirstFolder = folderIndex == 1 and dropboxFiles._root_files is not defined %}
-
-                        <div class="accordion-item">
-                            <h2 class="accordion-header">
-                                <button class="accordion-button {% if not isFirstFolder %}collapsed{% endif %}" type="button"
-                                        data-bs-toggle="collapse" data-bs-target="#{{ folderId }}"
-                                        aria-expanded="{{ isFirstFolder ? 'true' : 'false' }}">
-                                    <i class="bi bi-folder2-open me-2"></i>
-                                    {{ folderName }}
-                                    {% set pdfCount = folderData|count_pdf_files %}
-                                    {% set audioCount = folderData|count_audio_files %}
-                                    {% if pdfCount > 0 %}
-                                        <span class="badge bg-danger ms-2" title="PDF-Dateien">
-                                            <i class="bi bi-file-pdf"></i> {{ pdfCount }}
-                                        </span>
-                                    {% endif %}
-                                    {% if audioCount > 0 %}
-                                        <span class="badge bg-success ms-2" title="Audio-Dateien">
-                                            <i class="bi bi-music-note"></i> {{ audioCount }}
-                                        </span>
-                                    {% endif %}
-                                </button>
-                            </h2>
-                            <div id="{{ folderId }}" class="accordion-collapse collapse {% if isFirstFolder %}show{% endif %}" data-bs-parent="#probenAccordion">
-                                <div class="accordion-body">
-                                    {% if folderData._files is not empty %}
-                                        <div class="list-group">
-                                            {% for file in folderData._files %}
-                                                {% include 'components/dropbox_file_item.html.twig' with {'file': file} %}
-                                            {% endfor %}
-                                        </div>
-                                    {% endif %}
-
-                                    {# Display subfolders #}
-                                    {% if folderData._subfolders is defined and folderData._subfolders is not empty %}
-                                        <div class="ms-3 mt-3">
-                                            {% include 'components/dropbox_subfolder.html.twig' with {
-                                                'subfolders': folderData._subfolders,
-                                                'parentId': folderId
-                                            } %}
-                                        </div>
-                                    {% endif %}
-                                </div>
-                            </div>
-                        </div>
-                    {% endif %}
                 {% endfor %}
             </div>
-
-            {% if dropboxFiles is empty or (dropboxFiles._root_files is not defined and dropboxFiles|length == 0) %}
-                <div class="alert alert-info mt-4">
-                    <i class="bi bi-info-circle me-2"></i>
-                    Aktuell sind keine Übungsmaterialien verfügbar.
-                </div>
-            {% endif %}
         </section>
         {% else %}
         <div class="alert alert-info mt-4">
             <i class="bi bi-info-circle me-2"></i>
             Aktuell sind keine Übungsmaterialien verfügbar.
         </div>
+        {% endif %}
+
+        {# All Scores Section #}
+        {% if notenSongs is not empty %}
+        <section class="mt-5">
+            <h2 class="mb-4">
+                <i class="bi bi-folder-fill me-2"></i>
+                Noten und Aufnahmen
+            </h2>
+            <p class="text-muted mb-4">
+                <i class="bi bi-info-circle me-1"></i>
+                Hier findet Ihr unsere Noten (PDF) und Aufnahmen (MP3) nach Kategorien sortiert.
+            </p>
+
+            <div class="accordion" id="allFilesAccordion">
+                {% for song in notenSongs %}
+                    {% set allFolderId = 'noten-' ~ loop.index %}
+                    {% set hasDropbox = song.dropboxlink is not null and song.dropboxlink != '' %}
+                    {% set hasMovements = song.children|length > 0 %}
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed accordion-btn-files"
+                                    type="button"
+                                    data-bs-toggle="collapse"
+                                    data-bs-target="#{{ allFolderId }}"
+                                    aria-expanded="false"
+                                    {% if hasDropbox %}data-dropbox-path="{{ song.dropboxlink }}"{% endif %}>
+                                {% if hasDropbox or hasMovements %}
+                                    <i class="bi bi-folder2-open me-2 text-warning"></i>
+                                {% else %}
+                                    <i class="bi bi-music-note me-2 text-secondary"></i>
+                                {% endif %}
+                                {{ song.songName }}
+                                {{ _self.etikett_badge(song.etikett) }}
+                                {% if hasMovements %}
+                                    <span class="badge bg-secondary ms-2 fw-normal">{{ song.children|length }} Sätze</span>
+                                {% endif %}
+                                <span class="ms-auto d-flex gap-1 file-badges-{{ allFolderId }}"></span>
+                            </button>
+                        </h2>
+                        <div id="{{ allFolderId }}" class="accordion-collapse collapse"
+                             data-bs-parent="#allFilesAccordion">
+                            <div class="accordion-body">
+                                {# Song metadata row #}
+                                <div class="d-flex flex-wrap gap-3 mb-3 text-muted small">
+                                    {% if song.composer %}
+                                        <span><i class="bi bi-person me-1"></i>{{ song.composer }}</span>
+                                    {% endif %}
+                                    {% if song.etikett %}
+                                        <span><i class="bi bi-hash me-1"></i>{{ song.etikett }}</span>
+                                    {% endif %}
+                                    {% if song.latestKonzertDate %}
+                                        <span><i class="bi bi-calendar-event me-1"></i>Letzte Aufführung: {{ song.latestKonzertDate|date('M Y') }}</span>
+                                    {% endif %}
+                                </div>
+                                {# Parent-level files (if any) #}
+                                {% if hasDropbox %}
+                                    <div class="list-group song-files-container {% if hasMovements %}mb-3{% endif %}" data-dropbox-path="{{ song.dropboxlink }}">
+                                        <div class="text-center text-muted py-3 file-loading-spinner">
+                                            <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                                            Lade Dateien…
+                                        </div>
+                                    </div>
+                                {% elseif not hasMovements %}
+                                    <p class="text-muted mb-0">
+                                        <i class="bi bi-info-circle me-1"></i>Keine Dateien in Dropbox verfügbar.
+                                    </p>
+                                {% endif %}
+                                {# Movements (Sätze) #}
+                                {% if hasMovements %}
+                                    <div class="accordion" id="{{ allFolderId }}-movements">
+                                        {% for movement in song.children %}
+                                            {% set movId = allFolderId ~ '-mov-' ~ loop.index %}
+                                            {% set movHasDropbox = movement.dropboxlink is not null and movement.dropboxlink != '' %}
+                                            <div class="accordion-item border-start border-3 border-primary">
+                                                <h2 class="accordion-header">
+                                                    <button class="accordion-button collapsed accordion-btn-files py-2"
+                                                            type="button"
+                                                            data-bs-toggle="collapse"
+                                                            data-bs-target="#{{ movId }}"
+                                                            {% if movHasDropbox %}data-dropbox-path="{{ movement.dropboxlink }}"{% endif %}>
+                                                        <i class="bi bi-music-note me-2 text-primary"></i>
+                                                        {{ movement.songName }}
+                                                        <span class="ms-auto d-flex gap-1 file-badges-{{ movId }}"></span>
+                                                    </button>
+                                                </h2>
+                                                <div id="{{ movId }}" class="accordion-collapse collapse">
+                                                    <div class="accordion-body py-2">
+                                                        {% if movHasDropbox %}
+                                                            <div class="list-group song-files-container" data-dropbox-path="{{ movement.dropboxlink }}">
+                                                                <div class="text-center text-muted py-3 file-loading-spinner">
+                                                                    <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                                                                    Lade Dateien…
+                                                                </div>
+                                                            </div>
+                                                        {% else %}
+                                                            <p class="text-muted mb-0 small"><i class="bi bi-info-circle me-1"></i>Keine Dateien verfügbar.</p>
+                                                        {% endif %}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </section>
         {% endif %}
     </div>
 </main>
@@ -151,7 +260,6 @@
                         <h6 class="card-title mb-3">
                             <i class="bi bi-speedometer2 me-2"></i>Wiedergabegeschwindigkeit
                         </h6>
-
                         <div class="d-flex align-items-center gap-3 mb-3">
                             <label for="speedSlider" class="form-label mb-0" style="min-width: 60px;">
                                 <span id="speedValue">1.0</span>x
@@ -159,7 +267,6 @@
                             <input type="range" class="form-range flex-grow-1" id="speedSlider"
                                    min="0.25" max="2.0" step="0.05" value="1.0">
                         </div>
-
                         <div class="d-flex gap-2 flex-wrap">
                             <button class="btn btn-sm btn-outline-secondary speed-preset" data-speed="0.5">0.5x</button>
                             <button class="btn btn-sm btn-outline-secondary speed-preset" data-speed="0.75">0.75x</button>
@@ -172,6 +279,9 @@
                 </div>
             </div>
             <div class="modal-footer">
+                <button type="button" class="btn btn-success" id="audioPlayBtn">
+                    <i class="bi bi-play-fill me-1"></i>Abspielen
+                </button>
                 <a id="audioDownloadLink" href="#" download class="btn btn-primary">
                     <i class="bi bi-download me-2"></i>Herunterladen
                 </a>
@@ -182,135 +292,11 @@
 </div>
 
 <script>
-// Handle Dropbox file viewing with PDF viewer and audio player
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('Dropbox file viewer loaded');
-
-    const links = document.querySelectorAll('.dropbox-file-link');
-    const pdfModal = new bootstrap.Modal(document.getElementById('pdfViewerModal'));
-    const audioModal = new bootstrap.Modal(document.getElementById('audioPlayerModal'));
-    const audioPlayer = document.getElementById('audioPlayer');
-    const speedSlider = document.getElementById('speedSlider');
-    const speedValue = document.getElementById('speedValue');
-    const speedPresets = document.querySelectorAll('.speed-preset');
-
-    console.log('Found ' + links.length + ' Dropbox file links');
-
-    // Speed control functionality
-    speedSlider.addEventListener('input', function() {
-        const speed = parseFloat(this.value);
-        audioPlayer.playbackRate = speed;
-        speedValue.textContent = speed.toFixed(2);
-        updateSpeedPresetButtons(speed);
-    });
-
-    speedPresets.forEach(function(btn) {
-        btn.addEventListener('click', function() {
-            const speed = parseFloat(this.dataset.speed);
-            speedSlider.value = speed;
-            audioPlayer.playbackRate = speed;
-            speedValue.textContent = speed.toFixed(2);
-            updateSpeedPresetButtons(speed);
-        });
-    });
-
-    function updateSpeedPresetButtons(speed) {
-        speedPresets.forEach(function(btn) {
-            const btnSpeed = parseFloat(btn.dataset.speed);
-            if (Math.abs(btnSpeed - speed) < 0.01) {
-                btn.classList.remove('btn-outline-secondary', 'btn-outline-primary');
-                btn.classList.add('btn-primary');
-            } else {
-                btn.classList.remove('btn-primary');
-                if (btnSpeed === 1.0) {
-                    btn.classList.add('btn-outline-primary');
-                } else {
-                    btn.classList.add('btn-outline-secondary');
-                }
-            }
-        });
-    }
-
-    // Reset playback speed when modal is closed
-    document.getElementById('audioPlayerModal').addEventListener('hidden.bs.modal', function() {
-        audioPlayer.pause();
-        audioPlayer.currentTime = 0;
-    });
-
-    // Handle file clicks
-    links.forEach(function(link) {
-        link.addEventListener('click', function(e) {
-            e.preventDefault();
-            console.log('File clicked:', this.dataset.filePath);
-
-            const filePath = this.dataset.filePath;
-            const fileName = this.dataset.fileName;
-            const fileType = this.dataset.fileType;
-            const spinner = this.querySelector('.spinner-border');
-
-            // Show loading spinner
-            if (spinner) {
-                spinner.classList.remove('d-none');
-            }
-
-            // Fetch temporary link from server
-            fetch('{{ path('api_dropbox_link') }}', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ path: filePath })
-            })
-            .then(response => {
-                console.log('Response status:', response.status);
-                return response.json();
-            })
-            .then(data => {
-                console.log('Response data:', data);
-
-                if (spinner) {
-                    spinner.classList.add('d-none');
-                }
-
-                if (data.link) {
-                    if (fileType === 'pdf') {
-                        // Open PDF in viewer
-                        document.getElementById('pdfFileName').textContent = fileName;
-                        document.getElementById('pdfViewerFrame').src = '{{ path('api_dropbox_view') }}?path=' + encodeURIComponent(filePath);
-                        document.getElementById('pdfDownloadLink').href = data.link;
-                        document.getElementById('pdfDownloadLink').download = fileName;
-                        pdfModal.show();
-                    } else if (fileType === 'audio') {
-                        // Open audio in player
-                        document.getElementById('audioFileName').textContent = fileName;
-                        audioPlayer.src = data.link;
-                        document.getElementById('audioDownloadLink').href = data.link;
-                        document.getElementById('audioDownloadLink').download = fileName;
-
-                        // Reset speed controls
-                        speedSlider.value = 1.0;
-                        audioPlayer.playbackRate = 1.0;
-                        speedValue.textContent = '1.0';
-                        updateSpeedPresetButtons(1.0);
-
-                        audioModal.show();
-                    } else {
-                        // For other file types, open in new tab
-                        window.open(data.link, '_blank');
-                    }
-                } else {
-                    alert('Fehler beim Laden der Datei: ' + (data.error || 'Unbekannter Fehler'));
-                }
-            })
-            .catch(error => {
-                if (spinner) {
-                    spinner.classList.add('d-none');
-                }
-                console.error('Error:', error);
-                alert('Fehler beim Laden der Datei. Bitte versuchen Sie es erneut.');
-            });
-        });
-    });
-});
+window.PROBEN_CONFIG = {
+    filesUrl: '{{ path('api_dropbox_song_files') }}',
+    linkUrl:  '{{ path('api_dropbox_link') }}',
+    viewUrl:  '{{ path('api_dropbox_view') }}'
+};
 </script>
+<script src="{{ asset('js/member-proben.js') }}"></script>
 {% endblock %}

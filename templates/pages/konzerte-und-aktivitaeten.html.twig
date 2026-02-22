@@ -3,59 +3,35 @@
 {% block title %}Konzerte und Aktivitäten - Chorgemeinschaft Teutonia Willstätt{% endblock %}
 
 {% block body %}
+<!-- template: templates/pages/konzerte-und-aktivitaeten.html.twig -->
 <main id="main-content">
     <div class="container" id="page-container">
         <h1 id="page-title">Konzerte und Aktivitäten</h1>
 
         <p class="lead" id="page-lead">Unser Chor entfaltet eine vielfältige und lebendige Konzerttätigkeit.</p>
 
-        {% if years is defined and years|length > 0 %}
-        <div class="mb-4">
-            <label for="year-selector" class="form-label">Nach Jahr filtern:</label>
-            <select id="year-selector" class="form-select" style="max-width: 200px;">
-                <option value="">Alle Jahre</option>
-                {% for year in years %}
-                    <option value="{{ year }}">{{ year }}</option>
-                {% endfor %}
-            </select>
+        <div class="row">
+            {% if years is defined and years|length > 0 %}
+            <div class="col-md-2 pe-0">
+                <label for="year-selector" class="form-label mb-1 small text-muted">Nach Jahr filtern:</label>
+                <select id="year-selector" class="form-select form-select-sm">
+                    <option value="">Alle Jahre</option>
+                    {% for year in years %}
+                        <option value="{{ year }}">{{ year }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            {% endif %}
+            <div class="{% if years is defined and years|length > 0 %}col-md-10{% else %}col-12{% endif %}">
+                {% include 'components/posts_display.html.twig' %}
+            </div>
         </div>
-        {% endif %}
-
-        {% include 'components/posts_display.html.twig' %}
     </div>
 </main>
 {% endblock %}
 
 {% block javascripts %}
     {{ parent() }}
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const yearSelector = document.getElementById('year-selector');
-
-            if (yearSelector) {
-                yearSelector.addEventListener('change', function() {
-                    const selectedYear = this.value;
-
-                    if (!selectedYear) {
-                        // Scroll to top if "Alle Jahre" is selected
-                        window.scrollTo({ top: 0, behavior: 'smooth' });
-                        return;
-                    }
-
-                    // Find all posts with the selected year
-                    const postsWithYear = document.querySelectorAll(`[data-year="${selectedYear}"]`);
-
-                    if (postsWithYear.length > 0) {
-                        // Get the last post of the selected year
-                        const lastPost = postsWithYear[postsWithYear.length - 1];
-
-                        // Scroll to the last post with offset for navbar
-                        const offsetTop = lastPost.getBoundingClientRect().top + window.pageYOffset - 80;
-                        window.scrollTo({ top: offsetTop, behavior: 'smooth' });
-                    }
-                });
-            }
-        });
-    </script>
+    <script src="{{ asset('js/pages-concerts.js') }}"></script>
 {% endblock %}
 

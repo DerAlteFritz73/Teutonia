@@ -1,0 +1,172 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ isNew ? 'Neuer Stil' : 'Stil bearbeiten' }} - {{ parent() }}{% endblock %}
+
+{% block body %}
+<!-- template: templates/admin/styles/form.html.twig -->
+<div class="container-fluid py-4" style="max-width:900px">
+    <h1>{{ isNew ? 'Neuer Stil' : ('Stil bearbeiten: ' ~ style.name) }}</h1>
+
+    {{ form_start(form, {attr: {enctype: 'multipart/form-data', class: 'mt-4', id: 'style-form'}}) }}
+
+    <div class="mb-3">
+        {{ form_label(form.name) }}
+        {{ form_widget(form.name) }}
+        {{ form_errors(form.name) }}
+    </div>
+
+    <div class="mb-3">
+        {{ form_label(form.description) }}
+        {{ form_widget(form.description) }}
+    </div>
+
+    <div class="row mb-3">
+        <div class="col">
+            {{ form_label(form.color) }}
+            <div class="input-group">
+                {{ form_widget(form.color, {attr: {type: 'color', class: 'form-control form-control-color', style: 'max-width:60px'}}) }}
+                <input type="text" id="color-hex" class="form-control form-control-sm"
+                       value="{{ style.color ?? '#4e6fc4' }}" maxlength="30"
+                       placeholder="#4e6fc4" style="max-width:100px">
+            </div>
+        </div>
+        <div class="col">
+            {{ form_label(form.color2) }}
+            <div class="input-group">
+                {{ form_widget(form.color2, {attr: {type: 'color', class: 'form-control form-control-color', style: 'max-width:60px'}}) }}
+                <input type="text" id="color2-hex" class="form-control form-control-sm"
+                       value="{{ style.color2 ?? '#7b3fc4' }}" maxlength="30"
+                       placeholder="#7b3fc4" style="max-width:100px">
+            </div>
+        </div>
+    </div>
+
+    {# Live gradient preview #}
+    <div class="mb-3">
+        <label class="form-label text-muted small">Vorschau</label>
+        <div id="gradient-preview" class="rounded d-flex align-items-center justify-content-center"
+             style="height:60px;font-weight:bold;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.4);
+                    background:linear-gradient(135deg,{{ style.color ?? '#4e6fc4' }},{{ style.color2 ?? '#7b3fc4' }})">
+            {{ style.name }}
+        </div>
+    </div>
+
+    <div class="mb-3">
+        {{ form_label(form.imagePosition) }}
+        {{ form_widget(form.imagePosition) }}
+    </div>
+
+    <div class="mb-3">
+        {{ form_label(form.imageFile) }}
+        {% if style.image %}
+        <div class="mb-2 d-flex align-items-center gap-3">
+            <img src="{{ asset('images/styles/' ~ style.image) }}"
+                 style="width:64px;height:64px;border-radius:50%;object-fit:cover;border:3px solid #dee2e6" alt="">
+            <span class="text-muted small">Aktuelles Bild: {{ style.image }}</span>
+        </div>
+        {% endif %}
+        {{ form_widget(form.imageFile) }}
+        {{ form_errors(form.imageFile) }}
+        <div class="form-text">JPG, PNG, WebP – max. 2 MB. Leer lassen, um das aktuelle Bild zu behalten.</div>
+    </div>
+
+    {{ form_end(form) }}
+</div>
+
+{% if not isNew %}
+<div class="container-fluid py-3" style="max-width:900px">
+    <hr>
+    <h4 class="mb-3">
+        Lieder dieses Stils
+        <span class="badge bg-secondary fs-6 ms-1">{{ total }}</span>
+    </h4>
+
+    {% if songs is empty and total == 0 %}
+        <p class="text-muted">Keine Lieder diesem Stil zugeordnet.</p>
+    {% else %}
+        <div class="table-responsive">
+            <table class="table table-sm table-striped table-hover align-middle">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Liedtitel</th>
+                        <th style="width:190px">Komponist</th>
+                        <th style="width:40px" title="Im Repertoire anzeigen"><i class="bi bi-eye"></i></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for song in songs %}
+                    {% set inRepertoire = song in style.repertoireSongs %}
+                    <tr>
+                        <td class="fw-semibold">{{ song.songName }}</td>
+                        <td class="text-muted">{{ song.composer ?? '—' }}</td>
+                        <td class="text-center">
+                            <button class="btn btn-sm btn-link p-0 repertoire-toggle"
+                                    data-id="{{ song.id }}"
+                                    data-active="{{ inRepertoire ? '1' : '0' }}"
+                                    title="{{ inRepertoire ? 'Sichtbar – klicken zum Ausblenden' : 'Ausgeblendet – klicken zum Anzeigen' }}">
+                                <i class="bi {{ inRepertoire ? 'bi-eye-fill text-success' : 'bi-eye-slash text-muted' }}"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if totalPages > 1 %}
+        <nav aria-label="Seitennavigation">
+            <ul class="pagination justify-content-center flex-wrap">
+                <li class="page-item{{ currentPage == 1 ? ' disabled' : '' }}">
+                    <a class="page-link" href="{{ path('admin_styles_edit', {id: style.id, page: currentPage - 1}) }}">
+                        <i class="bi bi-chevron-left"></i>
+                    </a>
+                </li>
+                {% for p in 1..totalPages %}
+                    {% if p == 1 or p == totalPages or (p >= currentPage - 2 and p <= currentPage + 2) %}
+                        <li class="page-item{{ p == currentPage ? ' active' : '' }}">
+                            <a class="page-link" href="{{ path('admin_styles_edit', {id: style.id, page: p}) }}">{{ p }}</a>
+                        </li>
+                    {% elseif p == currentPage - 3 or p == currentPage + 3 %}
+                        <li class="page-item disabled"><span class="page-link">…</span></li>
+                    {% endif %}
+                {% endfor %}
+                <li class="page-item{{ currentPage == totalPages ? ' disabled' : '' }}">
+                    <a class="page-link" href="{{ path('admin_styles_edit', {id: style.id, page: currentPage + 1}) }}">
+                        <i class="bi bi-chevron-right"></i>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+        {% endif %}
+    {% endif %}
+
+    <div class="d-flex gap-2 mt-4">
+        <button type="submit" form="style-form" class="btn btn-primary">
+            <i class="bi bi-check-lg me-1"></i>{{ isNew ? 'Erstellen' : 'Speichern' }}
+        </button>
+        <a href="{{ path('admin_styles') }}" class="btn btn-secondary">Abbrechen</a>
+    </div>
+</div>
+{% endif %}
+
+{% if isNew %}
+<div class="container-fluid py-3" style="max-width:900px">
+    <div class="d-flex gap-2 mt-2">
+        <button type="submit" form="style-form" class="btn btn-primary">
+            <i class="bi bi-check-lg me-1"></i>Erstellen
+        </button>
+        <a href="{{ path('admin_styles') }}" class="btn btn-secondary">Abbrechen</a>
+    </div>
+</div>
+{% endif %}
+
+<script>
+window.STYLE_CONFIG = {
+    colorFieldName:  '{{ form.color.vars.full_name }}',
+    color2FieldName: '{{ form.color2.vars.full_name }}',
+    csrfToken:       '{{ csrf_token('song_patch') }}',
+    styleId:         {{ style.id ?? 'null' }}
+};
+</script>
+<script src="{{ asset('js/admin-styles-form.js') }}"></script>
+{% endblock %}

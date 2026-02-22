@@ -24,6 +24,8 @@ document.addEventListener('turbo:load', function () {
 
     if (paragraphInput && paragraphInput.value) {
         quill.root.innerHTML = paragraphInput.value;
+        // Sync back so preview always uses Quill's normalised HTML from the start
+        paragraphInput.value = quill.root.innerHTML;
     }
 
     // Image rotation
@@ -90,16 +92,8 @@ document.addEventListener('turbo:load', function () {
         updatePreviewPost();
     });
 
-    function quillToBr(html) {
-        return html
-            .replace(/<p><br\s*\/?><\/p>/gi, '<br>')
-            .replace(/<\/p>/gi, '<br>')
-            .replace(/<p>/gi, '')
-            .replace(/<br>$/, '');
-    }
-
     quill.on('text-change', function () {
-        paragraphInput.value = quillToBr(quill.root.innerHTML);
+        paragraphInput.value = quill.root.innerHTML;
         updatePreviewPost();
     });
 
@@ -109,7 +103,7 @@ document.addEventListener('turbo:load', function () {
     pageSelect.addEventListener('change', loadPagePreview);
 
     document.getElementById('post-form').addEventListener('submit', function () {
-        paragraphInput.value = quillToBr(quill.root.innerHTML);
+        paragraphInput.value = quill.root.innerHTML;
     });
 
     // ── Inline Image Editor ───────────────────────────────────────────────────
@@ -548,7 +542,7 @@ document.addEventListener('turbo:load', function () {
             html += `</div>`;
         }
 
-        if (paragraph) html += `<div class="mt-3">${paragraph}</div>`;
+        if (paragraph) html += `<div class="mt-3 post-paragraph">${paragraph}</div>`;
 
         html += '</div>'; // close blue border
 

@@ -3,6 +3,7 @@
 {% block title %}Mitgliederbereich - {{ parent() }}{% endblock %}
 
 {% block body %}
+<!-- template: templates/member/dashboard.html.twig -->
 <div class="container py-5">
     <h1>Willkommen im Mitgliederbereich</h1>
     <p class="lead">Hallo {% if app.user.username == 'teutonia' %}liebe Sängerin, lieber Sänger{% else %}{{ app.user.firstName }}{% endif %}!</p>

@@ -7,13 +7,12 @@ document.addEventListener('turbo:load', function () {
 
         document.querySelectorAll('[data-year]').forEach(function (el) {
             const postYear = parseInt(el.dataset.year);
-            if (selectedYear === null || postYear <= selectedYear) {
-                el.style.display = '';
-            } else {
-                el.style.display = 'none';
-            }
+            const row = el.parentElement;
+            const visible = selectedYear === null || postYear <= selectedYear;
+            row.style.display = visible ? '' : 'none';
         });
     }
 
     yearSelector.addEventListener('change', filterPosts);
+    filterPosts();
 });

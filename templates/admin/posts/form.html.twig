@@ -4,21 +4,41 @@
 
 {% block stylesheets %}
     {{ parent() }}
-    <style>
-        ::placeholder {
-            color: #6c757d !important;
-            opacity: 0.6 !important;
-        }
+    <link rel="stylesheet" href="{{ asset('css/admin-posts-form.css') }}">
+    <link href="https://cdn.quilljs.com/1.3.7/quill.snow.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.css">
+{% endblock %}
 
-        input::placeholder,
-        textarea::placeholder {
-            color: #6c757d !important;
-            opacity: 0.6 !important;
-        }
-    </style>
+{% block javascripts %}
+    {{ parent() }}
+    <script src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js"></script>
+    <script>
+    window.POSTS_FORM_CONFIG = {
+        imageRotation:   {{ post.imageRotation ?? 0 }},
+        previewImageUrl: {% if not isNew and post.imagePath %}'{{ asset(post.imagePath) }}'{% else %}null{% endif %},
+        pageMap: {
+            'unser-chor':                '{{ path('page_chor') }}',
+            'konzerte-und-aktivitaeten': '{{ path('page_concerts') }}',
+            'historie':                  '{{ path('page_history') }}',
+            'chorproben':                '{{ path('page_rehearsals') }}',
+            'unser-repertoire':          '{{ path('page_repertoire') }}',
+            'unsere-naechsten-termine':  '{{ path('page_events') }}',
+            'geselliges':                '{{ path('page_social') }}',
+            'archiv':                    '{{ path('page_archive') }}',
+            'beitraege':                 '{{ path('page_posts') }}'
+        },
+        postTitle: '{{ (post.title ?? '')|escape('js') }}',
+        postId:    '{{ post.id ?? 'new' }}',
+        isNew:     {{ isNew ? 'true' : 'false' }}
+    };
+    </script>
+    <script src="{{ asset('js/admin-posts-font-modal.js') }}"></script>
+    <script src="{{ asset('js/admin-posts-form.js') }}"></script>
 {% endblock %}
 
 {% block body %}
+<!-- template: templates/admin/posts/form.html.twig -->
 <div class="container-fluid py-5">
     <h1>{{ isNew ? 'Neuer Beitrag' : 'Beitrag bearbeiten' }}</h1>
 
@@ -35,9 +55,7 @@
             {# Left Column - Form Fields #}
             <div class="col-md-6">
 
-                <div class="row">
-                    <div class="col-md-{% if not isNew and post.imagePath %}6{% else %}12{% endif %}">
-                        <div class="mb-3">
+                <div class="mb-3">
                             <div class="d-flex align-items-center">
                                 {{ form_label(form.title, null, {'label_attr': {'class': 'mb-0 me-2'}}) }}
                                 <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#fontModalTitle" title="Schriftart und Größe">
@@ -176,29 +194,9 @@
                             </small>
                             {{ form_errors(form.isMain) }}
                         </div>
-                    </div>
-
-                    {% if not isNew and post.imagePath %}
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <div class="d-flex align-items-center mb-2">
-                                    <label class="form-label mb-0 me-2">Aktuelles Bild:</label>
-                                    <button type="button" class="btn btn-sm btn-outline-secondary me-1" id="rotate-left" title="90° nach links drehen">
-                                        <i class="bi bi-arrow-counterclockwise"></i>
-                                    </button>
-                                    <button type="button" class="btn btn-sm btn-outline-secondary" id="rotate-right" title="90° nach rechts drehen">
-                                        <i class="bi bi-arrow-clockwise"></i>
-                                    </button>
-                                </div>
-                                <div style="width: 100%; height: 400px; display: flex; align-items: center; justify-content: center; overflow: hidden; background: #f8f9fa; border-radius: 0.375rem;">
-                                    <img src="{{ asset(post.imagePath) }}" alt="{{ post.title }}" style="max-width: 100%; max-height: 100%; object-fit: contain; transform: rotate({{ post.imageRotation ?? 0 }}deg); transition: transform 0.3s ease;" class="img-thumbnail" id="current-image">
-                                </div>
-                            </div>
-                        </div>
-                    {% endif %}
-                </div>
 
                 <div class="mt-4">
+
                     <button type="submit" class="btn btn-primary me-2">
                         Speichern & Zurück
                     </button>
@@ -210,6 +208,12 @@
 
             {# Right Column - Page Selection & Full Page Preview #}
             <div class="col-md-6">
+                {% if not isNew and post.imagePath %}
+                    {# Hidden image for JS rotation tracking #}
+                    <img id="current-image" src="{{ asset(post.imagePath) }}" alt=""
+                         style="display:none; transform: rotate({{ post.imageRotation ?? 0 }}deg);">
+                {% endif %}
+
                 <div class="mb-3">
                     <div class="d-flex align-items-end gap-2">
                         <div class="flex-grow-1">
@@ -223,11 +227,33 @@
                     </div>
                 </div>
 
-                <div class="card sticky-top" style="top: 20px; max-height: 80vh; overflow-y: auto;">
-                    <div class="card-header bg-primary text-white">
-                        <h5 class="mb-0">Seitenvorschau</h5>
-                        <small>Die vollständige Seite mit Ihrem Beitrag</small>
+                <div class="card sticky-top" style="top: 20px; max-height: 80vh; overflow-y: auto;" id="right-card">
+                    {# Preview header #}
+                    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center" id="preview-card-header">
+                        <div>
+                            <h5 class="mb-0">Seitenvorschau</h5>
+                            <small>Die vollständige Seite mit Ihrem Beitrag</small>
+                        </div>
+                        {% if not isNew and post.imagePath %}
+                        <div class="d-flex align-items-center gap-1 ms-2">
+                            <button type="button" class="btn btn-sm btn-outline-light" id="rotate-left" title="90° nach links drehen">
+                                <i class="bi bi-arrow-counterclockwise"></i>
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-light" id="rotate-right" title="90° nach rechts drehen">
+                                <i class="bi bi-arrow-clockwise"></i>
+                            </button>
+                            <button type="button" class="btn btn-sm btn-light" id="crop-existing-btn" title="Zuschneiden">
+                                <i class="bi bi-crop"></i> Zuschneiden
+                            </button>
+                        </div>
+                        {% endif %}
                     </div>
+                    {# Editor header #}
+                    <div class="card-header bg-dark text-white" id="editor-card-header" style="display:none;">
+                        <h5 class="mb-0"><i class="bi bi-crop me-2"></i>Bild bearbeiten</h5>
+                    </div>
+
+                    {# Preview body #}
                     <div class="card-body p-2" id="preview-container" style="background-color: #f8f9fa;">
                         <div id="full-page-preview" style="transform: scale(0.8); transform-origin: top left; width: 125%;">
                             <div class="text-center text-muted py-5">
@@ -235,6 +261,49 @@
                                     <span class="visually-hidden">Laden...</span>
                                 </div>
                                 <p class="mt-2">Vorschau wird geladen...</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {# Editor body #}
+                    <div id="image-editor-body" style="display:none;">
+                        <div style="height:50vh; background:#1a1a1a;">
+                            <img id="crop-image" src="" alt="" style="max-width:100%; display:block;">
+                        </div>
+                        <div class="p-2 border-top">
+                            <div class="d-flex align-items-center gap-1 flex-wrap mb-2">
+                                <span class="small fw-bold text-muted me-1">Drehen:</span>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" id="editor-rotate-left"><i class="bi bi-arrow-counterclockwise"></i></button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" id="editor-rotate-right"><i class="bi bi-arrow-clockwise"></i></button>
+                                <span class="small fw-bold text-muted ms-2 me-1">Verhältnis:</span>
+                                <button type="button" class="btn btn-sm btn-outline-secondary active" data-ratio="free">Frei</button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" data-ratio="1">1:1</button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" data-ratio="1.3333">4:3</button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" data-ratio="0.75">3:4</button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" data-ratio="1.7778">16:9</button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" data-ratio="original">Original</button>
+                            </div>
+                            <div class="d-flex align-items-center gap-1 flex-wrap mb-2">
+                                <span class="small fw-bold text-muted me-1">Ausgabe:</span>
+                                <input type="number" id="crop-output-width" class="form-control form-control-sm" style="width:80px;" min="1" placeholder="B">
+                                <span class="text-muted small">×</span>
+                                <input type="number" id="crop-output-height" class="form-control form-control-sm" style="width:80px;" min="1" placeholder="H">
+                                <div class="form-check mb-0 ms-1">
+                                    <input type="checkbox" id="crop-keep-ratio" class="form-check-input" checked>
+                                    <label for="crop-keep-ratio" class="form-check-label small">Verhältnis</label>
+                                </div>
+                                <span class="text-muted small ms-2" id="crop-selection-size"></span>
+                                <span class="text-muted small" id="crop-original-size"></span>
+                            </div>
+                            <div id="sibling-image-info" class="d-flex align-items-center gap-1 mb-2" style="display:none !important;">
+                                <i class="bi bi-image text-muted"></i>
+                                <span class="small text-muted">2. Bild:</span>
+                                <span class="small fw-bold" id="sibling-image-dims"></span>
+                                <button type="button" class="btn btn-outline-secondary btn-sm py-0 px-1 ms-1" id="use-sibling-size" style="font-size:0.75rem;">Übernehmen</button>
+                            </div>
+                            <div class="d-flex gap-2">
+                                <button type="button" class="btn btn-primary btn-sm flex-grow-1" id="crop-apply-btn"><i class="bi bi-check-lg"></i> Speichern</button>
+                                <button type="button" class="btn btn-secondary btn-sm" id="crop-cancel-btn">Abbrechen</button>
                             </div>
                         </div>
                     </div>
@@ -248,525 +317,4 @@
     {% include 'admin/posts/_font_modal.html.twig' with {'field': 'subtitle', 'modalId': 'fontModalSubtitle', 'label': 'Untertitel'} %}
     {% include 'admin/posts/_font_modal.html.twig' with {'field': 'paragraph', 'modalId': 'fontModalParagraph', 'label': 'Text'} %}
 </div>
-
-{# Quill Rich Text Editor #}
-<link href="https://cdn.quilljs.com/1.3.7/quill.snow.css" rel="stylesheet">
-<script src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
-
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('Preview script initializing...');
-
-    // Initialize Quill Rich Text Editor
-    const quill = new Quill('#quill-editor', {
-        theme: 'snow',
-        modules: {
-            toolbar: [
-                [{ 'header': [1, 2, 3, false] }],
-                ['bold', 'italic', 'underline', 'strike'],
-                [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-                [{ 'align': [] }],
-                ['link', 'image'],
-                [{ 'color': [] }, { 'background': [] }],
-                ['clean']
-            ]
-        },
-        placeholder: 'Schreiben Sie hier Ihren Text...'
-    });
-
-    // Get form elements - try both custom IDs and Symfony auto-generated IDs
-    const titleInput = document.getElementById('post-title') || document.getElementById('post_title');
-    const subtitleInput = document.getElementById('post-subtitle') || document.getElementById('post_subtitle');
-    const paragraphInput = document.getElementById('post-paragraph') || document.getElementById('post_paragraph');
-
-    // Load initial content into Quill from textarea
-    if (paragraphInput && paragraphInput.value) {
-        quill.root.innerHTML = paragraphInput.value;
-    }
-
-    // Image rotation handling
-    const currentImage = document.getElementById('current-image');
-    const rotationInput = document.getElementById('post_imageRotation');
-    let currentRotation = {{ post.imageRotation ?? 0 }};
-
-    if (rotationInput) {
-        rotationInput.value = currentRotation;
-    }
-
-    document.getElementById('rotate-left')?.addEventListener('click', function() {
-        currentRotation = (currentRotation - 90) % 360;
-        if (currentRotation < 0) currentRotation += 360;
-        applyRotation();
-    });
-
-    document.getElementById('rotate-right')?.addEventListener('click', function() {
-        currentRotation = (currentRotation + 90) % 360;
-        applyRotation();
-    });
-
-    function applyRotation() {
-        if (currentImage) {
-            currentImage.style.transform = 'rotate(' + currentRotation + 'deg)';
-        }
-        if (rotationInput) {
-            rotationInput.value = currentRotation;
-        }
-        // Update preview with new rotation
-        updatePreviewPost();
-    }
-
-    const imageInput = document.getElementById('post-image') || document.getElementById('post_imageFile');
-
-    // Auto-resize uploaded images if they're too large
-    if (imageInput) {
-        imageInput.addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (file && file.type.startsWith('image/')) {
-                const reader = new FileReader();
-                reader.onload = function(event) {
-                    const img = new Image();
-                    img.onload = function() {
-                        const maxWidth = 1920;  // Maximum width in pixels
-                        const maxHeight = 1920; // Maximum height in pixels
-
-                        let width = img.width;
-                        let height = img.height;
-
-                        // Check if resizing is needed
-                        if (width > maxWidth || height > maxHeight) {
-                            // Calculate new dimensions maintaining aspect ratio
-                            if (width > height) {
-                                if (width > maxWidth) {
-                                    height = Math.round((height * maxWidth) / width);
-                                    width = maxWidth;
-                                }
-                            } else {
-                                if (height > maxHeight) {
-                                    width = Math.round((width * maxHeight) / height);
-                                    height = maxHeight;
-                                }
-                            }
-
-                            // Create canvas and resize
-                            const canvas = document.createElement('canvas');
-                            canvas.width = width;
-                            canvas.height = height;
-                            const ctx = canvas.getContext('2d');
-                            ctx.drawImage(img, 0, 0, width, height);
-
-                            // Convert to blob and replace file
-                            canvas.toBlob(function(blob) {
-                                const resizedFile = new File([blob], file.name, {
-                                    type: 'image/jpeg',
-                                    lastModified: Date.now()
-                                });
-
-                                const dataTransfer = new DataTransfer();
-                                dataTransfer.items.add(resizedFile);
-                                imageInput.files = dataTransfer.files;
-
-                                console.log('Image resized from ' + img.width + 'x' + img.height + ' to ' + width + 'x' + height);
-                            }, 'image/jpeg', 0.92);
-                        }
-                    };
-                    img.src = event.target.result;
-                };
-                reader.readAsDataURL(file);
-            }
-        });
-    }
-    const layoutSelect = document.getElementById('post-layout') || document.getElementById('post_layout');
-    const isMainCheckbox = document.getElementById('post-is-main') || document.getElementById('post_isMain');
-    const pageSelect = document.getElementById('post-page') || document.getElementById('post_page');
-
-    // Get preview container
-    const fullPagePreview = document.getElementById('full-page-preview');
-
-    // Character counters
-    const titleCounter = document.getElementById('title-counter');
-    const subtitleCounter = document.getElementById('subtitle-counter');
-
-    // Current preview image
-    let currentPreviewImage = {% if not isNew and post.imagePath %}'{{ asset(post.imagePath) }}'{% else %}null{% endif %};
-
-    // Debug: Log which elements were found
-    console.log('Elements found:', {
-        titleInput: !!titleInput,
-        subtitleInput: !!subtitleInput,
-        paragraphInput: !!paragraphInput,
-        imageInput: !!imageInput,
-        layoutSelect: !!layoutSelect,
-        isMainCheckbox: !!isMainCheckbox,
-        pageSelect: !!pageSelect,
-        fullPagePreview: !!fullPagePreview
-    });
-
-    // Check if all elements are found
-    if (!titleInput || !subtitleInput || !paragraphInput || !imageInput || !layoutSelect || !isMainCheckbox || !pageSelect) {
-        console.error('Form elements not found - missing elements:', {
-            titleInput: !!titleInput,
-            subtitleInput: !!subtitleInput,
-            paragraphInput: !!paragraphInput,
-            imageInput: !!imageInput,
-            layoutSelect: !!layoutSelect,
-            isMainCheckbox: !!isMainCheckbox,
-            pageSelect: !!pageSelect
-        });
-        return;
-    }
-
-    console.log('All elements found, setting up event listeners...');
-
-    // Initialize counters
-    updateCharCounter(titleInput, titleCounter);
-    updateCharCounter(subtitleInput, subtitleCounter);
-
-    // Function to try loading preview
-    function tryLoadPreview(attempt = 1) {
-        console.log('Attempting to load preview (attempt ' + attempt + ')...');
-
-        if (pageSelect && pageSelect.value && document.readyState === 'complete') {
-            console.log('Page ready, loading preview now');
-            loadPagePreview();
-        } else if (attempt < 15) {
-            console.log('Page not ready yet, waiting... (readyState: ' + document.readyState + ')');
-            setTimeout(() => tryLoadPreview(attempt + 1), 300);
-        } else {
-            console.error('Failed to load preview after 15 attempts');
-            fullPagePreview.innerHTML = '<div class="text-center text-muted py-5"><p>Vorschau konnte nicht geladen werden</p><button class="btn btn-sm btn-primary mt-2" onclick="window.location.reload()">Seite neu laden</button></div>';
-        }
-    }
-
-    // Wait for page to be fully loaded
-    if (document.readyState === 'complete') {
-        console.log('Page already loaded, starting preview immediately');
-        setTimeout(() => tryLoadPreview(), 500);
-    } else {
-        console.log('Waiting for page to load...');
-        window.addEventListener('load', () => {
-            console.log('Page loaded, starting preview');
-            setTimeout(() => tryLoadPreview(), 500);
-        });
-    }
-
-    // Title input handler
-    titleInput.addEventListener('input', function() {
-        updateCharCounter(this, titleCounter);
-        updatePreviewPost();
-    });
-
-    // Subtitle input handler
-    subtitleInput.addEventListener('input', function() {
-        updateCharCounter(this, subtitleCounter);
-        updatePreviewPost();
-    });
-
-    // Paragraph input handler - now using Quill
-    quill.on('text-change', function() {
-        paragraphInput.value = quill.root.innerHTML;
-        updatePreviewPost();
-    });
-
-    // Image input handler
-    imageInput.addEventListener('change', function(e) {
-        const file = e.target.files[0];
-        if (file) {
-            // Show image info
-            const sizeInMB = (file.size / (1024 * 1024)).toFixed(2);
-            document.getElementById('image-size').textContent = sizeInMB + ' MB';
-            document.getElementById('image-info').style.display = 'block';
-
-            // Load image for dimensions and preview
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const img = new Image();
-                img.onload = function() {
-                    document.getElementById('image-dimensions').textContent = this.width + ' × ' + this.height + ' px';
-                    currentPreviewImage = e.target.result;
-                    updatePreviewPost();
-                };
-                img.src = e.target.result;
-            };
-            reader.readAsDataURL(file);
-        }
-    });
-
-    // Layout select handler
-    layoutSelect.addEventListener('change', updatePreviewPost);
-
-    // isMain checkbox handler
-    isMainCheckbox.addEventListener('change', updatePreviewPost);
-
-    // Page select handler
-    pageSelect.addEventListener('change', loadPagePreview);
-
-    // Form submit handler - sync Quill content before submission
-    document.getElementById('post-form').addEventListener('submit', function() {
-        paragraphInput.value = quill.root.innerHTML;
-    });
-
-    // Helper function to update character counter
-    function updateCharCounter(input, counter) {
-        const length = input.value.length;
-        counter.textContent = length;
-        if (length > 255) {
-            counter.parentElement.classList.add('text-danger');
-        } else {
-            counter.parentElement.classList.remove('text-danger');
-        }
-    }
-
-    // Function to load page preview
-    function loadPagePreview() {
-        const selectedPage = pageSelect.value;
-        const pageMap = {
-            'unser-chor': '{{ path('page_chor') }}',
-            'konzerte-und-aktivitaeten': '{{ path('page_concerts') }}',
-            'historie': '{{ path('page_history') }}',
-            'chorproben': '{{ path('page_rehearsals') }}',
-            'unser-repertoire': '{{ path('page_repertoire') }}',
-            'unsere-naechsten-termine': '{{ path('page_events') }}',
-            'geselliges': '{{ path('page_social') }}',
-            'archiv': '{{ path('page_archive') }}',
-            'beitraege': '{{ path('page_posts') }}'
-        };
-
-        const pageUrl = pageMap[selectedPage];
-        if (!pageUrl) {
-            fullPagePreview.innerHTML = '<div class="text-center text-muted py-5"><p>Keine Vorschau verfügbar für diese Seite</p></div>';
-            return;
-        }
-
-        fullPagePreview.innerHTML = '<div class="text-center text-muted py-5"><div class="spinner-border" role="status"></div><p class="mt-2">Vorschau wird geladen...</p><button class="btn btn-sm btn-secondary mt-3" onclick="document.getElementById(\'full-page-preview\').innerHTML = \'<div class=\\\'text-center text-muted py-5\\\'><p>Vorschau übersprungen</p></div>\'; return false;">Vorschau überspringen</button></div>';
-
-        console.log('Fetching preview from:', pageUrl);
-
-        // Add timeout to fetch
-        const fetchWithTimeout = (url, timeout = 10000) => {
-            return Promise.race([
-                fetch(url),
-                new Promise((_, reject) =>
-                    setTimeout(() => {
-                        console.error('Fetch timeout after ' + timeout + 'ms');
-                        reject(new Error('Timeout'));
-                    }, timeout)
-                )
-            ]);
-        };
-
-        fetchWithTimeout(pageUrl)
-            .then(response => response.text())
-            .then(html => {
-                // Parse the HTML
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(html, 'text/html');
-
-                // Try to find the main content container (skip nav/header)
-                // Look for common content containers in order of preference
-                let mainContent = doc.querySelector('main') ||
-                                 doc.querySelector('[role="main"]') ||
-                                 doc.querySelector('.container .py-5') ||
-                                 doc.querySelector('.container');
-
-                if (!mainContent) {
-                    fullPagePreview.innerHTML = '<div class="text-center text-muted py-5"><p>Hauptinhalt nicht gefunden</p></div>';
-                    return;
-                }
-
-                // Clone the content to avoid modifying the original
-                const contentClone = mainContent.cloneNode(true);
-
-                // Remove navigation if it exists in the content
-                const nav = contentClone.querySelector('nav');
-                if (nav) nav.remove();
-
-                // Remove header if it exists
-                const header = contentClone.querySelector('header');
-                if (header) header.remove();
-
-                fullPagePreview.innerHTML = contentClone.innerHTML;
-
-                console.log('Page preview loaded, now injecting preview post...');
-
-                // Hide the actual post if it exists on the page (we're editing it)
-                {% if not isNew %}
-                const allPosts = fullPagePreview.querySelectorAll('[class*="col"]');
-                allPosts.forEach(post => {
-                    // Check if this post contains content matching our post
-                    const postTitle = post.querySelector('h3');
-                    if (postTitle && postTitle.textContent.trim() === '{{ post.title|escape('js') }}') {
-                        post.style.display = 'none';
-                        console.log('Hidden existing post from database');
-                    }
-                });
-                {% endif %}
-
-                // Update the preview post after loading the page
-                setTimeout(() => updatePreviewPost(), 100);
-            })
-            .catch(error => {
-                console.error('Error loading preview:', error);
-                let errorMessage = 'Fehler beim Laden der Vorschau';
-                if (error.message === 'Timeout') {
-                    errorMessage = 'Vorschau konnte nicht geladen werden (Zeitüberschreitung). Bitte Seite neu laden.';
-                }
-                fullPagePreview.innerHTML = `<div class="text-center text-danger py-5"><p>${errorMessage}</p><button class="btn btn-sm btn-primary mt-3" onclick="location.reload()">Seite neu laden</button></div>`;
-            });
-    }
-
-    // Function to update the preview post in the loaded page
-    function updatePreviewPost() {
-        console.log('Updating preview post...');
-
-        // Find the preview post element (we'll add a special marker)
-        const previewPostId = 'preview-post-{{ post.id ?? "new" }}';
-
-        // Create preview post HTML
-        const previewHtml = createPreviewPostHtml();
-
-        // Try to find and update existing preview post
-        let previewPost = fullPagePreview.querySelector('#' + previewPostId);
-
-        if (!previewPost) {
-            console.log('Preview post not found, injecting new one...');
-
-            // Try multiple selectors to find where posts are displayed (prefer stable IDs)
-            let postsContainer = fullPagePreview.querySelector('#posts-container') ||
-                               fullPagePreview.querySelector('.row.mt-2') ||
-                               fullPagePreview.querySelector('.row.mt-3') ||
-                               fullPagePreview.querySelector('.row.mt-4') ||
-                               fullPagePreview.querySelector('.row.mt-5') ||
-                               fullPagePreview.querySelector('.row') ||
-                               fullPagePreview.querySelector('[class*="post"]');
-
-            // If no container found, create one
-            if (!postsContainer) {
-                console.log('No posts container found, creating wrapper...');
-                const wrapper = document.createElement('div');
-                wrapper.className = 'container py-5';
-                wrapper.innerHTML = '<h2>Beiträge auf dieser Seite</h2><div class="row mt-4"></div>';
-                fullPagePreview.appendChild(wrapper);
-                postsContainer = wrapper.querySelector('.row');
-            }
-
-            if (postsContainer) {
-                const tempDiv = document.createElement('div');
-                tempDiv.innerHTML = previewHtml;
-                const previewElement = tempDiv.firstElementChild;
-                previewElement.id = previewPostId;
-                previewElement.style.border = '3px solid #0d6efd';
-                previewElement.style.backgroundColor = '#e7f1ff';
-                previewElement.style.padding = '15px';
-                previewElement.style.marginBottom = '20px';
-                previewElement.style.borderRadius = '8px';
-
-                // Insert at the beginning
-                if (postsContainer.firstChild) {
-                    postsContainer.insertBefore(previewElement, postsContainer.firstChild);
-                } else {
-                    postsContainer.appendChild(previewElement);
-                }
-                console.log('Preview post injected successfully');
-            } else {
-                console.error('Could not find or create posts container');
-            }
-        } else {
-            console.log('Updating existing preview post...');
-            // Update existing preview
-            const tempDiv = document.createElement('div');
-            tempDiv.innerHTML = previewHtml;
-            previewPost.innerHTML = tempDiv.firstElementChild.innerHTML;
-        }
-    }
-
-    // Function to create preview post HTML
-    function createPreviewPostHtml() {
-        const title = titleInput.value || 'Titel wird hier angezeigt...';
-        const subtitle = subtitleInput.value;
-        const paragraph = paragraphInput.value;
-        const isMain = isMainCheckbox.checked;
-        const layout = layoutSelect.value;
-
-        // Determine column size based on layout
-        const colSize = layout === 'side_by_side' ? 'col-md-6' : 'col-12';
-
-        let html = `<div class="${colSize} mb-4">`;
-
-        // Preview badge
-        html += '<div class="mb-2">';
-        if (isMain) {
-            html += '<span class="badge bg-warning">★ Hauptbeitrag</span> ';
-        }
-        html += '<span class="badge bg-info">VORSCHAU - Ihr neuer Beitrag</span>';
-        html += '</div>';
-
-        // Title
-        html += `<h3>${escapeHtml(title)}</h3>`;
-
-        // Subtitle
-        if (subtitle) {
-            html += `<h5 class="text-muted">${escapeHtml(subtitle)}</h5>`;
-        }
-
-        // Image
-        if (currentPreviewImage) {
-            const rotationStyle = currentRotation ? ` style="transform: rotate(${currentRotation}deg);"` : '';
-            html += `<div class="mt-3" style="width: 100%; display: flex; align-items: center; justify-content: center;">`;
-            html += `<img src="${currentPreviewImage}" alt="${escapeHtml(title)}" class="img-fluid rounded" style="max-width: 100%; height: auto; object-fit: contain;${currentRotation ? ' transform: rotate(' + currentRotation + 'deg);' : ''}">`;
-            html += `</div>`;
-        }
-
-        // Paragraph - render HTML from Quill editor
-        if (paragraph) {
-            html += `<div class="mt-3">${paragraph}</div>`;
-        }
-
-        html += '</div>';
-
-        return html;
-    }
-
-    // Helper function to escape HTML
-    function escapeHtml(text) {
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
-    }
-
-    // "Zur Seite" button functionality
-    const gotoPageBtn = document.getElementById('goto-page-btn');
-
-    // Page URL mapping
-    const pageMap = {
-        'unser-chor': '{{ path('page_chor') }}',
-        'konzerte-und-aktivitaeten': '{{ path('page_concerts') }}',
-        'historie': '{{ path('page_history') }}',
-        'chorproben': '{{ path('page_rehearsals') }}',
-        'unser-repertoire': '{{ path('page_repertoire') }}',
-        'unsere-naechsten-termine': '{{ path('page_events') }}',
-        'geselliges': '{{ path('page_social') }}',
-        'archiv': '{{ path('page_archive') }}',
-        'beitraege': '{{ path('page_posts') }}'
-    };
-
-    // Function to update goto button
-    function updateGotoButton() {
-        const selectedPage = pageSelect.value;
-        if (pageMap[selectedPage]) {
-            gotoPageBtn.href = pageMap[selectedPage];
-            gotoPageBtn.style.display = 'inline-block';
-        } else {
-            gotoPageBtn.style.display = 'none';
-        }
-    }
-
-    if (pageSelect && gotoPageBtn) {
-        // Set initial state
-        updateGotoButton();
-
-        // Update button when dropdown changes
-        pageSelect.addEventListener('change', updateGotoButton);
-    }
-});
-</script>
 {% endblock %}

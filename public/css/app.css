@@ -1,0 +1,51 @@
+html, body { height: 100%; }
+body { display: flex; flex-direction: column; min-height: 100vh; }
+main { flex: 1 0 auto; padding-top: 1rem; }
+footer { flex-shrink: 0; }
+
+/* ── Global responsive ───────────────────────────────────────────────── */
+/* Prevent any element from overflowing the viewport width */
+*, *::before, *::after { box-sizing: border-box; }
+html { overflow-x: hidden; }
+body { max-width: 100vw; overflow-x: hidden; }
+
+/* Images always shrink to fit their container */
+img { max-width: 100% !important; height: auto !important; }
+
+/* Constrain inline-block wrappers (used for rotated post images) */
+div[style*="inline-block"] { max-width: 100%; }
+
+/* Hide empty paragraphs from Quill editor output (outside the editor and post content) */
+p:empty, p:has(br:only-child) { display: none; }
+
+/* Keep Quill editor paragraphs visible (it uses <p><br></p> for blank lines and cursor) */
+.ql-editor p:empty,
+.ql-editor p:has(br:only-child) { display: block !important; }
+
+/* Quill paragraph content: <p> blocks act as single line breaks */
+.post-paragraph p { margin: 0; }
+/* Allow empty <p><br></p> to show as blank lines inside post content */
+.post-paragraph p:empty,
+.post-paragraph p:has(br:only-child) { display: block; }
+
+/* Lightbox overlay for post images */
+#lightbox-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.88);
+    z-index: 9999;
+    cursor: zoom-out;
+    align-items: center;
+    justify-content: center;
+}
+#lightbox-overlay.active { display: flex; }
+#lightbox-overlay img {
+    max-width: 92vw;
+    max-height: 92vh;
+    object-fit: contain;
+    box-shadow: 0 0 40px rgba(0,0,0,0.6);
+}
+
+/* Right-align file count badges in accordion buttons */
+.accordion-btn-files::after { margin-left: 0.5rem !important; }

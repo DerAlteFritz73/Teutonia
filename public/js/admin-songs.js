@@ -94,7 +94,10 @@
 
         input.dataset.original = input.value;
 
-        cell.addEventListener('click', () => activate(cell));
+        cell.addEventListener('click', () => {
+            if (window.innerWidth < 768) return; // mobile: edit via song edit page
+            activate(cell);
+        });
 
         input.addEventListener('keydown', e => {
             if (e.key === 'Enter' && input.type !== 'date') {

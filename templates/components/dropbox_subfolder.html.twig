@@ -1,28 +1,31 @@
+<!-- template: templates/components/dropbox_subfolder.html.twig -->
 {# Component for displaying subfolders recursively as accordions #}
-<div class="accordion accordion-flush" id="accordion-{{ parentId }}">
+<div class="accordion" id="accordion-{{ parentId }}">
     {% for subfolderName, subfolderData in subfolders %}
         {% if subfolderData._type is defined and subfolderData._type == 'folder' %}
             {% set subfolderId = parentId ~ '-sub-' ~ loop.index %}
 
             <div class="accordion-item border-start border-2 border-warning">
                 <h2 class="accordion-header">
-                    <button class="accordion-button collapsed bg-light" type="button"
+                    <button class="accordion-button collapsed bg-light accordion-btn-files" type="button"
                             data-bs-toggle="collapse" data-bs-target="#{{ subfolderId }}"
                             aria-expanded="false" aria-controls="{{ subfolderId }}">
                         <i class="bi bi-folder me-2 text-warning"></i>
                         {{ subfolderName }}
                         {% set pdfCount = subfolderData|count_pdf_files %}
                         {% set audioCount = subfolderData|count_audio_files %}
-                        {% if pdfCount > 0 %}
-                            <span class="badge bg-danger ms-2" title="PDF-Dateien">
-                                <i class="bi bi-file-pdf"></i> {{ pdfCount }}
-                            </span>
-                        {% endif %}
-                        {% if audioCount > 0 %}
-                            <span class="badge bg-success ms-2" title="Audio-Dateien">
-                                <i class="bi bi-music-note"></i> {{ audioCount }}
-                            </span>
-                        {% endif %}
+                        <span class="ms-auto d-flex gap-1">
+                            {% if pdfCount > 0 %}
+                                <span class="badge bg-danger" title="PDF-Dateien">
+                                    <i class="bi bi-file-pdf"></i> {{ pdfCount }}
+                                </span>
+                            {% endif %}
+                            {% if audioCount > 0 %}
+                                <span class="badge bg-success" title="Audio-Dateien">
+                                    <i class="bi bi-music-note"></i> {{ audioCount }}
+                                </span>
+                            {% endif %}
+                        </span>
                     </button>
                 </h2>
                 <div id="{{ subfolderId }}" class="accordion-collapse collapse" data-bs-parent="#accordion-{{ parentId }}">

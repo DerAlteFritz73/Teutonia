@@ -43,15 +43,29 @@ class PostRepository extends ServiceEntityRepository
             ->getOneOrNullResult();
     }
 
-    public function findByPage(string $page, int $limit = 10): array
+    public function findByPage(string $page, ?int $limit = null): array
     {
-        return $this->createQueryBuilder('p')
+        $qb = $this->createQueryBuilder('p')
             ->where('p.page = :page')
             ->setParameter('page', $page)
             ->orderBy('p.isMain', 'DESC')
             ->addOrderBy('p.position', 'ASC')
+            ->addOrderBy('p.createdAt', 'DESC');
+
+        if ($limit !== null) {
+            $qb->setMaxResults($limit);
+        }
+
+        return $qb->getQuery()->getResult();
+    }
+
+    public function findByPageOrderedByDate(string $page): array
+    {
+        return $this->createQueryBuilder('p')
+            ->where('p.page = :page')
+            ->setParameter('page', $page)
+            ->orderBy('p.date', 'DESC')
             ->addOrderBy('p.createdAt', 'DESC')
-            ->setMaxResults($limit)
             ->getQuery()
             ->getResult();
     }

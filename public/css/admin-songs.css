@@ -1,0 +1,103 @@
+.editable-cell {
+    cursor: pointer;
+    transition: background-color 0.15s;
+}
+.editable-cell:hover:not(.editing) {
+    background-color: rgba(13, 110, 253, 0.06) !important;
+}
+.editable-cell.editing {
+    cursor: default;
+    background-color: rgba(13, 110, 253, 0.04) !important;
+}
+.edit-input {
+    width: 100%;
+    min-width: 80px;
+}
+.edit-input[type="date"] {
+    min-width: 130px;
+}
+.editable-cell .display-val {
+    display: block;
+    min-height: 1.4em;
+}
+
+/* Movement row drag & drop */
+.drag-handle {
+    cursor: grab;
+    color: #adb5bd;
+    margin-right: 2px;
+}
+.drag-handle:active { cursor: grabbing; }
+tr.movement-row.dragging { opacity: 0.35; }
+tr.movement-row.drop-before { box-shadow: 0 -2px 0 0 #0d6efd inset; }
+tr.movement-row.drop-after  { box-shadow: 0  2px 0 0 #0d6efd inset; }
+
+/* ── FooTable v3 ─────────────────────────────────────────────────────── */
+
+/* Dedicated toggle column */
+#songs-table th:first-child,
+#songs-table td:first-child {
+    width: 26px !important;
+    min-width: 26px !important;
+    padding: 0 4px !important;
+    text-align: center;
+    vertical-align: middle;
+}
+
+/* Replace fooicon base64 font with a pure-CSS chevron.
+   inline-flex + align/justify center keeps the chevron perfectly
+   centred inside its box regardless of collapsed/expanded state.    */
+span.footable-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 14px;
+    height: 14px;
+    cursor: pointer;
+    font-size: 0 !important;   /* suppress the invisible fooicon glyph */
+    opacity: .55;
+    vertical-align: middle;
+    margin-right: 3px;
+}
+tr:hover span.footable-toggle { opacity: .85; }
+
+/* Chevron border trick – rotate only, no translate needed */
+span.footable-toggle::before {
+    content: "";
+    width: 6px;
+    height: 6px;
+    border-right: 2px solid #495057;
+    border-bottom: 2px solid #495057;
+    transform: rotate(-45deg);        /* ▶ right  = collapsed */
+    transition: transform .15s ease;
+}
+span.footable-toggle.fooicon-minus::before {
+    transform: rotate(45deg);         /* ▼ down   = expanded  */
+}
+
+
+/* Detail / card row */
+tr.footable-detail-row > td {
+    background: #f1f3f5 !important;
+    padding: 6px 12px 8px 28px;
+    border-top: none !important;
+}
+.table-hover > tbody > tr.footable-detail-row:hover > * {
+    background: #f1f3f5 !important;
+    color: inherit !important;
+}
+.footable-details { width: 100%; border-collapse: collapse; }
+.footable-details td {
+    padding: 2px 4px;
+    font-size: .85rem;
+    vertical-align: top;
+    border: none !important;
+}
+.footable-details .footable-detail-name {
+    color: #6c757d;
+    font-weight: 600;
+    white-space: nowrap;
+    padding-right: 14px;
+    width: 1%;
+}
+.footable-details .footable-detail-value { color: #212529; }

@@ -4,6 +4,7 @@ namespace App\Controller;
 
 use App\Repository\PostRepository;
 use App\Repository\SongKeywordRepository;
+use App\Repository\StyleRepository;
 use App\Service\DropboxService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -11,6 +12,8 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Contracts\Cache\CacheInterface;
+use Symfony\Contracts\Cache\ItemInterface;
 
 class PageController extends AbstractController
 {
@@ -25,7 +28,7 @@ class PageController extends AbstractController
     #[Route('/konzerte-und-aktivitaeten', name: 'page_concerts')]
     public function konzerteUndAktivitaeten(PostRepository $postRepository): Response
     {
-        $posts = $postRepository->findByPage('konzerte-und-aktivitaeten');
+        $posts = $postRepository->findByPageOrderedByDate('konzerte-und-aktivitaeten');
 
         // Extract unique years from posts
         $years = [];
@@ -62,14 +65,11 @@ class PageController extends AbstractController
     }
 
     #[Route('/unser-repertoire', name: 'page_repertoire')]
-    public function repertoire(PostRepository $postRepository, DropboxService $dropboxService): Response
+    public function repertoire(PostRepository $postRepository, StyleRepository $styleRepository): Response
     {
-        // Get Dropbox file structure
-        $dropboxFiles = $dropboxService->getFileStructure('/Chorgemeinschaft Teutonia');
-
         return $this->render('pages/unser-repertoire.html.twig', [
-            'posts' => $postRepository->findByPage('unser-repertoire'),
-            'dropboxFiles' => $dropboxFiles,
+            'posts'  => $postRepository->findByPage('unser-repertoire'),
+            'styles' => $styleRepository->findAllWithSongs(),
         ]);
     }
 
@@ -108,6 +108,21 @@ class PageController extends AbstractController
             'currentPage' => $page,
             'totalPages' => ceil($postRepository->countByPage('beitraege') / $limit),
         ]);
+    }
+
+    #[Route('/api/dropbox/song-files', name: 'api_dropbox_song_files', methods: ['GET'])]
+    #[IsGranted('ROLE_USER')]
+    public function getSongFiles(Request $request, DropboxService $dropboxService): JsonResponse
+    {
+        $path = $request->query->get('path');
+
+        if (!$path) {
+            return new JsonResponse(['error' => 'Path is required'], 400);
+        }
+
+        $files = $dropboxService->getFilesForFolder($path);
+
+        return new JsonResponse(['files' => $files]);
     }
 
     #[Route('/api/dropbox/link', name: 'api_dropbox_link', methods: ['POST'])]
@@ -182,17 +197,31 @@ class PageController extends AbstractController
     }
 
     #[Route('/api/wordcloud', name: 'api_wordcloud', methods: ['GET'])]
-    public function getWordCloudData(SongKeywordRepository $songKeywordRepository): JsonResponse
+    public function getWordCloudData(SongKeywordRepository $songKeywordRepository, CacheInterface $cache): JsonResponse
     {
-        $composerData = $songKeywordRepository->getComposerFrequency('Noten');
+        $wordCloudData = $cache->get('wordcloud_data', function (ItemInterface $item) use ($songKeywordRepository) {
+            $item->expiresAfter(86400); // 1 day TTL
 
-        // Format for word cloud library (array of {text, size})
-        $wordCloudData = array_map(function($item) {
-            return [
-                'text' => $item['composer'],
-                'size' => (int)$item['frequency']
-            ];
-        }, $composerData);
+            $words = [];
+
+            // Composers — sized by number of songs (appear larger when repeated)
+            foreach ($songKeywordRepository->getComposerFrequency('Noten') as $row) {
+                $words[] = [
+                    'text' => $row['composer'],
+                    'size' => (int)$row['frequency'] * 3,
+                ];
+            }
+
+            // Song titles — each counts as 1 (appears smaller than composers)
+            foreach ($songKeywordRepository->getSongTitles('Noten') as $title) {
+                $words[] = [
+                    'text' => $title,
+                    'size' => 1,
+                ];
+            }
+
+            return $words;
+        });
 
         return new JsonResponse($wordCloudData);
     }

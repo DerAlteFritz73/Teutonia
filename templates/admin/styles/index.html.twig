@@ -1,0 +1,91 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Stile verwalten - {{ parent() }}{% endblock %}
+
+{% block body %}
+<!-- template: templates/admin/styles/index.html.twig -->
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Stile <span class="badge bg-secondary fs-6">{{ styles|length }}</span></h1>
+        <a href="{{ path('admin_styles_new') }}" class="btn btn-primary">
+            <i class="bi bi-plus-lg me-1"></i>Neuer Stil
+        </a>
+    </div>
+
+    {% for message in app.flashes('success') %}
+        <div class="alert alert-success alert-dismissible fade show">{{ message }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+    {% endfor %}
+
+    <div class="table-responsive">
+        <table class="table table-striped table-hover table-sm align-middle">
+            <thead class="table-dark">
+                <tr>
+                    <th>Name</th>
+                    <th style="width:140px">Farbe</th>
+                    <th style="width:80px">Bild</th>
+                    <th style="width:130px">Bildposition</th>
+                    <th style="width:80px">Lieder</th>
+                    <th class="text-end" style="width:80px">Aktionen</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for style in styles %}
+                <tr>
+                    <td class="fw-semibold">{{ style.name }}</td>
+                    <td>
+                        {% set c1 = style.color ?? '#adb5bd' %}
+                        {% set c2 = style.color2 ?? style.color ?? '#6c757d' %}
+                        <span class="d-inline-block rounded-pill"
+                              style="width:120px;height:30px;background:linear-gradient(135deg,{{ c1 }},{{ c2 }});border:1px solid rgba(0,0,0,.1)"></span>
+                    </td>
+                    <td>
+                        {% if style.image %}
+                            <img src="{{ asset('images/styles/' ~ style.image) }}"
+                                 style="width:40px;height:40px;border-radius:50%;object-fit:cover;border:2px solid #dee2e6" alt="">
+                        {% else %}
+                            <span class="text-muted">—</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% set posLabels = {
+                            'top-left':     'Oben links',
+                            'top':          'Oben Mitte',
+                            'top-right':    'Oben rechts',
+                            'right':        'Rechts',
+                            'bottom-right': 'Unten rechts',
+                            'bottom':       'Unten Mitte',
+                            'bottom-left':  'Unten links',
+                            'left':         'Links'
+                        } %}
+                        {{ posLabels[style.imagePosition] ?? '—' }}
+                    </td>
+                    <td>
+                        <a href="{{ path('admin_songs', {q: style.name}) }}"
+                           class="badge bg-secondary text-decoration-none">{{ style.songKeywords|length }}</a>
+                    </td>
+                    <td class="text-end">
+                        <a href="{{ path('admin_styles_edit', {id: style.id}) }}"
+                           class="btn btn-sm btn-outline-primary" title="Bearbeiten">
+                            <i class="bi bi-pencil"></i>
+                        </a>
+                        <form action="{{ path('admin_styles_delete', {id: style.id}) }}" method="post"
+                              class="d-inline" onsubmit="return confirm('Stil wirklich löschen?')">
+                            <input type="hidden" name="_token" value="{{ csrf_token('delete_style' ~ style.id) }}">
+                            <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                        </form>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" class="text-center text-muted py-4">Keine Stile vorhanden.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <a href="{{ path('admin_dashboard') }}" class="btn btn-secondary mt-2">
+        <i class="bi bi-arrow-left me-1"></i>Zurück
+    </a>
+</div>
+{% endblock %}
