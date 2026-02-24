@@ -60,11 +60,9 @@
 </style>
 
 <script>
-document.addEventListener('DOMContentLoaded', function () {
+document.addEventListener('turbo:load', function () {
     const next = document.getElementById('next-event');
-    if (next) {
-        next.scrollIntoView({ behavior: 'instant', block: 'start' });
-    }
-});
+    if (next) next.scrollIntoView({ behavior: 'instant', block: 'start' });
+}, { once: true });
 </script>
 {% endblock %}

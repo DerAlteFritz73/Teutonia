@@ -1,4 +1,4 @@
-document.addEventListener('turbo:load', function () {
+pageLoad(function () {
     const yearSelector = document.getElementById('year-selector');
     if (!yearSelector) return;
 

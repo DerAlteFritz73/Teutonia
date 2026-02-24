@@ -1,4 +1,4 @@
-document.addEventListener('turbo:load', function () {
+pageLoad(function () {
     document.querySelectorAll('.like-button').forEach(button => {
         button.addEventListener('click', function () {
             const suggestionId = this.dataset.suggestionId;

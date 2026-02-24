@@ -1,4 +1,4 @@
-document.addEventListener('turbo:load', function () {
+pageLoad(function () {
     const cfg = window.POSTS_FORM_CONFIG || {};
 
     // Initialize Quill Rich Text Editor

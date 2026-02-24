@@ -81,7 +81,7 @@ function randomizeSongs(n) {
     });
 }
 
-document.addEventListener('turbo:load', function () { loadWordCloud(); randomizeSongs(); });
+pageLoad(function () { loadWordCloud(); randomizeSongs(); });
 window.addEventListener('pageshow', function (event) {
     if (event.persisted) { loadWordCloud(); randomizeSongs(); }
 });

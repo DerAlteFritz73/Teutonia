@@ -1,3 +1,17 @@
+// ── pageLoad: Turbo-safe initialisation helper ──────────────────────────────
+// Use pageLoad(fn) instead of document.addEventListener('turbo:load', fn).
+// Fixes the race condition where head scripts load asynchronously and
+// turbo:load has already fired before they can register their listener.
+(function () {
+    var _fired = false;
+    document.addEventListener('turbo:before-visit', function () { _fired = false; });
+    document.addEventListener('turbo:load',         function () { _fired = true;  });
+    window.pageLoad = function (fn) {
+        document.addEventListener('turbo:load', fn);
+        if (_fired) fn(); // fallback: turbo:load already fired for this page
+    };
+}());
+
 function togglePassword(inputId, button) {
     const input = document.getElementById(inputId);
     const icon = button.querySelector('svg');
@@ -11,7 +25,7 @@ function togglePassword(inputId, button) {
 }
 
 // Lightbox for post images
-document.addEventListener('turbo:load', function () {
+pageLoad(function () {
     let overlay = document.getElementById('lightbox-overlay');
     if (!overlay) {
         overlay = document.createElement('div');
@@ -37,7 +51,7 @@ document.addEventListener('turbo:load', function () {
 });
 
 // Fix Bootstrap dropdown issue - prevent default on dropdown toggles
-document.addEventListener('turbo:load', function () {
+pageLoad(function () {
     document.querySelectorAll('[data-bs-toggle="dropdown"]').forEach(function (dropdownToggle) {
         dropdownToggle.addEventListener('click', function (e) {
             e.preventDefault();

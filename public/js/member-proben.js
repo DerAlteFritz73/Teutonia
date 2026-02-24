@@ -1,4 +1,4 @@
-document.addEventListener('turbo:load', function () {
+pageLoad(function () {
     const cfg        = window.PROBEN_CONFIG || {};
     const pdfModal   = new bootstrap.Modal(document.getElementById('pdfViewerModal'));
     const audioModal = new bootstrap.Modal(document.getElementById('audioPlayerModal'));

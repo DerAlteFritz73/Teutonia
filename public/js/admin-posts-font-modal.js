@@ -26,7 +26,10 @@ function initFontModal(fieldCap, field, modalId) {
     let selectedUnderline = false;
     let fieldInput;
 
-    document.addEventListener('turbo:load', function () {
+    // Remove any previously registered handler for this modal to prevent accumulation
+    var _prevHandler = window['_fmHandler_' + modalId];
+    if (_prevHandler) document.removeEventListener('turbo:load', _prevHandler);
+    var _handler = function () {
         const fontList           = document.getElementById('fontList' + fieldCap);
         const fontSearch         = document.getElementById('fontSearch' + fieldCap);
         const sizeSlider         = document.getElementById('fontSizeSlider' + fieldCap);
@@ -156,7 +159,9 @@ function initFontModal(fieldCap, field, modalId) {
                 updatePreview();
             }, 100);
         });
-    });
+    };
+    window['_fmHandler_' + modalId] = _handler;
+    pageLoad(_handler);
 
     window['applyFont' + fieldCap] = function () {
         document.getElementById('post_font' + fieldCap).value           = selectedFont;
