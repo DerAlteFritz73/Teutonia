@@ -10,6 +10,18 @@
         {% block stylesheets %}
         {% endblock %}
 
+        <script>
+        // pageLoad must be defined in <head> so it's available before any page script runs.
+        (function () {
+            var _fired = false;
+            document.addEventListener('turbo:before-visit', function () { _fired = false; });
+            document.addEventListener('turbo:load',         function () { _fired = true;  });
+            window.pageLoad = function (fn) {
+                document.addEventListener('turbo:load', fn);
+                if (_fired) fn();
+            };
+        }());
+        </script>
         {% block javascripts %}
             {% block importmap %}{{ importmap('app') }}{% endblock %}
         {% endblock %}

@@ -1,16 +1,16 @@
-// ── pageLoad: Turbo-safe initialisation helper ──────────────────────────────
-// Use pageLoad(fn) instead of document.addEventListener('turbo:load', fn).
-// Fixes the race condition where head scripts load asynchronously and
-// turbo:load has already fired before they can register their listener.
-(function () {
-    var _fired = false;
-    document.addEventListener('turbo:before-visit', function () { _fired = false; });
-    document.addEventListener('turbo:load',         function () { _fired = true;  });
-    window.pageLoad = function (fn) {
-        document.addEventListener('turbo:load', fn);
-        if (_fired) fn(); // fallback: turbo:load already fired for this page
-    };
-}());
+// pageLoad is defined inline in base.html.twig <head> so it is always available
+// before any page-specific script runs. This guard prevents accidental re-definition.
+if (!window.pageLoad) {
+    (function () {
+        var _fired = false;
+        document.addEventListener('turbo:before-visit', function () { _fired = false; });
+        document.addEventListener('turbo:load',         function () { _fired = true;  });
+        window.pageLoad = function (fn) {
+            document.addEventListener('turbo:load', fn);
+            if (_fired) fn();
+        };
+    }());
+}
 
 function togglePassword(inputId, button) {
     const input = document.getElementById(inputId);
