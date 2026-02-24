@@ -6,12 +6,18 @@
 <!-- template: templates/member/kalender.html.twig -->
 <div class="container py-5">
     <h1>Kalender</h1>
-    <p class="lead">Alle kommenden Termine auf einen Blick.</p>
+    <p class="lead">Alle Termine auf einen Blick.</p>
 
     {% if events|length > 0 %}
+        {% set now = "now"|date('U') %}
+        {% set nextFound = false %}
         <div class="list-group mt-4">
             {% for event in events %}
-                <div class="list-group-item">
+                {% set isPast = event.date|date('U') < now %}
+                {% set isNext = not isPast and not nextFound %}
+                {% if isNext %}{% set nextFound = true %}{% endif %}
+                <div class="list-group-item{% if isPast %} event-past{% endif %}"
+                     {% if isNext %}id="next-event"{% endif %}>
                     <div class="d-flex w-100 justify-content-between align-items-start">
                         <div>
                             <h5 class="mb-1">{{ event.title }}</h5>
@@ -29,7 +35,7 @@
                             {% endif %}
                         </div>
                         <div class="text-end">
-                            <span class="badge bg-primary fs-6">
+                            <span class="badge {% if isPast %}bg-secondary{% else %}bg-primary{% endif %} fs-6">
                                 {{ event.date|date('d.m.Y') }}
                             </span>
                             <br>
@@ -41,8 +47,24 @@
         </div>
     {% else %}
         <div class="alert alert-info mt-4">
-            Aktuell sind keine kommenden Termine eingetragen.
+            Aktuell sind keine Termine eingetragen.
         </div>
     {% endif %}
 </div>
+
+<style>
+.event-past {
+    opacity: .45;
+    pointer-events: none;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const next = document.getElementById('next-event');
+    if (next) {
+        next.scrollIntoView({ behavior: 'instant', block: 'start' });
+    }
+});
+</script>
 {% endblock %}

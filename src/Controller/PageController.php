@@ -89,14 +89,6 @@ class PageController extends AbstractController
         ]);
     }
 
-    #[Route('/archiv', name: 'page_archive')]
-    public function archiv(PostRepository $postRepository): Response
-    {
-        return $this->render('pages/archiv.html.twig', [
-            'posts' => $postRepository->findByPage('archiv'),
-        ]);
-    }
-
     #[Route('/beitraege', name: 'page_posts')]
     public function beitraege(PostRepository $postRepository, Request $request): Response
     {

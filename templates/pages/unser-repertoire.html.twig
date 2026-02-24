@@ -20,8 +20,8 @@
     <div class="container" id="page-container">
         <h1 id="page-title">Unser Repertoire</h1>
         <div class="d-flex align-items-center gap-3 mb-3">
-            <button type="button" class="btn btn-primary flex-shrink-0" onclick="loadWordCloud()">Entdecke hier</button>
-            <p class="lead mb-0" id="page-lead">Die Lieder und Kompositionen, die wir singen</p>
+            <button type="button" class="btn btn-primary flex-shrink-0" onclick="loadWordCloud(); randomizeSongs();">Entdecke hier</button>
+            <p class="lead mb-0" id="page-lead">die Lieder und Kompositionen, die wir singen</p>
         </div>
 
         {# Word Cloud Section - Visible to all #}
@@ -58,24 +58,22 @@
                                 {% endif %}
                             </div>
                         </div>
-                        <ul class="style-songs list-unstyled w-100 px-3 mt-1">
-                            {% for song in visibleSongs %}
-                                {% if song.parent is null %}
-                                <li>
-                                    <i class="bi bi-music-note me-1 text-muted"></i>{% if song.composer %}{{ song.composer }} – {% endif %}{{ song.songName }}
-                                    {% if song.children|length > 0 %}
-                                        <ul class="list-unstyled ms-3 mt-1 mb-1">
-                                            {% for movement in song.children %}
-                                                <li class="text-muted small">
-                                                    <i class="bi bi-chevron-right me-1" style="font-size:0.7em;vertical-align:middle"></i>{{ movement.songName }}
-                                                </li>
-                                            {% endfor %}
-                                        </ul>
-                                    {% endif %}
-                                </li>
-                                {% endif %}
-                            {% endfor %}
-                        </ul>
+                        {% set songsData = [] %}
+                        {% for song in visibleSongs %}
+                            {% if song.parent is null %}
+                                {% set movements = [] %}
+                                {% for movement in song.children %}
+                                    {% set movements = movements|merge([movement.songName]) %}
+                                {% endfor %}
+                                {% set songsData = songsData|merge([{
+                                    'composer': song.composer,
+                                    'songName': song.songName,
+                                    'movements': movements
+                                }]) %}
+                            {% endif %}
+                        {% endfor %}
+                        <ul class="style-songs list-unstyled w-100 px-3 mt-1"
+                            data-songs="{{ songsData|json_encode|e('html_attr') }}"></ul>
                     </div>
                 {% endfor %}
             </div>

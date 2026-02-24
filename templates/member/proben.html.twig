@@ -9,7 +9,7 @@
             'rosa':     'bg-danger-subtle text-danger-emphasis border border-danger-subtle',
             'extrabox': 'bg-secondary text-white'
         }[prefix] ?? 'bg-light text-dark border' %}
-        <span class="badge {{ class }} ms-2 fw-normal">{{ etikett }}</span>
+        <span class="badge {{ class }} fw-normal">{{ etikett }}</span>
     {% endif %}
 {% endmacro %}
 
@@ -17,7 +17,7 @@
 
 {% block body %}
 <!-- template: templates/member/proben.html.twig -->
-<main id="main-content">
+<main id="main-content" data-turbo-cache="false">
     <div class="container py-5" id="page-container">
         <h1 id="page-title">Aktuelle Proben</h1>
         <p class="lead" id="page-lead">Hier findest du alle Noten und Übungsdateien für die aktuellen Proben.</p>
@@ -39,10 +39,12 @@
                                     {% if song.dropboxlink %}data-dropbox-path="{{ song.dropboxlink }}"{% endif %}>
                                 <i class="bi bi-folder2-open me-2"></i>
                                 {{ song.songName }}
-                                {% if hasMovements %}
-                                    <span class="badge bg-secondary ms-2 fw-normal">{{ song.children|length }} Sätze</span>
-                                {% endif %}
-                                <span class="ms-auto d-flex gap-1 file-badges-{{ folderId }}"></span>
+                                <span class="ms-auto d-flex align-items-center gap-2">
+                                    {% if hasMovements %}
+                                        <span class="badge bg-secondary fw-normal">{{ song.children|length }} Sätze</span>
+                                    {% endif %}
+                                    <span class="d-flex gap-1 file-count-badges"></span>
+                                </span>
                             </button>
                         </h2>
                         <div id="{{ folderId }}" class="accordion-collapse collapse {% if loop.first %}show{% endif %}"
@@ -69,7 +71,9 @@
                                                             {% if movement.dropboxlink %}data-dropbox-path="{{ movement.dropboxlink }}"{% endif %}>
                                                         <i class="bi bi-music-note me-2 text-primary"></i>
                                                         {{ movement.songName }}
-                                                        <span class="ms-auto d-flex gap-1 file-badges-{{ movId }}"></span>
+                                                        <span class="ms-auto d-flex align-items-center gap-2">
+                                                            <span class="d-flex gap-1 file-count-badges"></span>
+                                                        </span>
                                                     </button>
                                                 </h2>
                                                 <div id="{{ movId }}" class="accordion-collapse collapse">
@@ -112,7 +116,7 @@
             </h2>
             <p class="text-muted mb-4">
                 <i class="bi bi-info-circle me-1"></i>
-                Hier findet Ihr unsere Noten (PDF) und Aufnahmen (MP3) nach Kategorien sortiert.
+                Hier findet Ihr unsere Noten (PDF) und Aufnahmen (MP3).
             </p>
 
             <div class="accordion" id="allFilesAccordion">
@@ -134,11 +138,13 @@
                                     <i class="bi bi-music-note me-2 text-secondary"></i>
                                 {% endif %}
                                 {{ song.songName }}
-                                {{ _self.etikett_badge(song.etikett) }}
-                                {% if hasMovements %}
-                                    <span class="badge bg-secondary ms-2 fw-normal">{{ song.children|length }} Sätze</span>
-                                {% endif %}
-                                <span class="ms-auto d-flex gap-1 file-badges-{{ allFolderId }}"></span>
+                                <span class="ms-auto d-flex align-items-center gap-2">
+                                    {{ _self.etikett_badge(song.etikett) }}
+                                    {% if hasMovements %}
+                                        <span class="badge bg-secondary fw-normal">{{ song.children|length }} Sätze</span>
+                                    {% endif %}
+                                    <span class="d-flex gap-1 file-count-badges"></span>
+                                </span>
                             </button>
                         </h2>
                         <div id="{{ allFolderId }}" class="accordion-collapse collapse"
@@ -184,7 +190,9 @@
                                                             {% if movHasDropbox %}data-dropbox-path="{{ movement.dropboxlink }}"{% endif %}>
                                                         <i class="bi bi-music-note me-2 text-primary"></i>
                                                         {{ movement.songName }}
-                                                        <span class="ms-auto d-flex gap-1 file-badges-{{ movId }}"></span>
+                                                        <span class="ms-auto d-flex align-items-center gap-2">
+                                                            <span class="d-flex gap-1 file-count-badges"></span>
+                                                        </span>
                                                     </button>
                                                 </h2>
                                                 <div id="{{ movId }}" class="accordion-collapse collapse">

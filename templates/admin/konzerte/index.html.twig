@@ -8,10 +8,12 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1>Konzerte <span class="badge bg-secondary fs-6">{{ konzerte|length }}</span></h1>
         <div class="d-flex gap-2">
+            {% if is_granted('ROLE_ADMIN') %}
             <a href="{{ path('admin_konzerte_new') }}" class="btn btn-primary">
                 <i class="bi bi-plus-lg me-1"></i>Neues Konzert
             </a>
             <a href="{{ path('admin_dashboard') }}" class="btn btn-secondary">Zurück</a>
+            {% endif %}
         </div>
     </div>
 
@@ -20,26 +22,34 @@
     {% endfor %}
 
     <div class="table-responsive">
-        <table class="table table-striped table-hover align-middle">
+        <table class="table table-hover align-middle">
             <thead class="table-dark">
                 <tr>
                     <th>Datum</th>
                     <th>Name</th>
                     <th>Ort</th>
                     <th style="width:80px">Lieder</th>
-                    <th class="text-end" style="width:120px">Aktionen</th>
+                    {% if is_granted('ROLE_ADMIN') %}<th class="text-end" style="width:120px">Aktionen</th>{% endif %}
                 </tr>
             </thead>
             <tbody>
                 {% for konzert in konzerte %}
-                <tr>
+
+                <tr class="konzert-row{% if loop.index is even %} krow-even{% endif %}"
+                    data-bs-toggle="collapse"
+                    data-bs-target="#songs-{{ konzert.id }}"
+                    aria-expanded="false"
+                    aria-controls="songs-{{ konzert.id }}">
                     <td class="text-nowrap fw-semibold">{{ konzert.date|date('d.m.Y') }}</td>
-                    <td>{{ konzert.name }}</td>
+                    <td>
+                        {{ konzert.name }}
+                    </td>
                     <td class="text-muted">{{ konzert.location ?? '—' }}</td>
                     <td>
                         <span class="badge bg-secondary">{{ konzert.songs|length + konzert.customSongs|length }}</span>
                     </td>
-                    <td class="text-end">
+                    {% if is_granted('ROLE_ADMIN') %}
+                    <td class="text-end" onclick="event.stopPropagation()">
                         <a href="{{ path('admin_konzerte_edit', {id: konzert.id}) }}"
                            class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></a>
                         <form action="{{ path('admin_konzerte_delete', {id: konzert.id}) }}" method="post"
@@ -48,14 +58,85 @@
                             <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
                         </form>
                     </td>
+                    {% endif %}
                 </tr>
+
+                <tr class="konzert-detail">
+                    <td colspan="{{ is_granted('ROLE_ADMIN') ? 5 : 4 }}" class="p-0 border-0">
+                        <div id="songs-{{ konzert.id }}" class="collapse">
+                            <div class="px-4 py-2 border-bottom bg-light">
+                                {% set items = konzert.orderedSongList %}
+                                {% if items is empty %}
+                                    <em class="text-muted small">Keine Lieder verknüpft.</em>
+                                {% else %}
+                                    <div class="ksl-wrap">
+                                        <div class="ksl-header">
+                                            <span class="ksl-num">#</span>
+                                            <span class="ksl-composer">Komponist</span>
+                                            <span class="ksl-title">Liedtitel</span>
+                                            <span class="ksl-video"></span>
+                                        </div>
+                                        {% for item in items %}
+                                        <div class="ksl-row{% if item.type == 'custom' %} ksl-custom{% endif %}">
+                                            <span class="ksl-num text-muted">{{ loop.index }}</span>
+                                            <span class="ksl-composer">{{ item.composer ?: '—' }}</span>
+                                            <span class="ksl-title{% if item.type == 'custom' %} fst-italic{% endif %}">{{ item.title }}</span>
+                                            <span class="ksl-video">
+                                                {% if item.videoLink %}
+                                                    <a href="{{ item.videoLink }}" target="_blank" rel="noopener"
+                                                       class="btn btn-xs btn-outline-danger py-0 px-1" title="Video ansehen"
+                                                       onclick="event.stopPropagation()">
+                                                        <i class="bi bi-play-fill"></i>
+                                                    </a>
+                                                {% endif %}
+                                            </span>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+
                 {% else %}
                 <tr>
-                    <td colspan="5" class="text-center text-muted py-4">Noch keine Konzerte erfasst.</td>
+                    <td colspan="{{ is_granted('ROLE_ADMIN') ? 5 : 4 }}" class="text-center text-muted py-4">Noch keine Konzerte erfasst.</td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
 </div>
+
+<style>
+.konzert-row td            { background-color: #fff; }
+.konzert-row.krow-even td { background-color: #f8f9fa; }
+.konzert-row { cursor: pointer; }
+.konzert-chevron { transition: transform .2s ease; font-size: .75rem; }
+.konzert-row[aria-expanded="true"] .konzert-chevron { transform: rotate(90deg); }
+.konzert-detail:hover td { background-color: inherit !important; }
+
+/* Song list inside accordion — mirrors the edit-page right-list */
+.ksl-wrap { font-size: .8125rem; }
+.ksl-header {
+    display: flex; align-items: center;
+    background: #f8f9fa; border-bottom: 1px solid #dee2e6;
+    padding: 3px 8px;
+    font-size: .7rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .06em; color: #6c757d;
+}
+.ksl-row {
+    display: flex; align-items: center;
+    padding: 4px 8px; border-bottom: 1px solid #f2f2f2;
+}
+.ksl-row:last-child { border-bottom: none; }
+.ksl-row:hover { background: #eef2ff; }
+.ksl-custom { background: #fffbf0; }
+.ksl-custom:hover { background: #fff3cd; }
+.ksl-num     { width: 24px; min-width: 24px; color: #adb5bd; text-align: right; padding-right: 8px; }
+.ksl-composer { width: 35%; min-width: 35%; max-width: 35%; color: #6c757d; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-right: 10px; }
+.ksl-title   { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ksl-video   { width: 32px; min-width: 32px; text-align: center; }
+</style>
 {% endblock %}

@@ -34,11 +34,14 @@
     <input type="hidden" name="custom_songs_json" id="custom-songs-input" value="">
     {# Hidden input for song order (JSON array of IDs) — populated by JS before submit #}
     <input type="hidden" name="song_order_json" id="song-order-input" value="">
+    {# Hidden input for video links (JSON object) — populated by JS before submit #}
+    <input type="hidden" name="video_links_json" id="video-links-input" value="">
 
     {# Existing custom songs from DB — read by JS on page load #}
     <script>
     window.KONZERT_CUSTOM  = {{ konzert.customSongs|json_encode|raw }};
     window.KONZERT_ORDER   = {{ konzert.songOrder|json_encode|raw }};
+    window.KONZERT_VIDEOS  = {{ konzert.videoLinks|json_encode|raw }};
     window.SONG_PARENTS    = {{ songParents|json_encode|raw }};
     </script>
 
@@ -89,6 +92,7 @@
                     <span class="col-handle"></span>
                     <span class="col-composer">Komponist</span>
                     <span class="col-title">Liedtitel</span>
+                    <span class="col-video">Video-URL</span>
                     <span class="col-del"></span>
                 </div>
                 <div class="song-list" id="right-list"></div>
@@ -188,7 +192,7 @@
 }
 .col-handle:active { cursor: grabbing; }
 .col-composer {
-    width: 38%; min-width: 38%; max-width: 38%;
+    width: 22%; min-width: 22%; max-width: 22%;
     font-size: .8125rem; color: #6c757d;
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     padding-right: 10px;
@@ -196,6 +200,13 @@
 .col-title {
     flex: 1; font-size: .8125rem;
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.col-video {
+    flex: 0 0 160px; min-width: 0;
+    margin: 0 6px;
+}
+.col-video input {
+    font-size: .75rem; padding: 1px 5px; height: 24px;
 }
 .col-del {
     width: 24px; min-width: 24px;
@@ -258,7 +269,7 @@
                 const idx = parseInt(entry.substring(1));
                 if (!isNaN(idx) && CUSTOM_LIST[idx]) {
                     const c = CUSTOM_LIST[idx];
-                    rightItems.push({ type: 'custom', uid: 'c_' + (customUid++), composer: c.composer || '', title: c.title || '' });
+                    rightItems.push({ type: 'custom', uid: 'c_' + (customUid++), composer: c.composer || '', title: c.title || '', custIdx: idx });
                     usedCustIdx.add(idx);
                 }
             }
@@ -268,12 +279,12 @@
         // Append any custom songs not yet in order
         CUSTOM_LIST.forEach((c, i) => {
             if (!usedCustIdx.has(i))
-                rightItems.push({ type: 'custom', uid: 'c_' + (customUid++), composer: c.composer || '', title: c.title || '' });
+                rightItems.push({ type: 'custom', uid: 'c_' + (customUid++), composer: c.composer || '', title: c.title || '', custIdx: i });
         });
     } else {
         allSongs.filter(s => s.linked).sort((a, b) => a.title.localeCompare(b.title, 'de')).forEach(s => rightItems.push(s));
-        CUSTOM_LIST.forEach(c => {
-            rightItems.push({ type: 'custom', uid: 'c_' + (customUid++), composer: c.composer || '', title: c.title || '' });
+        CUSTOM_LIST.forEach((c, i) => {
+            rightItems.push({ type: 'custom', uid: 'c_' + (customUid++), composer: c.composer || '', title: c.title || '', custIdx: i });
         });
     }
 
@@ -344,6 +355,21 @@
             t.textContent = item.title;
         }
         row.appendChild(t);
+
+        // Video URL input
+        const vWrap = document.createElement('span');
+        vWrap.className = 'col-video';
+        const vInput = document.createElement('input');
+        vInput.type = 'url';
+        vInput.className = 'form-control form-control-sm';
+        vInput.placeholder = 'Video-URL…';
+        vInput.dataset.videoUid = item.type === 'custom' ? item.uid : item.value;
+        const vKey = item.type === 'song' ? item.value : (item.custIdx !== undefined ? 'c' + item.custIdx : null);
+        vInput.value = vKey !== null ? ((window.KONZERT_VIDEOS || {})[vKey] || '') : '';
+        vInput.addEventListener('click',     e => e.stopPropagation());
+        vInput.addEventListener('mousedown', e => e.stopPropagation());
+        vWrap.appendChild(vInput);
+        row.appendChild(vWrap);
 
         // Delete button (custom items only)
         const del = document.createElement('span');
@@ -606,6 +632,19 @@
             x.type === 'song' ? parseInt(x.value) : 'c' + customIdxMap.get(x.uid)
         );
         document.getElementById('song-order-input').value = JSON.stringify(unifiedOrder);
+
+        // Video links → hidden JSON object  { "songId": "url", "c0": "url", … }
+        const videoLinks = {};
+        rightListEl.querySelectorAll('[data-video-uid]').forEach(inp => {
+            const url = inp.value.trim();
+            if (!url) return;
+            const uid  = inp.dataset.videoUid;
+            const item = rightItems.find(x => (x.type === 'custom' ? x.uid : x.value) === uid);
+            if (!item) return;
+            const key  = item.type === 'song' ? item.value : 'c' + customIdxMap.get(item.uid);
+            if (key !== undefined && !key.endsWith('undefined')) videoLinks[key] = url;
+        });
+        document.getElementById('video-links-input').value = JSON.stringify(videoLinks);
     });
 
     // ── Initial render ─────────────────────────────────────────────────

@@ -3,13 +3,19 @@ document.addEventListener('turbo:load', function () {
     if (!yearSelector) return;
 
     function filterPosts() {
-        const selectedYear = yearSelector.value ? parseInt(yearSelector.value) : null;
+        const selectedYear = yearSelector.value ? parseInt(yearSelector.value, 10) : null;
 
         document.querySelectorAll('[data-year]').forEach(function (el) {
-            const postYear = parseInt(el.dataset.year);
-            const row = el.parentElement;
-            const visible = selectedYear === null || postYear <= selectedYear;
-            row.style.display = visible ? '' : 'none';
+            const postYear = parseInt(el.dataset.year, 10);
+            el.style.display = (selectedYear === null || postYear <= selectedYear) ? '' : 'none';
+        });
+
+        // Hide rows whose every [data-year] child is hidden, to avoid leftover margins
+        document.querySelectorAll('#posts-container .row').forEach(function (row) {
+            const posts = Array.from(row.querySelectorAll('[data-year]'));
+            if (posts.length === 0) return;
+            const anyVisible = posts.some(function (p) { return p.style.display !== 'none'; });
+            row.style.display = anyVisible ? '' : 'none';
         });
     }
 

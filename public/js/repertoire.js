@@ -55,7 +55,33 @@ function loadWordCloud(retries) {
         });
 }
 
-document.addEventListener('turbo:load', loadWordCloud);
+function randomizeSongs(n) {
+    if (n === undefined) n = 5;
+    document.querySelectorAll('.style-songs[data-songs]').forEach(function (ul) {
+        var songs;
+        try { songs = JSON.parse(ul.dataset.songs); } catch (e) { return; }
+        if (!songs.length) return;
+
+        // Fisher-Yates shuffle then pick n
+        var arr = songs.slice();
+        for (var i = arr.length - 1; i > 0; i--) {
+            var j = Math.floor(Math.random() * (i + 1));
+            var tmp = arr[i]; arr[i] = arr[j]; arr[j] = tmp;
+        }
+        var pick = arr.slice(0, n);
+
+        ul.innerHTML = pick.map(function (song) {
+            var label = (song.composer ? song.composer + ' \u2013 ' : '') + song.songName;
+            var movItems = (song.movements || []).map(function (m) {
+                return '<li class="text-muted small"><i class="bi bi-chevron-right me-1" style="font-size:0.7em;vertical-align:middle"></i>' + m + '</li>';
+            }).join('');
+            var movList = movItems ? '<ul class="list-unstyled ms-3 mt-1 mb-1">' + movItems + '</ul>' : '';
+            return '<li><i class="bi bi-music-note me-1 text-muted"></i>' + label + movList + '</li>';
+        }).join('');
+    });
+}
+
+document.addEventListener('turbo:load', function () { loadWordCloud(); randomizeSongs(); });
 window.addEventListener('pageshow', function (event) {
-    if (event.persisted) loadWordCloud();
+    if (event.persisted) { loadWordCloud(); randomizeSongs(); }
 });

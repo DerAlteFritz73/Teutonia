@@ -36,7 +36,14 @@
                         <li class="nav-item"><a class="nav-link{{ currentRoute == 'page_repertoire' ? ' active' : '' }}" href="{{ path('page_repertoire') }}">Repertoire</a></li>
                         <li class="nav-item"><a class="nav-link{{ currentRoute == 'page_events' ? ' active' : '' }}" href="{{ path('page_events') }}">Termine</a></li>
                         <li class="nav-item"><a class="nav-link{{ currentRoute == 'page_social' ? ' active' : '' }}" href="{{ path('page_social') }}">Geselliges</a></li>
-                        <li class="nav-item"><a class="nav-link{{ currentRoute == 'page_archive' ? ' active' : '' }}" href="{{ path('page_archive') }}">Archiv</a></li>
+                    </ul>
+
+                    <ul class="navbar-nav me-2">
+                        <li class="nav-item d-flex align-items-center">
+                            <button onclick="try{Turbo.cache.clear()}catch(e){} location.reload()" class="btn btn-sm btn-outline-secondary text-light border-0 px-2" title="Seite neu laden">
+                                <i class="bi bi-arrow-clockwise"></i>
+                            </button>
+                        </li>
                     </ul>
 
                     <ul class="navbar-nav">
@@ -75,8 +82,10 @@
                     <ul class="navbar-nav me-auto">
                         {% set currentRoute = app.request.attributes.get('_route') %}
                         <li class="nav-item"><a class="nav-link text-light py-1{{ currentRoute == 'member_proben' ? ' text-warning fw-semibold' : '' }}" href="{{ path('member_proben') }}">Aktuelle Proben</a></li>
+                        <li class="nav-item"><a class="nav-link text-light py-1{{ currentRoute in ['member_konzerte', 'admin_konzerte'] ? ' text-warning fw-semibold' : '' }}" href="{{ path('member_konzerte') }}">Konzerte</a></li>
                         <li class="nav-item"><a class="nav-link text-light py-1{{ currentRoute == 'member_kalender' ? ' text-warning fw-semibold' : '' }}" href="{{ path('member_kalender') }}">Kalender</a></li>
                         <li class="nav-item"><a class="nav-link text-light py-1{{ currentRoute == 'member_ideenkiste' ? ' text-warning fw-semibold' : '' }}" href="{{ path('member_ideenkiste') }}">Ideenkiste</a></li>
+                        <li class="nav-item"><a class="nav-link text-light py-1{{ currentRoute == 'member_archiv' ? ' text-warning fw-semibold' : '' }}" href="{{ path('member_archiv') }}">Archiv</a></li>
                         {% if is_granted('ROLE_ADMIN') %}
                         <li class="nav-item"><a class="nav-link text-danger py-1{{ currentRoute starts with 'admin_' ? ' fw-semibold' : '' }}" href="{{ path('admin_dashboard') }}">
                             <i class="bi bi-gear-fill me-1"></i>Admin

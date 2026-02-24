@@ -6,6 +6,8 @@ use App\Entity\SongSuggestion;
 use App\Entity\SongSuggestionLike;
 use App\Form\SongSuggestionType;
 use App\Repository\EventRepository;
+use App\Repository\KonzertRepository;
+use App\Repository\PostRepository;
 use App\Repository\SongKeywordRepository;
 use App\Repository\SongSuggestionLikeRepository;
 use App\Repository\SongSuggestionRepository;
@@ -25,6 +27,14 @@ class MemberController extends AbstractController
         return $this->render('member/dashboard.html.twig');
     }
 
+    #[Route('/archiv', name: 'member_archiv')]
+    public function archiv(PostRepository $postRepository): Response
+    {
+        return $this->render('member/archiv.html.twig', [
+            'posts' => $postRepository->findByPage('archiv'),
+        ]);
+    }
+
     #[Route('/aktuelle-proben', name: 'member_proben')]
     public function proben(SongKeywordRepository $songRepo): Response
     {
@@ -37,10 +47,18 @@ class MemberController extends AbstractController
         ]);
     }
 
+    #[Route('/konzerte', name: 'member_konzerte')]
+    public function konzerte(KonzertRepository $konzertRepository): Response
+    {
+        return $this->render('admin/konzerte/index.html.twig', [
+            'konzerte' => $konzertRepository->findAllOrdered(),
+        ]);
+    }
+
     #[Route('/kalender', name: 'member_kalender')]
     public function kalender(EventRepository $eventRepository): Response
     {
-        $events = $eventRepository->findUpcoming();
+        $events = $eventRepository->findAll();
 
         return $this->render('member/kalender.html.twig', [
             'events' => $events,

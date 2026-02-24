@@ -513,6 +513,8 @@ class AdminController extends AbstractController
             $konzert->setCustomSongs(json_decode($customJson, true) ?: []);
             $orderJson = $request->request->get('song_order_json', '[]');
             $konzert->setSongOrder(json_decode($orderJson, true) ?: []);
+            $videoJson = $request->request->get('video_links_json', '{}');
+            $konzert->setVideoLinks(json_decode($videoJson, true) ?: []);
             $em->persist($konzert);
             $em->flush();
             $this->addFlash('success', 'Konzert wurde erstellt.');
@@ -538,6 +540,8 @@ class AdminController extends AbstractController
             $konzert->setCustomSongs(json_decode($customJson, true) ?: []);
             $orderJson = $request->request->get('song_order_json', '[]');
             $konzert->setSongOrder(json_decode($orderJson, true) ?: []);
+            $videoJson = $request->request->get('video_links_json', '{}');
+            $konzert->setVideoLinks(json_decode($videoJson, true) ?: []);
             $em->flush();
             $this->addFlash('success', 'Konzert wurde aktualisiert.');
             return $this->redirectToRoute('admin_konzerte_edit', ['id' => $konzert->getId()]);

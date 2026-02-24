@@ -2,66 +2,39 @@
     'use strict';
     const cfg = window.SONGS_CONFIG || {};
 
-    /* ── Badge renderer ─────────────────────────────────────────────── */
-    function renderEtikett(val) {
-        if (!val) return '<span class="text-muted">—</span>';
-        const prefix = val.split(' ')[0].toLowerCase();
-        const map = {
-            blau:     'bg-primary text-white',
-            gelb:     'bg-warning text-dark',
-            rosa:     'bg-danger-subtle text-danger-emphasis border border-danger-subtle',
-            extrabox: 'bg-secondary text-white',
-        };
-        const cls = map[prefix] ?? 'bg-light text-dark border';
-        return `<span class="badge ${cls} fw-normal">${escHtml(val)}</span>`;
-    }
+    /* ── Helpers ─────────────────────────────────────────────────────── */
+    function esc(s)     { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+    function escAttr(s) { return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;'); }
 
-    function renderDropbox(val) {
-        if (!val) return '<i class="bi bi-folder-x text-muted"></i>';
-        return `<i class="bi bi-folder-check text-success" title="${escAttr(val)}"></i>`;
-    }
-
-    function escHtml(s) {
-        return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-    }
-    function escAttr(s) {
-        return s.replace(/&/g, '&amp;').replace(/"/g, '&quot;');
-    }
-
-    /* ── AJAX save ──────────────────────────────────────────────────── */
-    async function saveField(cell, songId, field, value) {
-        try {
-            const res = await fetch(`/admin/songs/${songId}/patch-field`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ _token: cfg.csrfPatch, field, value }),
-            });
-            const json = await res.json();
-            if (!res.ok || json.error) {
-                flashCell(cell, false);
-                alert(json.error ?? 'Fehler beim Speichern');
-                return false;
-            }
-            flashCell(cell, true);
-            return true;
-        } catch {
-            flashCell(cell, false);
-            return false;
+    function updateDisplay(cell, field, value) {
+        const d = cell.querySelector('.display-val');
+        if (field === 'etikett') {
+            if (!value) { d.innerHTML = '<span class="text-muted">—</span>'; return; }
+            const map = { blau:'bg-primary text-white', gelb:'bg-warning text-dark',
+                          rosa:'bg-danger-subtle text-danger-emphasis border border-danger-subtle',
+                          extrabox:'bg-secondary text-white' };
+            const cls = map[value.split(' ')[0].toLowerCase()] ?? 'bg-light text-dark border';
+            d.innerHTML = `<span class="badge ${cls} fw-normal">${esc(value)}</span>`;
+        } else if (field === 'dropboxlink') {
+            d.innerHTML = value
+                ? `<i class="bi bi-folder-check text-success" title="${escAttr(value)}"></i>`
+                : '<i class="bi bi-folder-x text-muted"></i>';
+        } else if (field === 'composer') {
+            d.textContent = value || '—';
+            d.className   = 'display-val text-muted';
+        } else {
+            d.textContent = value;
         }
     }
 
-    function flashCell(cell, ok) {
-        cell.style.transition = 'background-color 0.15s';
-        cell.style.backgroundColor = ok ? '#d1e7dd' : '#f8d7da';
-        setTimeout(() => { cell.style.backgroundColor = ''; }, 1400);
-    }
-
-    /* ── Activate / deactivate ──────────────────────────────────────── */
+    /* ── Cell state ──────────────────────────────────────────────────── */
     function activate(cell) {
         if (cell.classList.contains('editing')) return;
+        const input = cell.querySelector('.edit-input');
+        if (!input) return;
+        input.dataset.original = input.value;   // baseline for change detection
         cell.classList.add('editing');
         cell.querySelector('.display-val').classList.add('d-none');
-        const input = cell.querySelector('.edit-input');
         input.classList.remove('d-none');
         input.focus();
         if (input.type === 'text') input.select();
@@ -73,71 +46,82 @@
         cell.querySelector('.edit-input').classList.add('d-none');
     }
 
-    function updateDisplay(cell, field, value) {
-        const display = cell.querySelector('.display-val');
-        if (field === 'etikett') {
-            display.innerHTML = renderEtikett(value);
-        } else if (field === 'dropboxlink') {
-            display.innerHTML = renderDropbox(value);
-        } else if (field === 'composer') {
-            display.textContent = value || '—';
-            display.className = 'display-val text-muted';
-        } else {
-            display.textContent = value;
+    function flash(cell, ok) {
+        cell.classList.remove('cell-flash-ok', 'cell-flash-err');
+        cell.classList.add(ok ? 'cell-flash-ok' : 'cell-flash-err');
+        setTimeout(() => cell.classList.remove('cell-flash-ok', 'cell-flash-err'), 1400);
+    }
+
+    /* ── Save ────────────────────────────────────────────────────────── */
+    async function commit(cell) {
+        if (!cell.classList.contains('editing')) return;
+        const input  = cell.querySelector('.edit-input');
+        const songId = cell.closest('tr').dataset.id;
+        const field  = cell.dataset.field;
+        const value  = input.value;
+
+        // No change → just close
+        if (value === input.dataset.original) { deactivate(cell); return; }
+
+        // Deactivate now: removes .editing so any focusout that fires while we
+        // await the fetch hits the guard above and returns without double-saving.
+        deactivate(cell);
+
+        try {
+            const res  = await fetch(`/admin/songs/${songId}/patch-field`, {
+                method:  'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body:    JSON.stringify({ _token: cfg.csrfPatch, field, value }),
+            });
+            const json = await res.json();
+            if (!res.ok || json.error) throw new Error(json.error ?? 'Fehler beim Speichern');
+            input.dataset.original = value;
+            updateDisplay(cell, field, value);
+            flash(cell, true);
+        } catch (err) {
+            input.value = input.dataset.original;
+            flash(cell, false);
+            if (err.message) alert(err.message);
         }
     }
 
-    /* ── Wire up every editable cell ───────────────────────────────── */
-    document.querySelectorAll('.editable-cell').forEach(cell => {
-        const input = cell.querySelector('.edit-input');
-        if (!input) return;
+    /* ── Event delegation — works regardless of when DOM is ready ────── */
 
-        input.dataset.original = input.value;
+    // Click cell → activate
+    document.addEventListener('click', e => {
+        if (window.innerWidth < 768) return;
+        const cell = e.target.closest('.editable-cell');
+        if (cell && !e.target.closest('.edit-input')) activate(cell);
+    });
 
-        cell.addEventListener('click', () => {
-            if (window.innerWidth < 768) return; // mobile: edit via song edit page
-            activate(cell);
-        });
-
-        input.addEventListener('keydown', e => {
-            if (e.key === 'Enter' && input.type !== 'date') {
-                e.preventDefault();
-                input.blur();
-            } else if (e.key === 'Escape') {
-                input.value = input.dataset.original;
-                deactivate(cell);
-            }
-        });
-
-        input.addEventListener('click', e => e.stopPropagation());
-
-        input.addEventListener('blur', async () => {
-            if (!cell.classList.contains('editing')) return;
-
-            const songId = cell.closest('tr').dataset.id;
-            const field  = cell.dataset.field;
-            const value  = input.value;
-
-            if (value === input.dataset.original) {
-                deactivate(cell);
-                return;
-            }
-
-            const ok = await saveField(cell, songId, field, value);
-            if (ok) {
-                input.dataset.original = value;
-                updateDisplay(cell, field, value);
-            } else {
-                input.value = input.dataset.original;
-            }
+    // Enter → save,  Escape → cancel
+    document.addEventListener('keydown', e => {
+        if (!e.target.classList.contains('edit-input')) return;
+        const cell = e.target.closest('.editable-cell');
+        if (!cell) return;
+        if (e.key === 'Enter' && e.target.type !== 'date') {
+            e.preventDefault();
+            commit(cell);
+        } else if (e.key === 'Escape') {
+            e.target.value = e.target.dataset.original;
             deactivate(cell);
-        });
-
-        if (input.type === 'date') {
-            input.addEventListener('change', () => input.blur());
         }
     });
-})();
+
+    // Focus leaves input → save  (focusout bubbles; blur does not)
+    document.addEventListener('focusout', e => {
+        if (!e.target.classList.contains('edit-input')) return;
+        const cell = e.target.closest('.editable-cell');
+        if (cell) commit(cell);
+    });
+
+    // Date picker changed → save
+    document.addEventListener('change', e => {
+        if (!e.target.classList.contains('edit-input') || e.target.type !== 'date') return;
+        const cell = e.target.closest('.editable-cell');
+        if (cell) commit(cell);
+    });
+}());
 
 /* ── Movement row drag & drop reorder ──────────────────────────────── */
 (function () {

@@ -81,7 +81,7 @@ document.addEventListener('turbo:load', function () {
 
                     const btn = panel.previousElementSibling.querySelector('[data-dropbox-path]');
                     if (btn) {
-                        const badgeSpan = btn.querySelector('.ms-auto');
+                        const badgeSpan = btn.querySelector('.file-count-badges');
                         const pdfs   = files.filter(f => f.type === 'pdf').length;
                         const audios = files.filter(f => f.type === 'audio').length;
                         let badges = '';
