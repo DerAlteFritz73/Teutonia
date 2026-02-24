@@ -31,11 +31,11 @@
                     {% set hasMovements = song.children|length > 0 %}
                     <div class="accordion-item">
                         <h2 class="accordion-header">
-                            <button class="accordion-button {% if not loop.first %}collapsed{% endif %} accordion-btn-files"
+                            <button class="accordion-button collapsed accordion-btn-files"
                                     type="button"
                                     data-bs-toggle="collapse"
                                     data-bs-target="#{{ folderId }}"
-                                    aria-expanded="{{ loop.first ? 'true' : 'false' }}"
+                                    aria-expanded="false"
                                     {% if song.dropboxlink %}data-dropbox-path="{{ song.dropboxlink }}"{% endif %}>
                                 <i class="bi bi-folder2-open me-2"></i>
                                 {{ song.songName }}
@@ -47,7 +47,7 @@
                                 </span>
                             </button>
                         </h2>
-                        <div id="{{ folderId }}" class="accordion-collapse collapse {% if loop.first %}show{% endif %}"
+                        <div id="{{ folderId }}" class="accordion-collapse collapse"
                              data-bs-parent="#probenAccordion">
                             <div class="accordion-body">
                                 {% if song.dropboxlink %}

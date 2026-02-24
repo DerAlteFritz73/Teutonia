@@ -192,8 +192,4 @@ pageLoad(function () {
         });
     }
 
-    // Auto-load files for the first open accordion
-    document.querySelectorAll('.accordion-collapse.show').forEach(function (panel) {
-        panel.dispatchEvent(new Event('show.bs.collapse'));
-    });
 });
