@@ -84,6 +84,7 @@
                         <li class="nav-item"><a class="nav-link text-light py-1{{ currentRoute == 'member_proben' ? ' text-warning fw-semibold' : '' }}" href="{{ path('member_proben') }}">Aktuelle Proben</a></li>
                         <li class="nav-item"><a class="nav-link text-light py-1{{ currentRoute in ['member_konzerte', 'admin_konzerte'] ? ' text-warning fw-semibold' : '' }}" href="{{ path('member_konzerte') }}">Konzerte</a></li>
                         <li class="nav-item"><a class="nav-link text-light py-1{{ currentRoute == 'member_kalender' ? ' text-warning fw-semibold' : '' }}" href="{{ path('member_kalender') }}">Kalender</a></li>
+                        <li class="nav-item"><a class="nav-link text-light py-1{{ currentRoute == 'member_google_kalender' ? ' text-warning fw-semibold' : '' }}" href="{{ path('member_google_kalender') }}">Google-Kalender</a></li>
                         <li class="nav-item"><a class="nav-link text-light py-1{{ currentRoute == 'member_ideenkiste' ? ' text-warning fw-semibold' : '' }}" href="{{ path('member_ideenkiste') }}">Ideenkiste</a></li>
                         <li class="nav-item"><a class="nav-link text-light py-1{{ currentRoute == 'member_archiv' ? ' text-warning fw-semibold' : '' }}" href="{{ path('member_archiv') }}">Archiv</a></li>
                         {% if is_granted('ROLE_ADMIN') %}

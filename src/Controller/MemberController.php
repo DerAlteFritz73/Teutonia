@@ -55,6 +55,12 @@ class MemberController extends AbstractController
         ]);
     }
 
+    #[Route('/google-kalender', name: 'member_google_kalender')]
+    public function googleKalender(): Response
+    {
+        return $this->render('member/google-kalender.html.twig');
+    }
+
     #[Route('/kalender', name: 'member_kalender')]
     public function kalender(EventRepository $eventRepository): Response
     {
