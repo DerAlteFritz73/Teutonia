@@ -471,8 +471,10 @@ document.querySelectorAll('.btn-expand-movements').forEach(btn => {
 <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.slim.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/footable-v3/compiled/footable.core.min.js"></script>
 <script>
-jQuery(function ($) {
-    $('#songs-table').footable();
-});
+document.addEventListener('turbo:load', function () {
+    if (typeof jQuery !== 'undefined' && typeof jQuery.fn.footable !== 'undefined') {
+        jQuery('#songs-table').footable();
+    }
+}, { once: true });
 </script>
 {% endblock %}
