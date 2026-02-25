@@ -2,19 +2,16 @@
 
 namespace App\Controller\Admin;
 
-use App\Entity\Event;
 use App\Entity\Konzert;
 use App\Entity\Post;
 use App\Entity\SongKeyword;
 use App\Entity\Style;
 use App\Entity\User;
-use App\Form\EventType;
 use App\Form\KonzertType;
 use App\Form\PostType;
 use App\Form\SongKeywordType;
 use App\Form\StyleType;
 use App\Form\UserType;
-use App\Repository\EventRepository;
 use App\Repository\KonzertRepository;
 use App\Repository\PostRepository;
 use App\Repository\SongKeywordRepository;
@@ -36,14 +33,12 @@ class AdminController extends AbstractController
     #[Route('', name: 'admin_dashboard')]
     public function dashboard(
         UserRepository $userRepository,
-        EventRepository $eventRepository,
         PostRepository $postRepository,
         SongKeywordRepository $songRepository,
         KonzertRepository $konzertRepository
     ): Response {
         return $this->render('admin/dashboard.html.twig', [
             'userCount'    => count($userRepository->findAll()),
-            'eventCount'   => count($eventRepository->findAll()),
             'postCount'    => count($postRepository->findAll()),
             'songCount'    => $songRepository->countAllIncludingMovements(),
             'konzertCount' => count($konzertRepository->findAll()),
@@ -643,70 +638,6 @@ class AdminController extends AbstractController
         }
 
         return $this->redirectToRoute('admin_users');
-    }
-
-    // ==================== EVENTS ====================
-
-    #[Route('/termine', name: 'admin_events')]
-    public function events(EventRepository $eventRepository): Response
-    {
-        return $this->render('admin/termine/index.html.twig', [
-            'events' => $eventRepository->findUpcoming(),
-        ]);
-    }
-
-    #[Route('/termine/new', name: 'admin_events_new')]
-    public function eventsNew(Request $request, EntityManagerInterface $em): Response
-    {
-        $event = new Event();
-        $form = $this->createForm(EventType::class, $event);
-        $form->handleRequest($request);
-
-        if ($form->isSubmitted() && $form->isValid()) {
-            $em->persist($event);
-            $em->flush();
-
-            $this->addFlash('success', 'Termin wurde erstellt.');
-            return $this->redirectToRoute('admin_events');
-        }
-
-        return $this->render('admin/termine/form.html.twig', [
-            'form' => $form,
-            'event' => $event,
-            'isNew' => true,
-        ]);
-    }
-
-    #[Route('/termine/{id}/edit', name: 'admin_events_edit')]
-    public function eventsEdit(Event $event, Request $request, EntityManagerInterface $em): Response
-    {
-        $form = $this->createForm(EventType::class, $event);
-        $form->handleRequest($request);
-
-        if ($form->isSubmitted() && $form->isValid()) {
-            $em->flush();
-
-            $this->addFlash('success', 'Termin wurde aktualisiert.');
-            return $this->redirectToRoute('admin_events');
-        }
-
-        return $this->render('admin/termine/form.html.twig', [
-            'form' => $form,
-            'event' => $event,
-            'isNew' => false,
-        ]);
-    }
-
-    #[Route('/termine/{id}/delete', name: 'admin_events_delete', methods: ['POST'])]
-    public function eventsDelete(Event $event, Request $request, EntityManagerInterface $em): Response
-    {
-        if ($this->isCsrfTokenValid('delete' . $event->getId(), $request->request->get('_token'))) {
-            $em->remove($event);
-            $em->flush();
-            $this->addFlash('success', 'Termin wurde gelöscht.');
-        }
-
-        return $this->redirectToRoute('admin_events');
     }
 
     // ==================== POSTS ====================

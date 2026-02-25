@@ -5,7 +5,6 @@ namespace App\Controller;
 use App\Entity\SongSuggestion;
 use App\Entity\SongSuggestionLike;
 use App\Form\SongSuggestionType;
-use App\Repository\EventRepository;
 use App\Repository\KonzertRepository;
 use App\Repository\PostRepository;
 use App\Repository\SongKeywordRepository;
@@ -59,16 +58,6 @@ class MemberController extends AbstractController
     public function googleKalender(): Response
     {
         return $this->render('member/google-kalender.html.twig');
-    }
-
-    #[Route('/kalender', name: 'member_kalender')]
-    public function kalender(EventRepository $eventRepository): Response
-    {
-        $events = $eventRepository->findAll();
-
-        return $this->render('member/kalender.html.twig', [
-            'events' => $events,
-        ]);
     }
 
     #[Route('/ideenkiste', name: 'member_ideenkiste')]
