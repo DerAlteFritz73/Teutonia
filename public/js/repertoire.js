@@ -72,11 +72,7 @@ function randomizeSongs(n) {
 
         ul.innerHTML = pick.map(function (song) {
             var label = (song.composer ? song.composer + ' \u2013 ' : '') + song.songName;
-            var movItems = (song.movements || []).map(function (m) {
-                return '<li class="text-muted small"><i class="bi bi-chevron-right me-1" style="font-size:0.7em;vertical-align:middle"></i>' + m + '</li>';
-            }).join('');
-            var movList = movItems ? '<ul class="list-unstyled ms-3 mt-1 mb-1">' + movItems + '</ul>' : '';
-            return '<li><i class="bi bi-music-note me-1 text-muted"></i>' + label + movList + '</li>';
+            return '<li><i class="bi bi-music-note me-1 text-muted"></i>' + label + '</li>';
         }).join('');
     });
 }

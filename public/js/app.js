@@ -50,11 +50,12 @@ pageLoad(function () {
     });
 });
 
-// Fix Bootstrap dropdown issue - prevent default on dropdown toggles
+// Re-initialize Bootstrap dropdowns after each Turbo navigation.
+// Turbo replaces the <body> on each visit, so new DOM elements have no
+// Bootstrap Dropdown instance yet; lazy initialization on first click
+// is unreliable under Turbo and causes intermittent failures.
 pageLoad(function () {
-    document.querySelectorAll('[data-bs-toggle="dropdown"]').forEach(function (dropdownToggle) {
-        dropdownToggle.addEventListener('click', function (e) {
-            e.preventDefault();
-        });
+    document.querySelectorAll('[data-bs-toggle="dropdown"]').forEach(function (el) {
+        bootstrap.Dropdown.getOrCreateInstance(el);
     });
 });

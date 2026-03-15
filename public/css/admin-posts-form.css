@@ -4,3 +4,12 @@ textarea::placeholder {
     color: #6c757d !important;
     opacity: 0.6 !important;
 }
+
+/* Quill Schriftgrössen-Picker: lesbare Labels statt "0.75em" */
+.ql-snow .ql-picker.ql-size .ql-picker-label::before,
+.ql-snow .ql-picker.ql-size .ql-picker-item::before             { content: 'Normal'; }
+.ql-snow .ql-picker.ql-size .ql-picker-label[data-value="0.75em"]::before,
+.ql-snow .ql-picker.ql-size .ql-picker-item[data-value="0.75em"]::before {
+    content: 'Klein';
+    font-size: 0.75em;
+}

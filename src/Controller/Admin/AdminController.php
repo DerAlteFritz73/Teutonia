@@ -606,7 +606,7 @@ class AdminController extends AbstractController
         EntityManagerInterface $em,
         UserPasswordHasherInterface $passwordHasher
     ): Response {
-        $form = $this->createForm(UserType::class, $user);
+        $form = $this->createForm(UserType::class, $user, ['is_new' => false]);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
@@ -673,6 +673,10 @@ class AdminController extends AbstractController
     public function postsNew(Request $request, EntityManagerInterface $em): Response
     {
         $post = new Post();
+        $filterPage = $request->query->get('filter_page');
+        if ($filterPage && $filterPage !== 'all') {
+            $post->setPage($filterPage);
+        }
         $form = $this->createForm(PostType::class, $post);
         $form->handleRequest($request);
 

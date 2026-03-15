@@ -28,3 +28,11 @@ dropbox_debug.json
 
 # IDE/Editor files
 .claude/
+
+# Sensitive / local files
+dump.sql
+.env.test
+/populate_dropbox_links.php
+/import_songs.php
+/import_songs_csv.php
+/enrich_songs.php

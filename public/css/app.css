@@ -24,6 +24,10 @@ p:empty, p:has(br:only-child) { display: none; }
 
 /* Quill paragraph content: <p> blocks act as single line breaks */
 .post-paragraph p { margin: 0; }
+/* Quill alignment classes outside the editor (öffentliche Seiten) */
+.post-paragraph .ql-align-center  { text-align: center; }
+.post-paragraph .ql-align-right   { text-align: right; }
+.post-paragraph .ql-align-justify { text-align: justify; }
 /* Allow empty <p><br></p> to show as blank lines inside post content */
 .post-paragraph p:empty,
 .post-paragraph p:has(br:only-child) { display: block; }

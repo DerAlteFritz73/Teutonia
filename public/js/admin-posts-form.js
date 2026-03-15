@@ -1,12 +1,17 @@
 pageLoad(function () {
     const cfg = window.POSTS_FORM_CONFIG || {};
 
+    // Schriftgrösse als Inline-Style (funktioniert auch auf öffentlichen Seiten)
+    const SizeStyle = Quill.import('attributors/style/size');
+    SizeStyle.whitelist = ['0.75em'];
+    Quill.register(SizeStyle, true);
+
     // Initialize Quill Rich Text Editor
     const quill = new Quill('#quill-editor', {
         theme: 'snow',
         modules: {
             toolbar: [
-                [{ 'header': [1, 2, 3, false] }],
+                [{ 'header': [1, 2, 3, false] }, { 'size': [false, '0.75em'] }],
                 ['bold', 'italic', 'underline', 'strike'],
                 [{ 'list': 'ordered' }, { 'list': 'bullet' }],
                 [{ 'align': [] }],
@@ -16,6 +21,54 @@ pageLoad(function () {
             ]
         },
         placeholder: 'Schreiben Sie hier Ihren Text...'
+    });
+
+    // Tooltips für die Toolbar-Buttons
+    const toolbarTooltips = {
+        'ql-bold':        'Fett (Strg+B)',
+        'ql-italic':      'Kursiv (Strg+I)',
+        'ql-underline':   'Unterstrichen (Strg+U)',
+        'ql-strike':      'Durchgestrichen',
+        'ql-link':        'Link einfügen',
+        'ql-image':       'Bild einfügen',
+        'ql-clean':       'Formatierung entfernen',
+        'ql-list':        { 'ordered': 'Nummerierte Liste', 'bullet': 'Aufzählungsliste' },
+        'ql-align':       { '': 'Linksbündig', 'center': 'Zentriert', 'right': 'Rechtsbündig', 'justify': 'Blocksatz' },
+        'ql-color':       'Schriftfarbe',
+        'ql-background':  'Hintergrundfarbe',
+        'ql-header':      { '1': 'Überschrift 1', '2': 'Überschrift 2', '3': 'Überschrift 3', '': 'Normal' },
+        'ql-size':        { '': 'Normal', '0.75em': 'Klein' },
+    };
+    const toolbar = quill.getModule('toolbar').container;
+    toolbar.querySelectorAll('button, .ql-picker').forEach(el => {
+        const cls = Array.from(el.classList).find(c => toolbarTooltips[c]);
+        if (!cls) return;
+        const tip = toolbarTooltips[cls];
+        if (typeof tip === 'string') {
+            el.title = tip;
+        } else if (typeof tip === 'object') {
+            const val = el.value || '';
+            el.title = tip[val] || Object.values(tip)[0];
+        }
+    });
+
+    // Picker-Items (Untermenü) mit Tooltips versehen
+    toolbar.querySelectorAll('.ql-picker').forEach(picker => {
+        const cls = Array.from(picker.classList).find(c => toolbarTooltips[c]);
+        if (!cls || typeof toolbarTooltips[cls] !== 'object') return;
+        picker.querySelectorAll('.ql-picker-item').forEach(item => {
+            const val = item.dataset.value || '';
+            item.title = toolbarTooltips[cls][val] || Object.values(toolbarTooltips[cls])[0];
+        });
+    });
+
+    // Ausrichtungs-Picker-Label dynamisch aktualisieren
+    const alignPicker = toolbar.querySelector('.ql-align');
+    const alignLabel  = alignPicker?.querySelector('.ql-picker-label');
+    quill.on('selection-change', function (range) {
+        if (!range || !alignLabel) return;
+        const val = quill.getFormat(range).align || '';
+        alignLabel.title = toolbarTooltips['ql-align'][val] || 'Linksbündig';
     });
 
     const titleInput    = document.getElementById('post-title')    || document.getElementById('post_title');
@@ -55,8 +108,37 @@ pageLoad(function () {
     const imageInput = document.getElementById('post-image') || document.getElementById('post_imageFile');
 
     if (imageInput) {
+        let fileDisplayEl = null;
+        if (cfg.previewImageUrl) {
+            const fileName = cfg.previewImageUrl.split('/').pop();
+
+            const group = document.createElement('div');
+            group.className = 'input-group';
+
+            fileDisplayEl = document.createElement('input');
+            fileDisplayEl.type = 'text';
+            fileDisplayEl.className = 'form-control';
+            fileDisplayEl.value = fileName;
+            fileDisplayEl.readOnly = true;
+            fileDisplayEl.style.cursor = 'pointer';
+            fileDisplayEl.addEventListener('click', () => imageInput.click());
+
+            const btn = document.createElement('label');
+            btn.className = 'btn btn-outline-secondary mb-0';
+            btn.textContent = 'Durchsuchen';
+            btn.style.cursor = 'pointer';
+            btn.setAttribute('for', imageInput.id);
+
+            imageInput.style.cssText = 'position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;';
+            imageInput.parentNode.insertBefore(group, imageInput);
+            group.appendChild(fileDisplayEl);
+            group.appendChild(btn);
+            group.appendChild(imageInput);
+        }
+
         imageInput.addEventListener('change', function (e) {
             const file = e.target.files[0];
+            if (fileDisplayEl && file) fileDisplayEl.value = file.name;
             if (!file || !file.type.startsWith('image/')) return;
             const reader = new FileReader();
             reader.onload = function (event) { openImageEditor(event.target.result, file.name, true); };
@@ -493,8 +575,23 @@ pageLoad(function () {
             Array.from(previewEl.parentElement.children).forEach(sib => {
                 if (sib !== previewEl) sib.style.paddingTop = offset + 'px';
             });
+            scalePreview();
         });
     }
+
+    // Skaliert die Vorschau so, dass 1200px (= echte Seitenbreite) in den Container passt
+    function scalePreview() {
+        const container = document.getElementById('preview-container');
+        if (!container || !fullPagePreview) return;
+        const available = container.clientWidth - 16;
+        const scale = Math.min(1, available / 1200);
+        fullPagePreview.style.transform = 'scale(' + scale + ')';
+        // Negative Margin kompensiert den ungenutzten Layout-Platz des skalierten Elements
+        fullPagePreview.style.marginBottom = -(fullPagePreview.scrollHeight * (1 - scale)) + 'px';
+    }
+
+    // Neu skalieren wenn der Container seine Breite ändert (z.B. Browser resize)
+    new ResizeObserver(scalePreview).observe(document.getElementById('preview-container'));
 
     function readFontStyle(fieldCap) {
         const font      = document.getElementById('post_font' + fieldCap)?.value;
