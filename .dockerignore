@@ -10,7 +10,7 @@ public/bundles/
 public/assets/
 assets/vendor/
 
-docker/
+docker/nginx/
 
 # Test/debug files
 test_*.php
