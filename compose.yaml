@@ -4,6 +4,8 @@ services:
       context: .
       target: prod
     restart: unless-stopped
+    env_file:
+      - .env.local
     environment:
       APP_ENV: prod
     volumes:
