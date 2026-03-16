@@ -30,10 +30,6 @@ class PopulateSongKeywordsCommand extends Command
 
         $io->title('Populating Song Keywords from Dropbox');
 
-        // Clear existing data
-        $io->section('Clearing existing data...');
-        $this->entityManager->createQuery('DELETE FROM App\Entity\SongKeyword')->execute();
-
         // Process Noten folder
         $io->section('Processing Noten folder...');
         $this->processFolder('/Chorgemeinschaft Teutonia/Noten', 'Noten', $io);
