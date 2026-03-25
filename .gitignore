@@ -37,3 +37,4 @@ dump.sql
 /import_songs_csv.php
 /enrich_songs.php
 docker/init.sql
+compose.override.yaml
