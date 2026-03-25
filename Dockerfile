@@ -36,6 +36,14 @@ FROM base AS dev
 
 COPY docker/php/php.dev.ini $PHP_INI_DIR/conf.d/app.ini
 
+# Install dependencies (including dev) so vendor/ exists in the image
+# The bind mount in compose.override.yaml keeps vendor from being overwritten
+COPY composer.json composer.lock symfony.lock ./
+RUN composer install --prefer-dist --no-scripts --no-autoloader --no-interaction
+
+COPY . .
+RUN composer dump-autoload
+
 CMD ["php-fpm"]
 
 # --- Production stage ---
