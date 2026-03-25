@@ -36,3 +36,4 @@ dump.sql
 /import_songs.php
 /import_songs_csv.php
 /enrich_songs.php
+docker/init.sql
