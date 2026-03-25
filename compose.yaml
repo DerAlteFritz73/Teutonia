@@ -34,7 +34,7 @@ services:
     env_file:
       - .env.local
     environment:
-      MARIADB_DB: ${MARIADB_DB:-teutonia}
+      MARIADB_DATABASE: ${MARIADB_DB:-teutonia}
       MARIADB_USER: ${MARIADB_USER:-teutonia}
       MARIADB_PASSWORD: ${MARIADB_PASSWORD:?MARIADB_PASSWORD is required}
       MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD:?MARIADB_ROOT_PASSWORD is required}
