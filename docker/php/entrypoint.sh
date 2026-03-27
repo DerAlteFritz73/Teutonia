@@ -1,7 +1,7 @@
 #!/bin/sh
 # Seed the assets volume with files built into the image
 if [ -d /var/assets-seed ]; then
-    cp -r /var/assets-seed/. /var/www/html/public/assets/
+    cp -r /var/assets-seed/. /var/assets/
 fi
 
 # Ensure upload directories are writable by www-data (volumes start owned by root)

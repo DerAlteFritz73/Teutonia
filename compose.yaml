@@ -11,7 +11,7 @@ services:
     volumes:
       - uploads:/var/www/html/public/images/posts
       - style_images:/var/www/html/public/images/styles
-      - assets:/var/www/html/public/assets
+      - assets:/var/assets
       - pdfs:/var/www/html/public/pdfs
     depends_on:
       database:
@@ -27,7 +27,7 @@ services:
       - ./public:/var/www/html/public:ro
       - uploads:/var/www/html/public/images/posts:ro
       - style_images:/var/www/html/public/images/styles:ro
-      - assets:/var/www/html/public/assets:ro
+      - assets:/var/assets:ro
       - pdfs:/var/www/html/public/pdfs:ro
     depends_on:
       - php
