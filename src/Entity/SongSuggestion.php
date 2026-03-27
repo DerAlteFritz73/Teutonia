@@ -33,6 +33,11 @@ class SongSuggestion
     #[ORM\Column(length: 500, nullable: true)]
     private ?string $pdfPath = null;
 
+    #[ORM\Column(length: 500, nullable: true)]
+    #[Assert\Url(message: 'Bitte geben Sie eine gültige URL ein')]
+    #[Assert\Length(max: 500)]
+    private ?string $link = null;
+
     #[ORM\ManyToOne(targetEntity: User::class)]
     #[ORM\JoinColumn(nullable: false)]
     private ?User $submittedBy = null;
@@ -98,6 +103,17 @@ class SongSuggestion
     public function setPdfPath(?string $pdfPath): static
     {
         $this->pdfPath = $pdfPath;
+        return $this;
+    }
+
+    public function getLink(): ?string
+    {
+        return $this->link;
+    }
+
+    public function setLink(?string $link): static
+    {
+        $this->link = $link;
         return $this;
     }
 

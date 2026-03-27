@@ -57,11 +57,15 @@ class SongKeyword
     #[ORM\ManyToMany(targetEntity: Konzert::class, mappedBy: 'songs')]
     private Collection $konzerte;
 
+    #[ORM\OneToMany(mappedBy: 'song', targetEntity: SongLink::class, cascade: ['persist', 'remove'], orphanRemoval: true)]
+    private Collection $links;
+
     public function __construct()
     {
         $this->children = new ArrayCollection();
         $this->styles   = new ArrayCollection();
         $this->konzerte = new ArrayCollection();
+        $this->links    = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -162,6 +166,23 @@ class SongKeyword
             ->toArray();
 
         return empty($dates) ? null : max($dates);
+    }
+
+    public function getLinks(): Collection { return $this->links; }
+
+    public function addLink(SongLink $link): static
+    {
+        if (!$this->links->contains($link)) {
+            $this->links->add($link);
+            $link->setSong($this);
+        }
+        return $this;
+    }
+
+    public function removeLink(SongLink $link): static
+    {
+        $this->links->removeElement($link);
+        return $this;
     }
 
     public function addStyle(Style $style): static

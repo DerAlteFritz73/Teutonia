@@ -44,6 +44,11 @@
                             <a href="{{ path('admin_users_edit', {id: user.id}) }}" class="btn btn-sm btn-outline-primary">
                                 Bearbeiten
                             </a>
+                            <form action="{{ path('admin_users_reset_password', {id: user.id}) }}" method="post" class="d-inline"
+                                  onsubmit="return confirm('Passwort von {{ user.fullName }} auf &quot;teutonia&quot; zurücksetzen?')">
+                                <input type="hidden" name="_token" value="{{ csrf_token('reset-password' ~ user.id) }}">
+                                <button type="submit" class="btn btn-sm btn-outline-warning">Passwort zurücksetzen</button>
+                            </form>
                             <form action="{{ path('admin_users_delete', {id: user.id}) }}" method="post" class="d-inline"
                                   onsubmit="return confirm('Wirklich löschen?')">
                                 <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ user.id) }}">

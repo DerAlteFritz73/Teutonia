@@ -77,8 +77,20 @@
                                 </a>
                             {% endif %}
 
-                            {# Edit/Delete for own suggestions #}
-                            {% if suggestion.submittedBy == app.user %}
+                            {% if suggestion.link %}
+                                {% set isYoutube = 'youtube.com' in suggestion.link or 'youtu.be' in suggestion.link %}
+                                <a href="{{ suggestion.link }}" target="_blank" rel="noopener noreferrer"
+                                   class="btn btn-sm btn-outline-secondary w-100 mb-2">
+                                    {% if isYoutube %}
+                                        <i class="bi bi-youtube text-danger me-1"></i>YouTube
+                                    {% else %}
+                                        <i class="bi bi-link-45deg me-1"></i>Link
+                                    {% endif %}
+                                </a>
+                            {% endif %}
+
+                            {# Edit/Delete for own suggestions or admins #}
+                            {% if suggestion.submittedBy.id == app.user.id or is_granted('ROLE_ADMIN') %}
                                 <div class="d-flex gap-2">
                                     <a href="{{ path('member_ideenkiste_edit', {id: suggestion.id}) }}"
                                        class="btn btn-sm btn-outline-secondary flex-fill">

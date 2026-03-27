@@ -5,7 +5,15 @@
 {% block body %}
 <!-- template: templates/admin/songs/form.html.twig -->
 <div class="container py-5" style="max-width: 860px;">
-    <h1>{{ isNew ? 'Neues Lied' : song.songName }}</h1>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="mb-0">{{ isNew ? 'Neues Lied' : song.songName }}</h1>
+        <div class="d-flex gap-2">
+            <a href="{{ path('admin_songs') }}" class="btn btn-secondary">Abbrechen</a>
+            <button type="submit" form="song-edit-form" class="btn btn-primary">
+                <i class="bi bi-floppy me-1"></i>Speichern
+            </button>
+        </div>
+    </div>
 
     {% for message in app.flashes('success') %}
         <div class="alert alert-success alert-dismissible fade show">{{ message }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
@@ -14,7 +22,7 @@
         <div class="alert alert-danger alert-dismissible fade show">{{ message }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
     {% endfor %}
 
-    {{ form_start(form, {attr: {novalidate: 'novalidate', id: 'song-edit-form'}}) }}
+    {{ form_start(form, {attr: {novalidate: 'novalidate', id: 'song-edit-form', 'data-unsaved-check': ''}}) }}
 
     <div class="card mb-4">
         <div class="card-header fw-semibold">Grunddaten</div>
@@ -59,6 +67,31 @@
     </div>
 
     <div class="card mb-4">
+        <div class="card-header fw-semibold">Links</div>
+        <div class="card-body">
+            <div id="song-links-container"
+                 data-prototype="{{ form_widget(form.links.vars.prototype)|e('html_attr') }}"
+                 data-index="{{ form.links|length }}">
+                {% for linkForm in form.links %}
+                    <div class="link-row input-group mb-2">
+                        {{ form_widget(linkForm.url,   {attr: {class: 'form-control', placeholder: 'https://…'}}) }}
+                        {{ form_widget(linkForm.label, {attr: {class: 'form-control', placeholder: 'Bezeichnung (optional)'}}) }}
+                        <button type="button" class="btn btn-outline-danger remove-link" title="Entfernen">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </div>
+                    {% for error in linkForm.url.vars.errors %}
+                        <div class="text-danger small mb-1">{{ error.message }}</div>
+                    {% endfor %}
+                {% endfor %}
+            </div>
+            <button type="button" class="btn btn-outline-secondary btn-sm mt-1" id="add-link-btn">
+                <i class="bi bi-plus-lg me-1"></i>Link hinzufügen
+            </button>
+        </div>
+    </div>
+
+    <div class="card mb-4">
         <div class="card-header fw-semibold">Stile</div>
         <div class="card-body">
             <div class="row row-cols-2 row-cols-md-3 g-2">
@@ -76,24 +109,49 @@
 
     {{ form_end(form) }}
 
-    <div class="d-flex gap-2">
-        <button type="submit" form="song-edit-form" class="btn btn-primary">
-            <i class="bi bi-floppy me-1"></i>Speichern
-        </button>
-        <a href="{{ path('admin_songs') }}" class="btn btn-secondary">Abbrechen</a>
-        {% if not isNew %}
-            <form action="{{ path('admin_songs_delete', {id: song.id}) }}" method="post"
-                  class="ms-auto" onsubmit="return confirm('Lied wirklich löschen?')">
-                <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ song.id) }}">
-                <button class="btn btn-outline-danger">
-                    <i class="bi bi-trash me-1"></i>Löschen
-                </button>
-            </form>
-        {% endif %}
+    {% if not isNew %}
+    <div class="d-flex gap-2 mt-2">
+        <form action="{{ path('admin_songs_delete', {id: song.id}) }}" method="post"
+              class="ms-auto" onsubmit="return confirm('Lied wirklich löschen?')">
+            <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ song.id) }}">
+            <button class="btn btn-outline-danger">
+                <i class="bi bi-trash me-1"></i>Löschen
+            </button>
+        </form>
     </div>
+    {% endif %}
 </div>
 
 <script>
+/* ── Song links collection ── */
+(function () {
+    const container = document.getElementById('song-links-container');
+    const addBtn    = document.getElementById('add-link-btn');
+    if (!container || !addBtn) return;
+
+    function attachRemove(row) {
+        row.querySelector('.remove-link').addEventListener('click', function () {
+            row.remove();
+        });
+    }
+
+    container.querySelectorAll('.link-row').forEach(attachRemove);
+
+    addBtn.addEventListener('click', function () {
+        const index     = parseInt(container.dataset.index, 10);
+        const prototype = container.dataset.prototype;
+        const html      = prototype.replace(/__name__/g, index);
+        const div       = document.createElement('div');
+        div.innerHTML   = `<div class="link-row input-group mb-2">${html}<button type="button" class="btn btn-outline-danger remove-link" title="Entfernen"><i class="bi bi-trash"></i></button></div>`;
+        const row       = div.firstElementChild;
+        attachRemove(row);
+        container.appendChild(row);
+        container.dataset.index = index + 1;
+        row.querySelector('input[type="text"], input[type="url"]').focus();
+    });
+}());
+
+/* ── Parent search + auto-fill ── */
 (function () {
     const search = document.getElementById('parent-search');
     const select = document.getElementById('song_keyword_parent');

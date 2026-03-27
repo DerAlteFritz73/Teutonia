@@ -166,11 +166,11 @@
     }
 
     /* ── Audio / speed controls ──────────────────────────────────────────
-       Re-wired on every page visit via `{ once: true }` so listeners are
-       fresh for the new DOM elements without ever accumulating.           */
-    document.addEventListener('turbo:load', function () {
+       Runs directly: member-proben.js is at the bottom of the template,
+       so all DOM elements are already in place when this executes.       */
+    (function () {
         const audioPlayer  = document.getElementById('audioPlayer');
-        if (!audioPlayer) return;   // not on the proben page
+        if (!audioPlayer) return;
 
         const speedSlider  = document.getElementById('speedSlider');
         const speedValue   = document.getElementById('speedValue');
@@ -208,6 +208,30 @@
             audioPlayer.pause();
             audioPlayer.currentTime = 0;
         });
-    }, { once: true });
+    }());
 
+}());
+
+/* ── Noten search filter ─────────────────────────────────────────────── */
+(function () {
+    'use strict';
+    const input    = document.getElementById('notenSearch');
+    const noResult = document.getElementById('notenNoResults');
+    if (!input) return;
+
+    input.addEventListener('input', function () {
+        const q     = input.value.trim().toLowerCase();
+        const items = document.querySelectorAll('#allFilesAccordion .accordion-item');
+        let visible = 0;
+
+        items.forEach(function (item) {
+            const btn  = item.querySelector('.accordion-button');
+            const name = btn ? btn.textContent.trim().toLowerCase() : '';
+            const show = !q || name.includes(q);
+            item.style.display = show ? '' : 'none';
+            if (show) visible++;
+        });
+
+        noResult.classList.toggle('d-none', visible > 0 || !q);
+    });
 }());

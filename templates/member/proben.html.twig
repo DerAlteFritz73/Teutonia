@@ -50,6 +50,22 @@
                         <div id="{{ folderId }}" class="accordion-collapse collapse"
                              data-bs-parent="#probenAccordion">
                             <div class="accordion-body">
+                                {% if song.links|length > 0 %}
+                                    <div class="d-flex flex-wrap gap-2 mb-3">
+                                        {% for link in song.links %}
+                                            {% set isYoutube = 'youtube.com' in link.url or 'youtu.be' in link.url %}
+                                            <a href="{{ link.url }}" target="_blank" rel="noopener noreferrer"
+                                               class="btn btn-sm btn-outline-secondary">
+                                                {% if isYoutube %}
+                                                    <i class="bi bi-youtube text-danger me-1"></i>
+                                                {% else %}
+                                                    <i class="bi bi-link-45deg me-1"></i>
+                                                {% endif %}
+                                                {{ link.label ?? link.url }}
+                                            </a>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
                                 {% if song.dropboxlink %}
                                     <div class="list-group song-files-container mb-3" data-dropbox-path="{{ song.dropboxlink }}">
                                         <div class="text-center text-muted py-3 file-loading-spinner">
@@ -119,6 +135,12 @@
                 Hier findet Ihr unsere Noten (PDF) und Aufnahmen (MP3).
             </p>
 
+            <div class="mb-3">
+                <input type="search" id="notenSearch" class="form-control"
+                       placeholder="Lied suchen…" autocomplete="off">
+            </div>
+            <div id="notenNoResults" class="text-muted d-none">Kein Lied gefunden.</div>
+
             <div class="accordion" id="allFilesAccordion">
                 {% for song in notenSongs %}
                     {% set allFolderId = 'noten-' ~ loop.index %}
@@ -137,7 +159,12 @@
                                 {% else %}
                                     <i class="bi bi-music-note me-2 text-secondary"></i>
                                 {% endif %}
-                                {{ song.songName }}
+                                <span class="d-flex flex-column lh-sm">
+                                    {{ song.songName }}
+                                    {% if song.composer %}
+                                        <small class="text-muted fw-normal">{{ song.composer }}</small>
+                                    {% endif %}
+                                </span>
                                 <span class="ms-auto d-flex align-items-center gap-2">
                                     {{ _self.etikett_badge(song.etikett) }}
                                     {% if hasMovements %}
@@ -162,6 +189,22 @@
                                         <span><i class="bi bi-calendar-event me-1"></i>Letzte Aufführung: {{ song.latestKonzertDate|date('M Y') }}</span>
                                     {% endif %}
                                 </div>
+                                {% if song.links|length > 0 %}
+                                    <div class="d-flex flex-wrap gap-2 mb-3">
+                                        {% for link in song.links %}
+                                            {% set isYoutube = 'youtube.com' in link.url or 'youtu.be' in link.url %}
+                                            <a href="{{ link.url }}" target="_blank" rel="noopener noreferrer"
+                                               class="btn btn-sm btn-outline-secondary">
+                                                {% if isYoutube %}
+                                                    <i class="bi bi-youtube text-danger me-1"></i>
+                                                {% else %}
+                                                    <i class="bi bi-link-45deg me-1"></i>
+                                                {% endif %}
+                                                {{ link.label ?? link.url }}
+                                            </a>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
                                 {# Parent-level files (if any) #}
                                 {% if hasDropbox %}
                                     <div class="list-group song-files-container {% if hasMovements %}mb-3{% endif %}" data-dropbox-path="{{ song.dropboxlink }}">

@@ -41,6 +41,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(type: Types::DATETIME_MUTABLE, nullable: true)]
     private ?\DateTimeInterface $resetTokenExpiresAt = null;
 
+    #[ORM\Column]
+    private int $loginCount = 0;
+
     public function getId(): ?int
     {
         return $this->id;
@@ -148,6 +151,16 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     {
         $this->resetTokenExpiresAt = $resetTokenExpiresAt;
         return $this;
+    }
+
+    public function getLoginCount(): int
+    {
+        return $this->loginCount;
+    }
+
+    public function incrementLoginCount(): void
+    {
+        ++$this->loginCount;
     }
 
     public function isResetTokenValid(): bool

@@ -6,6 +6,7 @@ use App\Entity\SongKeyword;
 use App\Entity\Style;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
+use Symfony\Component\Form\Extension\Core\Type\CollectionType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
@@ -34,6 +35,14 @@ class SongKeywordType extends AbstractType
                 'label'    => 'Dropbox-Pfad',
                 'required' => false,
                 'attr'     => ['class' => 'form-control', 'placeholder' => '/Chorgemeinschaft Teutonia/Noten/…'],
+            ])
+            ->add('links', CollectionType::class, [
+                'label'         => false,
+                'entry_type'    => SongLinkType::class,
+                'allow_add'     => true,
+                'allow_delete'  => true,
+                'by_reference'  => false,
+                'required'      => false,
             ])
             ->add('styles', EntityType::class, [
                 'label'        => 'Stile',

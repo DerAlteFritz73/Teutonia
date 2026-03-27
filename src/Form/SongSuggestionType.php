@@ -40,6 +40,14 @@ class SongSuggestionType extends AbstractType
                     'placeholder' => 'z.B. "Besonders schöne Melodie"'
                 ],
             ])
+            ->add('link', TextType::class, [
+                'label' => 'Link (YouTube o.ä.)',
+                'required' => false,
+                'attr' => [
+                    'class' => 'form-control',
+                    'placeholder' => 'https://www.youtube.com/watch?v=…'
+                ],
+            ])
             ->add('pdfFile', FileType::class, [
                 'label' => 'Noten hochladen (PDF)',
                 'mapped' => false,

@@ -50,6 +50,106 @@ pageLoad(function () {
     });
 });
 
+// Unsaved changes guard
+(function () {
+    var trackedForm = null;
+    var initialSnapshot = '';
+    var bypassCheck = false;
+    var pendingUrl = null;
+    var bsModal = null;
+
+    function getSnapshot(form) {
+        var pairs = [];
+        Array.from(form.elements).forEach(function (el) {
+            if (!el.name || el.disabled) return;
+            if (el.type === 'file' || el.type === 'submit' || el.type === 'button') return;
+            if ((el.type === 'checkbox' || el.type === 'radio') && !el.checked) return;
+            pairs.push(el.name + '=' + el.value);
+        });
+        return pairs.join('&');
+    }
+
+    function isDirty() {
+        if (!trackedForm) return false;
+        if (window.unsavedChangesForced) return true;
+        return getSnapshot(trackedForm) !== initialSnapshot;
+    }
+
+    function ensureModal() {
+        var existing = document.getElementById('unsaved-modal');
+        if (existing) return existing;
+        var div = document.createElement('div');
+        div.innerHTML =
+            '<div class="modal fade" id="unsaved-modal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">' +
+                '<div class="modal-dialog modal-dialog-centered">' +
+                    '<div class="modal-content">' +
+                        '<div class="modal-header border-0 pb-0">' +
+                            '<h5 class="modal-title"><i class="bi bi-exclamation-triangle-fill text-warning me-2"></i>Ungespeicherte Änderungen</h5>' +
+                        '</div>' +
+                        '<div class="modal-body">Es gibt ungespeicherte Änderungen. Möchtest du die Seite wirklich verlassen?</div>' +
+                        '<div class="modal-footer border-0">' +
+                            '<button type="button" class="btn btn-secondary" id="unsaved-stay">Auf der Seite bleiben</button>' +
+                            '<button type="button" class="btn btn-danger" id="unsaved-leave">Trotzdem verlassen</button>' +
+                        '</div>' +
+                    '</div>' +
+                '</div>' +
+            '</div>';
+        document.body.appendChild(div.firstElementChild);
+        return document.getElementById('unsaved-modal');
+    }
+
+    // Global listeners — added once, survive Turbo navigations
+    document.addEventListener('turbo:before-visit', function (e) {
+        if (bypassCheck || !isDirty()) return;
+        e.preventDefault();
+        pendingUrl = e.detail.url;
+        if (bsModal) bsModal.show();
+    });
+
+    window.addEventListener('beforeunload', function (e) {
+        if (bypassCheck || !isDirty()) return;
+        e.preventDefault();
+        e.returnValue = '';
+    });
+
+    pageLoad(function () {
+        // Reset per-page state on each navigation
+        trackedForm = null;
+        initialSnapshot = '';
+        bypassCheck = false;
+        window.unsavedChangesForced = false;
+        pendingUrl = null;
+        bsModal = null;
+
+        var form = document.querySelector('form[data-unsaved-check]');
+        if (!form) return;
+
+        var modalEl = ensureModal();
+        bsModal = bootstrap.Modal.getOrCreateInstance(modalEl);
+        trackedForm = form;
+        initialSnapshot = getSnapshot(form);
+
+        document.getElementById('unsaved-stay').onclick = function () {
+            bsModal.hide();
+            pendingUrl = null;
+        };
+
+        document.getElementById('unsaved-leave').onclick = function () {
+            var url = pendingUrl;
+            bsModal.hide();
+            bypassCheck = true;
+            trackedForm = null;
+            pendingUrl = null;
+            if (url) window.location.href = url;
+        };
+
+        form.addEventListener('submit', function () {
+            bypassCheck = true;
+            trackedForm = null;
+        });
+    });
+}());
+
 // Re-initialize Bootstrap dropdowns after each Turbo navigation.
 // Turbo replaces the <body> on each visit, so new DOM elements have no
 // Bootstrap Dropdown instance yet; lazy initialization on first click

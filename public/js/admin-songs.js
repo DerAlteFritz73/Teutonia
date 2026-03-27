@@ -1,3 +1,9 @@
+/* All document-level listeners are registered only once per session.
+   admin-songs.js lives in a page body block and Turbo re-executes it on
+   each visit; the flag below prevents accumulating duplicate handlers.  */
+if (!window._adminSongsInit) {
+    window._adminSongsInit = true;
+
 (function () {
     'use strict';
     const cfg = window.SONGS_CONFIG || {};
@@ -192,18 +198,21 @@
 }());
 
 /* ── Dropbox sync ───────────────────────────────────────────────────── */
+/* Uses event delegation on document so the button works even after Turbo
+   replaces the body and the original button element is gone.            */
 (function () {
-    const cfg       = window.SONGS_CONFIG || {};
-    const btn       = document.getElementById('btn-sync-dropbox');
-    const modal     = new bootstrap.Modal(document.getElementById('syncResultModal'));
-    const body      = document.getElementById('syncResultBody');
-    const reloadBtn = document.getElementById('btnReloadAfterSync');
+    document.addEventListener('click', async (e) => {
+        if (!e.target.closest('#btn-sync-dropbox')) return;
 
-    btn.addEventListener('click', async () => {
+        const cfg       = window.SONGS_CONFIG || {};
+        const body      = document.getElementById('syncResultBody');
+        const reloadBtn = document.getElementById('btnReloadAfterSync');
+        const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('syncResultModal'));
+
         body.innerHTML = `
             <div class="text-center py-3">
                 <div class="spinner-border text-primary" role="status"></div>
-                <p class="mt-2 mb-0">Verbindung zu Dropbox…</p>
+                <p class="mt-2 mb-0">Verbindung zu Dropbox wird hergestellt…</p>
             </div>`;
         reloadBtn.classList.add('d-none');
         modal.show();
@@ -212,7 +221,15 @@
             const form = new FormData();
             form.append('_token', cfg.csrfSync);
 
+            // Update spinner text after a short delay so the user sees progress
+            const progressTimer = setTimeout(() => {
+                if (body.querySelector('.spinner-border')) {
+                    body.querySelector('p').textContent = 'Dropbox-Ordner werden abgeglichen…';
+                }
+            }, 1500);
+
             const res  = await fetch(cfg.syncUrl, { method: 'POST', body: form });
+            clearTimeout(progressTimer);
             const data = await res.json();
 
             if (!res.ok || data.error) {
@@ -220,11 +237,24 @@
                 return;
             }
 
+            const anyChanges = data.matched > 0 || data.created > 0;
+            const statusIcon = anyChanges
+                ? '<i class="bi bi-check-circle-fill text-success me-2"></i>'
+                : '<i class="bi bi-info-circle-fill text-primary me-2"></i>';
+            const statusText = anyChanges
+                ? `${data.matched + data.created} Änderung${(data.matched + data.created) !== 1 ? 'en' : ''} vorgenommen`
+                : 'Keine Änderungen';
+
             let html = `
+                <p class="mb-3">${statusIcon}<strong>${statusText}</strong></p>
                 <div class="list-group list-group-flush mb-3">
                     <div class="list-group-item d-flex justify-content-between">
                         <span><i class="bi bi-link-45deg text-success me-1"></i>Neu verknüpft</span>
                         <strong class="text-success">${data.matched}</strong>
+                    </div>
+                    <div class="list-group-item d-flex justify-content-between">
+                        <span><i class="bi bi-plus-circle text-primary me-1"></i>Neu angelegt</span>
+                        <strong class="text-primary">${data.created}</strong>
                     </div>
                     <div class="list-group-item d-flex justify-content-between">
                         <span><i class="bi bi-folder-check text-muted me-1"></i>Bereits verknüpft</span>
@@ -243,11 +273,13 @@
             }
 
             body.innerHTML = html;
-            if (data.matched > 0) {
+            if (data.matched > 0 || data.created > 0) {
                 reloadBtn.classList.remove('d-none');
             }
         } catch (err) {
-            body.innerHTML = `<div class="alert alert-danger mb-0">Netzwerkfehler: ${err.message}</div>`;
+            body.innerHTML = `<div class="alert alert-danger mb-0"><i class="bi bi-exclamation-triangle me-1"></i>Netzwerkfehler: ${err.message}</div>`;
         }
     });
 })();
+
+} // end if (!window._adminSongsInit)

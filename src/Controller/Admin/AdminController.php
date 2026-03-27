@@ -239,16 +239,65 @@ class AdminController extends AbstractController
             return [$byFull, $byTitle];
         };
 
-        [$notenByFull,   $notenByTitle]   = $buildLookup($notenFolders);
+        [$notenByFull,    $notenByTitle]    = $buildLookup($notenFolders);
         [$aktuelleByFull, $aktuelleByTitle] = $buildLookup($aktuelleFolder);
 
-        $songs        = $songRepository->findAll();
-        $matched      = 0;
+        // Match a song against a set of Dropbox folders using all strategies.
+        // Returns the matched folder name or null.
+        $findInFolders = function (string $normTitle, string $normComposer, array $byFull, array $byTitle): ?string {
+            // 1. Exact match on full folder name
+            if (isset($byFull[$normTitle])) return $byFull[$normTitle];
+
+            // 2. Match on the title part after " - "
+            if (isset($byTitle[$normTitle])) return $byTitle[$normTitle];
+
+            // 3. Composer last name + title combined substring match
+            if ($normComposer !== '') {
+                $parts    = explode(' ', $normComposer);
+                $lastName = end($parts);
+                foreach ($byFull as $norm => $name) {
+                    if (str_contains($norm, $lastName) && str_contains($norm, $normTitle)) {
+                        return $name;
+                    }
+                }
+            }
+
+            // 4. Fuzzy: Dropbox folder name contains the song title (≥ 8 chars)
+            if (mb_strlen($normTitle) >= 8) {
+                foreach ($byFull as $norm => $name) {
+                    if (str_contains($norm, $normTitle)) return $name;
+                }
+            }
+
+            // 5. Reverse fuzzy: song title contains the Dropbox title part (≥ 8 chars)
+            if (mb_strlen($normTitle) >= 8) {
+                foreach ($byTitle as $titleNorm => $name) {
+                    if (mb_strlen($titleNorm) >= 8 && str_contains($normTitle, $titleNorm)) {
+                        return $name;
+                    }
+                }
+            }
+
+            return null;
+        };
+
+        $songs         = $songRepository->findAll();
+        $matched       = 0;
         $alreadyLinked = 0;
-        $unmatched    = [];
+        $unmatched     = [];
+
+        $aktuelleBase = '/Chorgemeinschaft Teutonia/Aktuelle Proben';
+        $notenBase    = '/Chorgemeinschaft Teutonia/Noten';
 
         foreach ($songs as $song) {
-            if ($song->getDropboxlink()) {
+            $isAktuelle        = $song->getFolder() === 'Aktuelle Proben';
+            $currentLink       = $song->getDropboxlink();
+            $alreadyInAktuelle = $currentLink && str_starts_with($currentLink, $aktuelleBase);
+
+            // Skip if already correctly linked:
+            // - Non-Aktuelle songs with any link
+            // - Aktuelle songs already pointing to the Aktuelle Proben path
+            if ($currentLink && (!$isAktuelle || $alreadyInAktuelle)) {
                 $alreadyLinked++;
                 continue;
             }
@@ -256,53 +305,23 @@ class AdminController extends AbstractController
             $normTitle    = $this->normalizeForSync($song->getSongName());
             $normComposer = $song->getComposer() ? $this->normalizeForSync($song->getComposer()) : '';
             $folderName   = null;
-            $basePath     = '/Chorgemeinschaft Teutonia/Noten';
+            $basePath     = $notenBase;
 
-            // Try Aktuelle Proben first for songs in that folder
-            if ($song->getFolder() === 'Aktuelle Proben') {
-                if (isset($aktuelleByFull[$normTitle])) {
-                    $folderName = $aktuelleByFull[$normTitle];
-                    $basePath   = '/Chorgemeinschaft Teutonia/Aktuelle Proben';
-                } elseif (isset($aktuelleByTitle[$normTitle])) {
-                    $folderName = $aktuelleByTitle[$normTitle];
-                    $basePath   = '/Chorgemeinschaft Teutonia/Aktuelle Proben';
+            if ($isAktuelle) {
+                // Aktuelle Proben songs: try that directory first, fall back to Noten
+                $folderName = $findInFolders($normTitle, $normComposer, $aktuelleByFull, $aktuelleByTitle);
+                if ($folderName !== null) {
+                    $basePath = $aktuelleBase;
+                } else {
+                    $folderName = $findInFolders($normTitle, $normComposer, $notenByFull, $notenByTitle);
                 }
-            }
-
-            // 1. Exact match on full folder name
-            $folderName ??= $notenByFull[$normTitle] ?? null;
-
-            // 2. Match on the title part after " - "
-            $folderName ??= $notenByTitle[$normTitle] ?? null;
-
-            // 3. Composer last name + title combined substring match
-            if ($folderName === null && $normComposer !== '') {
-                $parts    = explode(' ', $normComposer);
-                $lastName = end($parts);
-                foreach ($notenByFull as $norm => $name) {
-                    if (str_contains($norm, $lastName) && str_contains($norm, $normTitle)) {
-                        $folderName = $name;
-                        break;
-                    }
-                }
-            }
-
-            // 4. Fuzzy: Dropbox folder name contains the song title (≥ 8 chars)
-            if ($folderName === null && mb_strlen($normTitle) >= 8) {
-                foreach ($notenByFull as $norm => $name) {
-                    if (str_contains($norm, $normTitle)) {
-                        $folderName = $name;
-                        break;
-                    }
-                }
-            }
-
-            // 5. Reverse fuzzy: song title contains the Dropbox title part (≥ 8 chars)
-            if ($folderName === null && mb_strlen($normTitle) >= 8) {
-                foreach ($notenByTitle as $titleNorm => $name) {
-                    if (mb_strlen($titleNorm) >= 8 && str_contains($normTitle, $titleNorm)) {
-                        $folderName = $name;
-                        break;
+            } else {
+                // All other songs: try Noten first, then Aktuelle Proben as fallback
+                $folderName = $findInFolders($normTitle, $normComposer, $notenByFull, $notenByTitle);
+                if ($folderName === null) {
+                    $folderName = $findInFolders($normTitle, $normComposer, $aktuelleByFull, $aktuelleByTitle);
+                    if ($folderName !== null) {
+                        $basePath = $aktuelleBase;
                     }
                 }
             }
@@ -317,11 +336,61 @@ class AdminController extends AbstractController
 
         $em->flush();
 
+        // Build a set of all dropboxlinks already in the DB (after matching above)
+        $linkedPaths = [];
+        foreach ($songRepository->findAll() as $s) {
+            if ($s->getDropboxlink()) {
+                $linkedPaths[rtrim($s->getDropboxlink(), '/')] = true;
+            }
+        }
+
+        // Create DB entries for Dropbox folders that have no matching song yet
+        $created = 0;
+        $toCreate = [
+            $notenBase    => $notenFolders,
+            $aktuelleBase => $aktuelleFolder,
+        ];
+
+        foreach ($toCreate as $base => $folders) {
+            $folderLabel = $base === $aktuelleBase ? 'Aktuelle Proben' : 'Notenverzeichnis';
+            foreach ($folders as $folderName) {
+                if (str_starts_with($folderName, '_')) {
+                    continue;
+                }
+                $path = $base . '/' . $folderName;
+                if (isset($linkedPaths[$path])) {
+                    continue;
+                }
+
+                // Parse "Composer - Title" pattern from folder name
+                $composer = null;
+                $title    = $folderName;
+                if (str_contains($folderName, ' - ')) {
+                    [$composerPart, $titlePart] = explode(' - ', $folderName, 2);
+                    $composer = trim($composerPart);
+                    $title    = trim($titlePart);
+                }
+
+                $song = new SongKeyword();
+                $song->setSongName($title);
+                $song->setComposer($composer);
+                $song->setFolder($folderLabel);
+                $song->setDropboxlink($path);
+                $em->persist($song);
+                $created++;
+            }
+        }
+
+        if ($created > 0) {
+            $em->flush();
+        }
+
         return $this->json([
             'matched'        => $matched,
             'already_linked' => $alreadyLinked,
             'unmatched'      => count($unmatched),
             'unmatched_names' => $unmatched,
+            'created'        => $created,
         ]);
     }
 
@@ -626,6 +695,22 @@ class AdminController extends AbstractController
             'user' => $user,
             'isNew' => false,
         ]);
+    }
+
+    #[Route('/users/{id}/reset-password', name: 'admin_users_reset_password', methods: ['POST'])]
+    public function usersResetPassword(
+        User $user,
+        Request $request,
+        EntityManagerInterface $em,
+        UserPasswordHasherInterface $passwordHasher
+    ): Response {
+        if ($this->isCsrfTokenValid('reset-password' . $user->getId(), $request->request->get('_token'))) {
+            $user->setPassword($passwordHasher->hashPassword($user, 'teutonia'));
+            $em->flush();
+            $this->addFlash('success', 'Passwort von ' . $user->getFullName() . ' wurde auf "teutonia" zurückgesetzt.');
+        }
+
+        return $this->redirectToRoute('admin_users');
     }
 
     #[Route('/users/{id}/delete', name: 'admin_users_delete', methods: ['POST'])]

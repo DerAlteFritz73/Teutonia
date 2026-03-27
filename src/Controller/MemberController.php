@@ -107,8 +107,9 @@ class MemberController extends AbstractController
     #[Route('/ideenkiste/{id}/bearbeiten', name: 'member_ideenkiste_edit')]
     public function ideenkisteEdit(SongSuggestion $suggestion, Request $request, EntityManagerInterface $em): Response
     {
-        // Security check: only allow editing own suggestions
-        if ($suggestion->getSubmittedBy() !== $this->getUser()) {
+        // Security check: only allow editing own suggestions or by admins
+        if ($suggestion->getSubmittedBy()->getId() !== $this->getUser()->getId()
+            && !$this->isGranted('ROLE_ADMIN')) {
             $this->addFlash('error', 'Sie können nur eigene Vorschläge bearbeiten.');
             return $this->redirectToRoute('member_ideenkiste');
         }
@@ -141,8 +142,9 @@ class MemberController extends AbstractController
     #[Route('/ideenkiste/{id}/loeschen', name: 'member_ideenkiste_delete', methods: ['POST'])]
     public function ideenkisteDelete(SongSuggestion $suggestion, Request $request, EntityManagerInterface $em): Response
     {
-        // Security check: only allow deleting own suggestions
-        if ($suggestion->getSubmittedBy() !== $this->getUser()) {
+        // Security check: only allow deleting own suggestions or by admins
+        if ($suggestion->getSubmittedBy()->getId() !== $this->getUser()->getId()
+            && !$this->isGranted('ROLE_ADMIN')) {
             $this->addFlash('error', 'Sie können nur eigene Vorschläge löschen.');
             return $this->redirectToRoute('member_ideenkiste');
         }

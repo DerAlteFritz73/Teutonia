@@ -46,15 +46,9 @@ class DropboxService
             return $cachedToken['access_token'];
         }
 
-        // If no cached token or it's expired, check if the initial token is still valid
-        // If it's fresh (from .env), cache it with a 4-hour expiry
-        if ($initialToken) {
-            error_log("Dropbox: Using initial access token from config");
-            $this->saveTokenToCache($initialToken, time() + 14400); // 4 hours
-            return $initialToken;
-        }
-
-        // If we get here, we need to refresh the token
+        // No valid cached token — always refresh using the refresh token.
+        // The initial access token from .env is a short-lived token that expires
+        // after 4 hours and cannot be relied upon as a fallback.
         return $this->refreshAccessToken();
     }
 

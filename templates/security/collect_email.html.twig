@@ -1,0 +1,35 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}E-Mail-Adresse hinterlegen - {{ parent() }}{% endblock %}
+
+{% block body %}
+<!-- template: templates/security/collect_email.html.twig -->
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-4">
+            <div class="card shadow">
+                <div class="card-header bg-dark text-white">
+                    <h4 class="mb-0">E-Mail-Adresse hinterlegen</h4>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted mb-4">
+                        Für bestimmte Funktionen (z.&nbsp;B. Passwort zurücksetzen) wird eine E-Mail-Adresse benötigt.
+                        Du kannst diese Angabe auch überspringen.
+                    </p>
+                    <form method="post">
+                        <div class="mb-4">
+                            <label for="inputEmail" class="form-label">E-Mail-Adresse</label>
+                            <input type="email" name="_email" id="inputEmail"
+                                   class="form-control" autocomplete="email" autofocus>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary flex-grow-1">Speichern</button>
+                            <a href="{{ path('member_dashboard') }}" class="btn btn-secondary">Überspringen</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

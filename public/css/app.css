@@ -16,10 +16,12 @@ img { max-width: 100% !important; height: auto !important; }
 div[style*="inline-block"] { max-width: 100%; }
 
 /* Hide empty paragraphs from Quill editor output (outside the editor and post content) */
-p:empty, p:has(br:only-child) { display: none; }
+/* Rules are split so p:empty works even in browsers without :has() (Safari < 15.4) */
+p:empty { display: none; }
+p:has(br:only-child) { display: none; }
 
 /* Keep Quill editor paragraphs visible (it uses <p><br></p> for blank lines and cursor) */
-.ql-editor p:empty,
+.ql-editor p:empty { display: block !important; }
 .ql-editor p:has(br:only-child) { display: block !important; }
 
 /* Quill paragraph content: <p> blocks act as single line breaks */
@@ -29,14 +31,17 @@ p:empty, p:has(br:only-child) { display: none; }
 .post-paragraph .ql-align-right   { text-align: right; }
 .post-paragraph .ql-align-justify { text-align: justify; }
 /* Allow empty <p><br></p> to show as blank lines inside post content */
-.post-paragraph p:empty,
+.post-paragraph p:empty { display: block; }
 .post-paragraph p:has(br:only-child) { display: block; }
 
 /* Lightbox overlay for post images */
 #lightbox-overlay {
     display: none;
     position: fixed;
-    inset: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
     background: rgba(0, 0, 0, 0.88);
     z-index: 9999;
     cursor: zoom-out;

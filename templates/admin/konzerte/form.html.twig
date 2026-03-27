@@ -5,9 +5,17 @@
 {% block body %}
 <!-- template: templates/admin/konzerte/form.html.twig -->
 <div class="container-fluid py-4" style="max-width:1200px">
-    <h1>{{ isNew ? 'Neues Konzert' : konzert.name }}</h1>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="mb-0">{{ isNew ? 'Neues Konzert' : konzert.name }}</h1>
+        <div class="d-flex gap-2">
+            <a href="{{ path('admin_konzerte') }}" class="btn btn-secondary">Abbrechen</a>
+            <button type="submit" form="konzert-form" class="btn btn-primary">
+                <i class="bi bi-check-lg me-1"></i>{{ isNew ? 'Erstellen' : 'Speichern' }}
+            </button>
+        </div>
+    </div>
 
-    {{ form_start(form, {attr: {class: 'mt-4', id: 'konzert-form'}}) }}
+    {{ form_start(form, {attr: {class: 'mt-4', id: 'konzert-form', 'data-unsaved-check': ''}}) }}
 
     <div class="row g-3 mb-4">
         <div class="col-md-5">
@@ -122,13 +130,6 @@
         Doppelklick zum schnellen Verschieben &middot;
         Rechte Liste: Drag &amp; Drop zum Umsortieren
     </p>
-
-    <div class="d-flex gap-2 mt-3">
-        <button type="submit" form="konzert-form" class="btn btn-primary">
-            <i class="bi bi-check-lg me-1"></i>{{ isNew ? 'Erstellen' : 'Speichern' }}
-        </button>
-        <a href="{{ path('admin_konzerte') }}" class="btn btn-secondary">Abbrechen</a>
-    </div>
 
     {{ form_end(form) }}
 </div>

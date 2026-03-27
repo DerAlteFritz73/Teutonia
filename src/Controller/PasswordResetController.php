@@ -24,6 +24,7 @@ class PasswordResetController extends AbstractController
     ): Response {
         $error = null;
         $success = false;
+        $noEmail = false;
 
         if ($request->isMethod('POST')) {
             $identifier = $request->request->get('identifier');
@@ -32,7 +33,9 @@ class PasswordResetController extends AbstractController
             $user = $userRepository->findOneBy(['username' => $identifier])
                 ?? $userRepository->findOneBy(['email' => $identifier]);
 
-            if ($user && $user->getEmail()) {
+            if ($user && !$user->getEmail()) {
+                $noEmail = true;
+            } elseif ($user && $user->getEmail()) {
                 // Generate reset token
                 $token = bin2hex(random_bytes(32));
                 $user->setResetToken($token);
@@ -59,13 +62,16 @@ class PasswordResetController extends AbstractController
                 }
             }
 
-            // Always show success message (don't reveal if user exists)
-            $success = true;
+            if (!$noEmail) {
+                // Always show success message (don't reveal if user exists)
+                $success = true;
+            }
         }
 
         return $this->render('security/forgot_password.html.twig', [
             'error' => $error,
             'success' => $success,
+            'no_email' => $noEmail,
         ]);
     }
 

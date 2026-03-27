@@ -63,21 +63,12 @@
         <div class="alert alert-success alert-dismissible fade show">{{ message }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
     {% endfor %}
 
-    {# Search form #}
-    <form method="get" class="mb-3 d-flex gap-2" style="max-width:500px;">
-        <input type="hidden" name="sort" value="{{ sort }}">
-        <input type="hidden" name="dir"  value="{{ dir }}">
-        <input type="search" name="q" value="{{ search }}" class="form-control"
-               placeholder="Suche nach Titel, Komponist, Etikett oder Stil…" autofocus>
-        <button class="btn btn-outline-secondary" type="submit">
-            <i class="bi bi-search"></i>
-        </button>
-        {% if search %}
-            <a href="{{ path('admin_songs', {sort: sort, dir: dir}) }}" class="btn btn-outline-danger" title="Filter zurücksetzen">
-                <i class="bi bi-x-lg"></i>
-            </a>
-        {% endif %}
-    </form>
+    {# Search filter #}
+    <div class="mb-3" style="max-width:500px;">
+        <input type="search" id="songsSearch" class="form-control"
+               placeholder="Lied suchen…" autocomplete="off" autofocus>
+    </div>
+    <div id="songsNoResults" class="text-muted d-none">Kein Lied gefunden.</div>
 
     <p class="text-muted small mb-2">
         <i class="bi bi-pencil-square me-1"></i>Auf eine Zelle klicken zum direkten Bearbeiten.
@@ -466,6 +457,33 @@ document.querySelectorAll('.btn-expand-movements').forEach(btn => {
         chev.className = open ? 'bi bi-chevron-right text-muted' : 'bi bi-chevron-down text-primary';
     });
 });
+</script>
+<script>
+(function () {
+    var input    = document.getElementById('songsSearch');
+    var noResult = document.getElementById('songsNoResults');
+    if (!input) return;
+
+    input.addEventListener('input', function () {
+        var q     = input.value.trim().toLowerCase();
+        var rows  = document.querySelectorAll('#songs-table tbody tr:not(.movement-row)');
+        var visible = 0;
+
+        rows.forEach(function (row) {
+            var text = [
+                row.querySelector('[data-field="songName"] .display-val'),
+                row.querySelector('[data-field="composer"] .display-val'),
+                row.querySelector('[data-field="etikett"] .display-val'),
+            ].map(function (el) { return el ? el.textContent.trim().toLowerCase() : ''; }).join(' ');
+
+            var show = !q || text.includes(q);
+            row.style.display = show ? '' : 'none';
+            if (show) visible++;
+        });
+
+        noResult.classList.toggle('d-none', visible > 0 || !q);
+    });
+}());
 </script>
 <script src="{{ asset('js/admin-songs.js') }}"></script>
 <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.slim.min.js"></script>
