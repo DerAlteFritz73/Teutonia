@@ -46,6 +46,12 @@
                                     {% endif %}
                                 </span>
                                 <span class="ms-auto d-flex align-items-center gap-2">
+                                    {% for style in song.styles if style.image %}
+                                        <img src="{{ asset('images/styles/' ~ style.image) }}"
+                                             class="rounded-circle flex-shrink-0"
+                                             style="width:28px;height:28px;object-fit:cover;border:2px solid rgba(255,255,255,.6)"
+                                             alt="{{ style.name }}" title="{{ style.name }}">
+                                    {% endfor %}
                                     {% if hasMovements %}
                                         <span class="badge bg-secondary fw-normal">{{ song.children|length }} Sätze</span>
                                     {% endif %}
@@ -172,6 +178,12 @@
                                     {% endif %}
                                 </span>
                                 <span class="ms-auto d-flex align-items-center gap-2">
+                                    {% for style in song.styles if style.image %}
+                                        <img src="{{ asset('images/styles/' ~ style.image) }}"
+                                             class="rounded-circle flex-shrink-0"
+                                             style="width:28px;height:28px;object-fit:cover;border:2px solid rgba(255,255,255,.6)"
+                                             alt="{{ style.name }}" title="{{ style.name }}">
+                                    {% endfor %}
                                     {{ _self.etikett_badge(song.etikett) }}
                                     {% if hasMovements %}
                                         <span class="badge bg-secondary fw-normal">{{ song.children|length }} Sätze</span>
