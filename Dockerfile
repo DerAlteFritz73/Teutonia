@@ -50,7 +50,7 @@ CMD ["php-fpm"]
 FROM base AS prod
 
 COPY docker/php/php.prod.ini $PHP_INI_DIR/conf.d/app.ini
-COPY docker/php/www.conf /usr/local/etc/php-fpm.d/www.conf
+COPY docker/php/zzz-clear-env.conf /usr/local/etc/php-fpm.d/zzz-clear-env.conf
 
 # Install dependencies first (layer cache)
 COPY composer.json composer.lock symfony.lock ./
