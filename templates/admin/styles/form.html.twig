@@ -15,7 +15,7 @@
         </div>
     </div>
 
-    {{ form_start(form, {attr: {class: 'mt-4', id: 'style-form', 'data-unsaved-check': ''}}) }}
+    {{ form_start(form, {attr: {enctype: 'multipart/form-data', class: 'mt-4', id: 'style-form', 'data-unsaved-check': ''}}) }}
 
     <div class="mb-3">
         {{ form_label(form.name) }}
@@ -60,15 +60,17 @@
     </div>
 
     <div class="mb-3">
-        {{ form_label(form.image) }}
-        <div class="input-group" style="max-width:200px">
-            {{ form_widget(form.image, {attr: {class: 'form-control', style: 'font-size:1.5rem;text-align:center'}}) }}
-            {% if style.image %}
-                <span class="input-group-text" style="font-size:1.5rem">{{ style.image }}</span>
-            {% endif %}
+        {{ form_label(form.imageFile) }}
+        {% if style.image %}
+        <div class="mb-2 d-flex align-items-center gap-3">
+            <img src="{{ asset('images/styles/' ~ style.image) }}"
+                 style="width:64px;height:64px;border-radius:50%;object-fit:cover;border:3px solid #dee2e6" alt="">
+            <span class="text-muted small">Aktuelles Bild: {{ style.image }}</span>
         </div>
-        {{ form_errors(form.image) }}
-        <div class="form-text">{{ form_help(form.image) }}</div>
+        {% endif %}
+        {{ form_widget(form.imageFile) }}
+        {{ form_errors(form.imageFile) }}
+        <div class="form-text">JPG, PNG, WebP, SVG – max. 2 MB. Leer lassen, um das aktuelle Bild zu behalten.</div>
     </div>
 
     {{ form_end(form) }}

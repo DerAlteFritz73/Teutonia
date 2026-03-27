@@ -4,10 +4,12 @@ namespace App\Form;
 
 use App\Entity\Style;
 use Symfony\Component\Form\AbstractType;
+use Symfony\Component\Form\Extension\Core\Type\FileType;
 use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
+use Symfony\Component\Validator\Constraints\File;
 
 class StyleType extends AbstractType
 {
@@ -33,11 +35,18 @@ class StyleType extends AbstractType
                 'required' => false,
                 'attr'     => ['class' => 'form-control form-control-color', 'type' => 'color'],
             ])
-            ->add('image', TextType::class, [
-                'label'    => 'Emoji',
+            ->add('imageFile', FileType::class, [
+                'label'    => 'Bild hochladen',
+                'mapped'   => false,
                 'required' => false,
-                'attr'     => ['class' => 'form-control', 'placeholder' => '🎵', 'maxlength' => 10],
-                'help'     => 'Ein Emoji, das diesen Stil repräsentiert.',
+                'attr'     => ['class' => 'form-control', 'accept' => 'image/*'],
+                'constraints' => [
+                    new File([
+                        'maxSize'   => '2M',
+                        'mimeTypes' => ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'],
+                        'mimeTypesMessage' => 'Bitte ein gültiges Bild hochladen (JPG, PNG, GIF, WebP, SVG).',
+                    ]),
+                ],
             ]);
     }
 

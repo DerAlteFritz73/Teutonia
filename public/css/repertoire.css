@@ -17,13 +17,16 @@
     padding: 44px;
     display: inline-block;
 }
-.style-emoji {
+.style-img {
     position: absolute;
     top: -28px;
-    right: 10px;
-    font-size: 2rem;
-    line-height: 1;
-    filter: drop-shadow(0 2px 4px rgba(0,0,0,.3));
+    right: 14px;
+    width: 68px;
+    height: 68px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid #fff;
+    box-shadow: 0 3px 12px rgba(0,0,0,.28);
 }
 .style-songs li {
     padding: 5px 0;

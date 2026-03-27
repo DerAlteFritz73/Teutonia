@@ -49,7 +49,9 @@
                                  style="background: linear-gradient(135deg, {{ style.color ?? '#6c757d' }}, {{ style.color2 ?? style.color ?? '#495057' }})">
                                 <span>{{ style.name }}</span>
                                 {% if style.image %}
-                                    <span class="style-emoji">{{ style.image }}</span>
+                                    <img src="{{ asset('images/styles/' ~ style.image) }}"
+                                         class="style-img"
+                                         alt="{{ style.name }}">
                                 {% endif %}
                             </div>
                         </div>

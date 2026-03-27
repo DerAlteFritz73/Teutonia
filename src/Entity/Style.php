@@ -29,7 +29,7 @@ class Style
     #[ORM\Column(length: 30, nullable: true)]
     private ?string $color2 = null;
 
-    #[ORM\Column(length: 10, nullable: true)]
+    #[ORM\Column(length: 255, nullable: true)]
     private ?string $image = null;
 
     #[ORM\ManyToMany(targetEntity: SongKeyword::class, mappedBy: 'styles')]
