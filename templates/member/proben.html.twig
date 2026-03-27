@@ -46,12 +46,9 @@
                                     {% endif %}
                                 </span>
                                 <span class="ms-auto ps-3 d-flex align-items-center gap-2">
-                                    {% for style in song.styles %}{% if style.image %}
-                                        <img src="{{ asset('images/styles/' ~ style.image) }}"
-                                             class="rounded-circle flex-shrink-0"
-                                             style="width:44px;height:44px;object-fit:cover;border:2px solid rgba(255,255,255,.6)"
-                                             alt="{{ style.name }}" title="{{ style.name }}">
-                                    {% endif %}{% endfor %}
+                                    {% for style in song.styles %}
+                                        <span class="badge rounded-pill fw-normal" style="background:rgba(255,255,255,.2);font-size:.75rem">{{ style.name }}</span>
+                                    {% endfor %}
                                     {% if hasMovements %}
                                         <span class="badge bg-secondary fw-normal">{{ song.children|length }} Sätze</span>
                                     {% endif %}
@@ -178,12 +175,9 @@
                                     {% endif %}
                                 </span>
                                 <span class="ms-auto ps-3 d-flex align-items-center gap-2">
-                                    {% for style in song.styles %}{% if style.image %}
-                                        <img src="{{ asset('images/styles/' ~ style.image) }}"
-                                             class="rounded-circle flex-shrink-0"
-                                             style="width:44px;height:44px;object-fit:cover;border:2px solid rgba(255,255,255,.6)"
-                                             alt="{{ style.name }}" title="{{ style.name }}">
-                                    {% endif %}{% endfor %}
+                                    {% for style in song.styles %}
+                                        <span class="badge rounded-pill fw-normal" style="background:rgba(255,255,255,.2);font-size:.75rem">{{ style.name }}</span>
+                                    {% endfor %}
                                     {{ _self.etikett_badge(song.etikett) }}
                                     {% if hasMovements %}
                                         <span class="badge bg-secondary fw-normal">{{ song.children|length }} Sätze</span>
