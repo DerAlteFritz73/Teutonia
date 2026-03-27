@@ -49,7 +49,7 @@
                                     {% for style in song.styles %}{% if style.image %}
                                         <img src="{{ asset('images/styles/' ~ style.image) }}"
                                              class="rounded-circle flex-shrink-0"
-                                             style="width:28px;height:28px;object-fit:cover;border:2px solid rgba(255,255,255,.6)"
+                                             style="width:44px;height:44px;object-fit:cover;border:2px solid rgba(255,255,255,.6)"
                                              alt="{{ style.name }}" title="{{ style.name }}">
                                     {% endif %}{% endfor %}
                                     {% if hasMovements %}
@@ -181,7 +181,7 @@
                                     {% for style in song.styles %}{% if style.image %}
                                         <img src="{{ asset('images/styles/' ~ style.image) }}"
                                              class="rounded-circle flex-shrink-0"
-                                             style="width:28px;height:28px;object-fit:cover;border:2px solid rgba(255,255,255,.6)"
+                                             style="width:44px;height:44px;object-fit:cover;border:2px solid rgba(255,255,255,.6)"
                                              alt="{{ style.name }}" title="{{ style.name }}">
                                     {% endif %}{% endfor %}
                                     {{ _self.etikett_badge(song.etikett) }}
