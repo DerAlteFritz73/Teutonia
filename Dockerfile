@@ -64,6 +64,7 @@ COPY . .
 # Finalize autoloader and run post-install scripts (assets:install, importmap:install)
 RUN composer dump-autoload --optimize --no-dev \
     && APP_ENV=prod composer run-script post-install-cmd --no-dev \
+    && APP_ENV=prod php bin/console asset-map:compile \
     && mkdir -p public/images/styles \
     && chown -R www-data:www-data var/ public/images/styles \
     && cp -r public/assets /var/assets-seed
