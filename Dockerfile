@@ -44,7 +44,9 @@ RUN composer install --prefer-dist --no-scripts --no-autoloader --no-interaction
 COPY . .
 RUN composer dump-autoload
 
-CMD ["php-fpm"]
+COPY docker/php/entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+ENTRYPOINT ["/entrypoint.sh"]
 
 # --- Production stage ---
 FROM base AS prod
