@@ -45,7 +45,7 @@
                                         <small class="text-muted fw-normal">{{ song.composer }}</small>
                                     {% endif %}
                                 </span>
-                                <span class="ms-auto d-flex align-items-center gap-2">
+                                <span class="ms-auto ps-3 d-flex align-items-center gap-2">
                                     {% for style in song.styles %}{% if style.image %}
                                         <img src="{{ asset('images/styles/' ~ style.image) }}"
                                              class="rounded-circle flex-shrink-0"
@@ -99,7 +99,7 @@
                                                             {% if movement.dropboxlink %}data-dropbox-path="{{ movement.dropboxlink }}"{% endif %}>
                                                         <i class="bi bi-music-note me-2 text-primary"></i>
                                                         {{ movement.songName }}
-                                                        <span class="ms-auto d-flex align-items-center gap-2">
+                                                        <span class="ms-auto ps-3 d-flex align-items-center gap-2">
                                                             <span class="d-flex gap-1 file-count-badges"></span>
                                                         </span>
                                                     </button>
@@ -177,7 +177,7 @@
                                         <small class="text-muted fw-normal">{{ song.composer }}</small>
                                     {% endif %}
                                 </span>
-                                <span class="ms-auto d-flex align-items-center gap-2">
+                                <span class="ms-auto ps-3 d-flex align-items-center gap-2">
                                     {% for style in song.styles %}{% if style.image %}
                                         <img src="{{ asset('images/styles/' ~ style.image) }}"
                                              class="rounded-circle flex-shrink-0"
@@ -251,7 +251,7 @@
                                                             {% if movHasDropbox %}data-dropbox-path="{{ movement.dropboxlink }}"{% endif %}>
                                                         <i class="bi bi-music-note me-2 text-primary"></i>
                                                         {{ movement.songName }}
-                                                        <span class="ms-auto d-flex align-items-center gap-2">
+                                                        <span class="ms-auto ps-3 d-flex align-items-center gap-2">
                                                             <span class="d-flex gap-1 file-count-badges"></span>
                                                         </span>
                                                     </button>
