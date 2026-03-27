@@ -65,5 +65,8 @@ RUN composer dump-autoload --optimize --no-dev \
     && mkdir -p public/images/styles \
     && chown -R www-data:www-data var/ public/images/styles
 
+COPY docker/php/entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
 EXPOSE 9000
-CMD ["php-fpm"]
+ENTRYPOINT ["/entrypoint.sh"]
