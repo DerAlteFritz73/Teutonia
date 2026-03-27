@@ -204,12 +204,14 @@ class SongKeywordRepository extends ServiceEntityRepository
     }
 
     /**
-     * Return all top-level songs, sorted by song name.
+     * Return all top-level songs for the Noten section, sorted by song name.
+     * Excludes songs currently in Aktuelle Proben (they appear in their own section).
      */
     public function findAllExcept(string $excludeFolder): array
     {
         return $this->createQueryBuilder('s')
             ->andWhere('s.parent IS NULL')
+            ->andWhere('s.isAktuelleProben = false')
             ->orderBy('s.songName', 'ASC')
             ->getQuery()
             ->getResult();

@@ -218,8 +218,8 @@ class AdminController extends AbstractController
 
         // Fetch immediate subfolders from both Dropbox locations
         try {
-            $notenFolders   = $dropboxService->listSubfolders('/Chorgemeinschaft Teutonia/Noten');
-            $aktuelleFolder = $dropboxService->listSubfolders('/Chorgemeinschaft Teutonia/Aktuelle Proben');
+            $notenFolders    = $dropboxService->listSubfolders('/Chorgemeinschaft Teutonia/Noten');
+            $aktuelleFolders = $dropboxService->listSubfolders('/Chorgemeinschaft Teutonia/Aktuelle Proben');
         } catch (\Exception $e) {
             return $this->json(['error' => 'Dropbox-Verbindung fehlgeschlagen: ' . $e->getMessage()], 502);
         }
@@ -244,7 +244,7 @@ class AdminController extends AbstractController
         };
 
         [$notenByFull,    $notenByTitle]    = $buildLookup($notenFolders);
-        [$aktuelleByFull, $aktuelleByTitle] = $buildLookup($aktuelleFolder);
+        [$aktuelleByFull, $aktuelleByTitle] = $buildLookup($aktuelleFolders);
 
         // Match a song against a set of Dropbox folders using all strategies.
         // Returns the matched folder name or null.
@@ -299,9 +299,9 @@ class AdminController extends AbstractController
             $changed      = false;
 
             // Try Aktuelle Proben match → sets isAktuelleProben + aktuelleDropboxlink
-            $aktuelleFolder = $findInFolders($normTitle, $normComposer, $aktuelleByFull, $aktuelleByTitle);
-            if ($aktuelleFolder !== null) {
-                $newAktuelle = $aktuelleBase . '/' . $aktuelleFolder;
+            $aktuelleMatch = $findInFolders($normTitle, $normComposer, $aktuelleByFull, $aktuelleByTitle);
+            if ($aktuelleMatch !== null) {
+                $newAktuelle = $aktuelleBase . '/' . $aktuelleMatch;
                 if (!$song->isAktuelleProben()) {
                     $song->setIsAktuelleProben(true);
                     $changed = true;
@@ -312,8 +312,9 @@ class AdminController extends AbstractController
                 }
             }
 
-            // Try Noten match → sets dropboxlink only if not already set
-            if (!$song->getDropboxlink()) {
+            // Try Noten match → sets dropboxlink if not yet pointing to Noten
+            $notenLinkMissing = !$song->getDropboxlink() || !str_starts_with($song->getDropboxlink(), $notenBase . '/');
+            if ($notenLinkMissing) {
                 $notenFolder = $findInFolders($normTitle, $normComposer, $notenByFull, $notenByTitle);
                 if ($notenFolder !== null) {
                     $song->setDropboxlink($notenBase . '/' . $notenFolder);
@@ -333,14 +334,16 @@ class AdminController extends AbstractController
 
         $em->flush();
 
-        // Build a set of all dropboxlinks already in the DB (after matching above)
+        // Build a set of all dropboxlinks already in the DB (after matching above).
+        // Keys are lowercased so the lookup is case-insensitive (Dropbox may return
+        // folder names with different capitalisation than what was saved in the DB).
         $linkedPaths = [];
         foreach ($songRepository->findAll() as $s) {
             if ($s->getDropboxlink()) {
-                $linkedPaths[rtrim($s->getDropboxlink(), '/')] = true;
+                $linkedPaths[mb_strtolower(rtrim($s->getDropboxlink(), '/'))] = true;
             }
             if ($s->getAktuelleDropboxlink()) {
-                $linkedPaths[rtrim($s->getAktuelleDropboxlink(), '/')] = true;
+                $linkedPaths[mb_strtolower(rtrim($s->getAktuelleDropboxlink(), '/'))] = true;
             }
         }
 
@@ -348,7 +351,7 @@ class AdminController extends AbstractController
         $created = 0;
         $toCreate = [
             $notenBase    => $notenFolders,
-            $aktuelleBase => $aktuelleFolder,
+            $aktuelleBase => $aktuelleFolders,
         ];
 
         foreach ($toCreate as $base => $folders) {
@@ -358,7 +361,7 @@ class AdminController extends AbstractController
                     continue;
                 }
                 $path = $base . '/' . $folderName;
-                if (isset($linkedPaths[$path])) {
+                if (isset($linkedPaths[mb_strtolower($path)])) {
                     continue;
                 }
 
