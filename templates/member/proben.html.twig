@@ -47,7 +47,7 @@
                                 </span>
                                 <span class="ms-auto ps-3 d-flex align-items-center gap-2">
                                     {% for style in song.styles %}
-                                        <span class="badge rounded-pill fw-normal" style="background:rgba(255,255,255,.2);font-size:.75rem">{{ style.name }}</span>
+                                        <span class="badge rounded-pill fw-normal text-white" style="background:rgba(0,0,0,.25);font-size:.75rem">{{ style.name }}</span>
                                     {% endfor %}
                                     {% if hasMovements %}
                                         <span class="badge bg-secondary fw-normal">{{ song.children|length }} Sätze</span>
@@ -176,7 +176,7 @@
                                 </span>
                                 <span class="ms-auto ps-3 d-flex align-items-center gap-2">
                                     {% for style in song.styles %}
-                                        <span class="badge rounded-pill fw-normal" style="background:rgba(255,255,255,.2);font-size:.75rem">{{ style.name }}</span>
+                                        <span class="badge rounded-pill fw-normal text-white" style="background:rgba(0,0,0,.25);font-size:.75rem">{{ style.name }}</span>
                                     {% endfor %}
                                     {{ _self.etikett_badge(song.etikett) }}
                                     {% if hasMovements %}
