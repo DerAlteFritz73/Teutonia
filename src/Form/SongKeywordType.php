@@ -6,6 +6,7 @@ use App\Entity\SongKeyword;
 use App\Entity\Style;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
+use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 use Symfony\Component\Form\Extension\Core\Type\CollectionType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
@@ -31,10 +32,20 @@ class SongKeywordType extends AbstractType
                 'required' => false,
                 'attr'     => ['class' => 'form-control'],
             ])
+            ->add('isAktuelleProben', CheckboxType::class, [
+                'label'    => 'Aktuell in Proben',
+                'required' => false,
+            ])
             ->add('dropboxlink', TextType::class, [
-                'label'    => 'Dropbox-Pfad',
+                'label'    => 'Dropbox-Pfad (Noten)',
                 'required' => false,
                 'attr'     => ['class' => 'form-control', 'placeholder' => '/Chorgemeinschaft Teutonia/Noten/…'],
+            ])
+            ->add('aktuelleDropboxlink', TextType::class, [
+                'label'    => 'Dropbox-Pfad (Aktuelle Proben)',
+                'required' => false,
+                'attr'     => ['class' => 'form-control', 'placeholder' => '/Chorgemeinschaft Teutonia/Aktuelle Proben/…'],
+                'help'     => 'Nur ausfüllen wenn der Ordner in "Aktuelle Proben" vom Noten-Pfad abweicht.',
             ])
             ->add('links', CollectionType::class, [
                 'label'         => false,

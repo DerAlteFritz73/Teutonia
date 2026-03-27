@@ -36,6 +36,12 @@ class SongKeyword
     #[ORM\Column(length: 500, nullable: true)]
     private ?string $dropboxlink = null;
 
+    #[ORM\Column(options: ['default' => false])]
+    private bool $isAktuelleProben = false;
+
+    #[ORM\Column(length: 500, nullable: true)]
+    private ?string $aktuelleDropboxlink = null;
+
     #[ORM\Column(name: 'sort_order', options: ['default' => 0])]
     private int $sortOrder = 0;
 
@@ -138,6 +144,12 @@ class SongKeyword
         $this->dropboxlink = $dropboxlink;
         return $this;
     }
+
+    public function isAktuelleProben(): bool { return $this->isAktuelleProben; }
+    public function setIsAktuelleProben(bool $isAktuelleProben): static { $this->isAktuelleProben = $isAktuelleProben; return $this; }
+
+    public function getAktuelleDropboxlink(): ?string { return $this->aktuelleDropboxlink; }
+    public function setAktuelleDropboxlink(?string $aktuelleDropboxlink): static { $this->aktuelleDropboxlink = $aktuelleDropboxlink; return $this; }
 
     public function getSortOrder(): int { return $this->sortOrder; }
     public function setSortOrder(int $sortOrder): static { $this->sortOrder = $sortOrder; return $this; }

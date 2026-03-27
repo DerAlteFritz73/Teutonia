@@ -36,7 +36,8 @@
                                     data-bs-toggle="collapse"
                                     data-bs-target="#{{ folderId }}"
                                     aria-expanded="false"
-                                    {% if song.dropboxlink %}data-dropbox-path="{{ song.dropboxlink }}"{% endif %}>
+                                    {% set probenPath = song.aktuelleDropboxlink ?? song.dropboxlink %}
+                    {% if probenPath %}data-dropbox-path="{{ probenPath }}"{% endif %}>
                                 <i class="bi bi-folder2-open me-2"></i>
                                 {{ song.songName }}
                                 <span class="ms-auto d-flex align-items-center gap-2">
@@ -66,8 +67,8 @@
                                         {% endfor %}
                                     </div>
                                 {% endif %}
-                                {% if song.dropboxlink %}
-                                    <div class="list-group song-files-container mb-3" data-dropbox-path="{{ song.dropboxlink }}">
+                                {% if probenPath %}
+                                    <div class="list-group song-files-container mb-3" data-dropbox-path="{{ probenPath }}">
                                         <div class="text-center text-muted py-3 file-loading-spinner">
                                             <span class="spinner-border spinner-border-sm me-2" role="status"></span>
                                             Lade Dateien…

@@ -56,9 +56,16 @@
     </div>
 
     <div class="card mb-4">
-        <div class="card-header fw-semibold">Dropbox</div>
+        <div class="card-header fw-semibold">Dropbox &amp; Proben</div>
         <div class="card-body">
+            <div class="form-check mb-3">
+                {{ form_widget(form.isAktuelleProben, {attr: {class: 'form-check-input'}}) }}
+                {{ form_label(form.isAktuelleProben, null, {label_attr: {class: 'form-check-label fw-semibold'}}) }}
+                <div class="form-text">Dieses Lied erscheint im Bereich „Aktuelle Proben" für Mitglieder.</div>
+            </div>
+            <hr>
             {{ form_row(form.dropboxlink) }}
+            {{ form_row(form.aktuelleDropboxlink) }}
             <small class="text-muted">
                 Vollständiger Pfad zum Ordner in Dropbox, z.B.
                 <code>/Chorgemeinschaft Teutonia/Noten/Cohen - Hallelujah</code>

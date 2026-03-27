@@ -196,23 +196,20 @@ class SongKeywordRepository extends ServiceEntityRepository
     public function findByFolderTopLevel(string $folder): array
     {
         return $this->createQueryBuilder('s')
-            ->where('s.folder = :folder')
+            ->where('s.isAktuelleProben = true')
             ->andWhere('s.parent IS NULL')
-            ->setParameter('folder', $folder)
             ->orderBy('s.songName', 'ASC')
             ->getQuery()
             ->getResult();
     }
 
     /**
-     * Return all top-level songs except those in the given folder, sorted by song name.
+     * Return all top-level songs, sorted by song name.
      */
     public function findAllExcept(string $excludeFolder): array
     {
         return $this->createQueryBuilder('s')
-            ->where('s.folder != :folder')
             ->andWhere('s.parent IS NULL')
-            ->setParameter('folder', $excludeFolder)
             ->orderBy('s.songName', 'ASC')
             ->getQuery()
             ->getResult();

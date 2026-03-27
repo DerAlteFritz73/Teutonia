@@ -294,47 +294,40 @@ class AdminController extends AbstractController
         $notenBase    = '/Chorgemeinschaft Teutonia/Noten';
 
         foreach ($songs as $song) {
-            $isAktuelle        = $song->getFolder() === 'Aktuelle Proben';
-            $currentLink       = $song->getDropboxlink();
-            $alreadyInAktuelle = $currentLink && str_starts_with($currentLink, $aktuelleBase);
-
-            // Skip if already correctly linked:
-            // - Non-Aktuelle songs with any link
-            // - Aktuelle songs already pointing to the Aktuelle Proben path
-            if ($currentLink && (!$isAktuelle || $alreadyInAktuelle)) {
-                $alreadyLinked++;
-                continue;
-            }
-
             $normTitle    = $this->normalizeForSync($song->getSongName());
             $normComposer = $song->getComposer() ? $this->normalizeForSync($song->getComposer()) : '';
-            $folderName   = null;
-            $basePath     = $notenBase;
+            $changed      = false;
 
-            if ($isAktuelle) {
-                // Aktuelle Proben songs: try that directory first, fall back to Noten
-                $folderName = $findInFolders($normTitle, $normComposer, $aktuelleByFull, $aktuelleByTitle);
-                if ($folderName !== null) {
-                    $basePath = $aktuelleBase;
-                } else {
-                    $folderName = $findInFolders($normTitle, $normComposer, $notenByFull, $notenByTitle);
+            // Try Aktuelle Proben match → sets isAktuelleProben + aktuelleDropboxlink
+            $aktuelleFolder = $findInFolders($normTitle, $normComposer, $aktuelleByFull, $aktuelleByTitle);
+            if ($aktuelleFolder !== null) {
+                $newAktuelle = $aktuelleBase . '/' . $aktuelleFolder;
+                if (!$song->isAktuelleProben()) {
+                    $song->setIsAktuelleProben(true);
+                    $changed = true;
                 }
-            } else {
-                // All other songs: try Noten first, then Aktuelle Proben as fallback
-                $folderName = $findInFolders($normTitle, $normComposer, $notenByFull, $notenByTitle);
-                if ($folderName === null) {
-                    $folderName = $findInFolders($normTitle, $normComposer, $aktuelleByFull, $aktuelleByTitle);
-                    if ($folderName !== null) {
-                        $basePath = $aktuelleBase;
-                    }
+                if ($song->getAktuelleDropboxlink() !== $newAktuelle) {
+                    $song->setAktuelleDropboxlink($newAktuelle);
+                    $changed = true;
                 }
             }
 
-            if ($folderName !== null) {
-                $song->setDropboxlink($basePath . '/' . $folderName);
+            // Try Noten match → sets dropboxlink only if not already set
+            if (!$song->getDropboxlink()) {
+                $notenFolder = $findInFolders($normTitle, $normComposer, $notenByFull, $notenByTitle);
+                if ($notenFolder !== null) {
+                    $song->setDropboxlink($notenBase . '/' . $notenFolder);
+                    $changed = true;
+                }
+            }
+
+            $hasAnyLink = $song->getDropboxlink() || $song->getAktuelleDropboxlink();
+            if (!$hasAnyLink) {
+                $unmatched[] = $song->getSongName();
+            } elseif ($changed) {
                 $matched++;
             } else {
-                $unmatched[] = $song->getSongName();
+                $alreadyLinked++;
             }
         }
 
@@ -345,6 +338,9 @@ class AdminController extends AbstractController
         foreach ($songRepository->findAll() as $s) {
             if ($s->getDropboxlink()) {
                 $linkedPaths[rtrim($s->getDropboxlink(), '/')] = true;
+            }
+            if ($s->getAktuelleDropboxlink()) {
+                $linkedPaths[rtrim($s->getAktuelleDropboxlink(), '/')] = true;
             }
         }
 
@@ -378,8 +374,13 @@ class AdminController extends AbstractController
                 $song = new SongKeyword();
                 $song->setSongName($title);
                 $song->setComposer($composer);
-                $song->setFolder($folderLabel);
-                $song->setDropboxlink($path);
+                $song->setFolder($base === $aktuelleBase ? 'Aktuelle Proben' : 'Notenverzeichnis');
+                if ($base === $aktuelleBase) {
+                    $song->setIsAktuelleProben(true);
+                    $song->setAktuelleDropboxlink($path);
+                } else {
+                    $song->setDropboxlink($path);
+                }
                 $em->persist($song);
                 $created++;
             }
