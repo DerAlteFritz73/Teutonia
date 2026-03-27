@@ -39,7 +39,12 @@
                                     {% set probenPath = song.aktuelleDropboxlink ?? song.dropboxlink %}
                     {% if probenPath %}data-dropbox-path="{{ probenPath }}"{% endif %}>
                                 <i class="bi bi-folder2-open me-2"></i>
-                                {{ song.songName }}
+                                <span class="d-flex flex-column lh-sm">
+                                    {{ song.songName }}
+                                    {% if song.composer %}
+                                        <small class="text-muted fw-normal">{{ song.composer }}</small>
+                                    {% endif %}
+                                </span>
                                 <span class="ms-auto d-flex align-items-center gap-2">
                                     {% if hasMovements %}
                                         <span class="badge bg-secondary fw-normal">{{ song.children|length }} Sätze</span>
