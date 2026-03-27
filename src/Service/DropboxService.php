@@ -454,15 +454,9 @@ class DropboxService
             if ($this->isAuthError($e)) {
                 error_log('Dropbox: auth error listing subfolders, refreshing token…');
                 $this->refreshAccessToken();
-                try {
-                    return $fetch();
-                } catch (\Exception $e2) {
-                    error_log('Dropbox: error listing subfolders after retry: ' . $e2->getMessage());
-                    return [];
-                }
+                return $fetch(); // throws on second failure — let the caller handle it
             }
-            error_log('Dropbox: error listing subfolders for ' . $path . ': ' . $e->getMessage());
-            return [];
+            throw $e;
         }
     }
 

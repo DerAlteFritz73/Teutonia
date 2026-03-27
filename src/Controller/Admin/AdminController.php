@@ -217,8 +217,12 @@ class AdminController extends AbstractController
         }
 
         // Fetch immediate subfolders from both Dropbox locations
-        $notenFolders   = $dropboxService->listSubfolders('/Chorgemeinschaft Teutonia/Noten');
-        $aktuelleFolder = $dropboxService->listSubfolders('/Chorgemeinschaft Teutonia/Aktuelle Proben');
+        try {
+            $notenFolders   = $dropboxService->listSubfolders('/Chorgemeinschaft Teutonia/Noten');
+            $aktuelleFolder = $dropboxService->listSubfolders('/Chorgemeinschaft Teutonia/Aktuelle Proben');
+        } catch (\Exception $e) {
+            return $this->json(['error' => 'Dropbox-Verbindung fehlgeschlagen: ' . $e->getMessage()], 502);
+        }
 
         // Build lookup maps: normalized name => original folder name
         $buildLookup = function (array $names): array {
