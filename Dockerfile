@@ -62,7 +62,8 @@ COPY . .
 # Finalize autoloader and run post-install scripts (assets:install, importmap:install)
 RUN composer dump-autoload --optimize --no-dev \
     && APP_ENV=prod composer run-script post-install-cmd --no-dev \
-    && chown -R www-data:www-data var/
+    && mkdir -p public/images/styles \
+    && chown -R www-data:www-data var/ public/images/styles
 
 EXPOSE 9000
 CMD ["php-fpm"]
