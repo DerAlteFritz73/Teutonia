@@ -73,6 +73,12 @@
                                                 {{ link.label ?? link.url }}
                                             </a>
                                         {% endfor %}
+                                        {% if is_granted('ROLE_ADMIN') %}
+                                            <a href="{{ path('admin_songs_edit', {id: song.id}) }}"
+                                               class="btn btn-sm btn-outline-warning" title="Lied bearbeiten">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                        {% endif %}
                                     </div>
                                 {% endif %}
                                 {% if probenPath %}
@@ -215,6 +221,12 @@
                                                 {{ link.label ?? link.url }}
                                             </a>
                                         {% endfor %}
+                                        {% if is_granted('ROLE_ADMIN') %}
+                                            <a href="{{ path('admin_songs_edit', {id: song.id}) }}"
+                                               class="btn btn-sm btn-outline-warning" title="Lied bearbeiten">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                        {% endif %}
                                     </div>
                                 {% endif %}
                                 {# Parent-level files (if any) #}
