@@ -29,11 +29,8 @@ class Style
     #[ORM\Column(length: 30, nullable: true)]
     private ?string $color2 = null;
 
-    #[ORM\Column(length: 255, nullable: true)]
+    #[ORM\Column(length: 10, nullable: true)]
     private ?string $image = null;
-
-    #[ORM\Column(length: 20, nullable: true)]
-    private ?string $imagePosition = null;
 
     #[ORM\ManyToMany(targetEntity: SongKeyword::class, mappedBy: 'styles')]
     private Collection $songKeywords;
@@ -108,17 +105,6 @@ class Style
     public function setImage(?string $image): static
     {
         $this->image = $image;
-        return $this;
-    }
-
-    public function getImagePosition(): ?string
-    {
-        return $this->imagePosition;
-    }
-
-    public function setImagePosition(?string $imagePosition): static
-    {
-        $this->imagePosition = $imagePosition;
         return $this;
     }
 

@@ -17,23 +17,14 @@
     padding: 44px;
     display: inline-block;
 }
-.style-img {
+.style-emoji {
     position: absolute;
-    width: 68px;
-    height: 68px;
-    border-radius: 50%;
-    object-fit: cover;
-    border: 3px solid #fff;
-    box-shadow: 0 3px 12px rgba(0,0,0,.28);
+    top: -28px;
+    right: 10px;
+    font-size: 2rem;
+    line-height: 1;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,.3));
 }
-.pos-top-left     { top: -28px; left: 14px; }
-.pos-top          { top: -34px; left: 50%; transform: translateX(-50%); }
-.pos-top-right    { top: -28px; right: 14px; }
-.pos-right        { top: 50%; right: -34px; transform: translateY(-50%); }
-.pos-bottom-right { bottom: -28px; right: 14px; }
-.pos-bottom       { bottom: -34px; left: 50%; transform: translateX(-50%); }
-.pos-bottom-left  { bottom: -28px; left: 14px; }
-.pos-left         { top: 50%; left: -34px; transform: translateY(-50%); }
 .style-songs li {
     padding: 5px 0;
     border-bottom: 1px solid rgba(0,0,0,.07);

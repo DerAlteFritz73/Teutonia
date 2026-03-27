@@ -439,7 +439,6 @@ class AdminController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            $this->handleStyleImageUpload($form, $style);
             $em->persist($style);
             $em->flush();
             $this->addFlash('success', 'Stil wurde erstellt.');
@@ -464,7 +463,6 @@ class AdminController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            $this->handleStyleImageUpload($form, $style);
             $em->flush();
             $this->addFlash('success', 'Stil wurde aktualisiert.');
             return $this->redirectToRoute('admin_styles_edit', [
@@ -527,40 +525,12 @@ class AdminController extends AbstractController
     public function stylesDelete(Style $style, Request $request, EntityManagerInterface $em): Response
     {
         if ($this->isCsrfTokenValid('delete_style' . $style->getId(), $request->request->get('_token'))) {
-            if ($style->getImage()) {
-                $path = $this->getParameter('kernel.project_dir') . '/public/images/styles/' . $style->getImage();
-                if (file_exists($path)) {
-                    unlink($path);
-                }
-            }
             $em->remove($style);
             $em->flush();
             $this->addFlash('success', 'Stil wurde gelöscht.');
         }
 
         return $this->redirectToRoute('admin_styles');
-    }
-
-    private function handleStyleImageUpload($form, Style $style): void
-    {
-        $file = $form->get('imageFile')->getData();
-        if (!$file) {
-            return;
-        }
-
-        $uploadDir = $this->getParameter('kernel.project_dir') . '/public/images/styles/';
-        if (!is_dir($uploadDir)) {
-            mkdir($uploadDir, 0755, true);
-        }
-
-        // Delete old image if present
-        if ($style->getImage() && file_exists($uploadDir . $style->getImage())) {
-            unlink($uploadDir . $style->getImage());
-        }
-
-        $filename = uniqid('style_') . '.' . $file->guessExtension();
-        $file->move($uploadDir, $filename);
-        $style->setImage($filename);
     }
 
     // ==================== KONZERTE ====================

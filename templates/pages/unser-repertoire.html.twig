@@ -49,12 +49,7 @@
                                  style="background: linear-gradient(135deg, {{ style.color ?? '#6c757d' }}, {{ style.color2 ?? style.color ?? '#495057' }})">
                                 <span>{{ style.name }}</span>
                                 {% if style.image %}
-                                    <img src="{{ asset('images/styles/' ~ style.image) }}"
-                                         class="style-img pos-{{ style.imagePosition ?? 'top-right' }}"
-                                         data-full="{{ asset('images/styles/' ~ style.image) }}"
-                                         alt="{{ style.name }}"
-                                         style="cursor:zoom-in;"
-                                         data-bs-toggle="modal" data-bs-target="#style-lightbox">
+                                    <span class="style-emoji">{{ style.image }}</span>
                                 {% endif %}
                             </div>
                         </div>
