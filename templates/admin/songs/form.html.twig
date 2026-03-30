@@ -169,9 +169,19 @@
     search.addEventListener('input', function () {
         const q = this.value.toLowerCase().trim();
         allOptions.forEach(opt => { opt.el.hidden = q !== '' && !opt.text.includes(q); });
+        const visible = q === '' ? allOptions.length : allOptions.filter(o => o.text.includes(q)).length;
+        select.size = q !== '' ? Math.max(2, Math.min(visible + 1, 10)) : 1;
     });
 
     search.addEventListener('keydown', e => { if (e.key === 'Enter') e.preventDefault(); });
+
+    // Collapse select after picking a value
+    select.addEventListener('change', function () {
+        if (search.value.trim() === '') return;
+        search.value = '';
+        allOptions.forEach(opt => { opt.el.hidden = false; });
+        select.size = 1;
+    });
 
     // Auto-fill composer from selected parent
     const composerInput = document.getElementById('song_keyword_composer');
