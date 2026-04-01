@@ -43,7 +43,14 @@ class TestResultsStorage
 
     private function resolveDatabaseUrl(): string
     {
-        // Prefer .env.local (real credentials) over the placeholder in .env
+        // Prefer the runtime environment variable — correct in Docker containers
+        // where the .env file on disk may contain a wrong placeholder host.
+        $env = $_ENV['DATABASE_URL'] ?? getenv('DATABASE_URL');
+        if ($env) {
+            return $env;
+        }
+
+        // Fall back to .env files for CLI runs outside Docker
         $root    = dirname(__DIR__, 2);
         $sources = [$root . '/.env.local', $root . '/.env'];
 
@@ -57,11 +64,6 @@ class TestResultsStorage
                     return trim($value, '"\'');
                 }
             }
-        }
-
-        $env = $_ENV['DATABASE_URL'] ?? getenv('DATABASE_URL');
-        if ($env) {
-            return $env;
         }
 
         throw new \RuntimeException('DATABASE_URL not found — cannot store test results.');

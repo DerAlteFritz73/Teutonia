@@ -47,10 +47,24 @@ abstract class AbstractE2ETestCase extends PantherTestCase
 
     /**
      * Always use the custom router so the PHP built-in server serves static assets correctly.
+     * Adds --no-sandbox and --disable-dev-shm-usage when running inside Docker (as root).
      */
     protected static function createPantherClient(array $options = [], array $kernelOptions = [], array $managerOptions = []): Client
     {
-        return parent::createPantherClient(array_merge(['router' => 'router.php'], $options), $kernelOptions, $managerOptions);
+        $chromeOptions = $options['chromeOptions'] ?? [];
+
+        if (posix_getuid() === 0) {
+            $chromeOptions = array_unique(array_merge($chromeOptions, [
+                '--no-sandbox',
+                '--disable-dev-shm-usage',
+            ]));
+        }
+
+        return parent::createPantherClient(
+            array_merge(['router' => 'router.php'], $options, ['chromeOptions' => $chromeOptions]),
+            $kernelOptions,
+            $managerOptions
+        );
     }
 
     /**
