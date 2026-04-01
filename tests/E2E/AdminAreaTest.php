@@ -24,7 +24,9 @@ class AdminAreaTest extends AbstractE2ETestCase
 
         // FooTable hides the table visually until its JS initialises; check the
         // raw page source (server-rendered HTML) instead of visible text.
-        $this->assertStringContainsString('Amazing Grace', $client->getWebDriver()->getPageSource());
+        // Check the composer, not the song name — testEditExistingSong renames the
+        // first song, so "Amazing Grace" may already be "Amazing Grace (bearbeitet)".
+        $this->assertStringContainsString('John Newton', $client->getWebDriver()->getPageSource());
     }
 
     public function testCreateNewSong(): void
