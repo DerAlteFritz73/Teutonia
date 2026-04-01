@@ -10,6 +10,8 @@ RUN apk add --no-cache \
     freetype-dev \
     libjpeg-turbo-dev \
     libpng-dev \
+    chromium \
+    chromium-chromedriver \
     $PHPIZE_DEPS \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install -j$(nproc) \
@@ -54,16 +56,16 @@ FROM base AS prod
 COPY docker/php/php.prod.ini $PHP_INI_DIR/conf.d/app.ini
 COPY docker/php/zzz-clear-env.conf /usr/local/etc/php-fpm.d/zzz-clear-env.conf
 
-# Install dependencies first (layer cache)
+# Install dependencies first (layer cache) — keep dev deps for the test runner
 COPY composer.json composer.lock symfony.lock ./
-RUN composer install --no-dev --no-scripts --no-autoloader --prefer-dist --no-interaction
+RUN composer install --no-scripts --no-autoloader --prefer-dist --no-interaction
 
 # Copy application
 COPY . .
 
 # Finalize autoloader and run post-install scripts (assets:install, importmap:install)
-RUN composer dump-autoload --optimize --no-dev \
-    && APP_ENV=prod composer run-script post-install-cmd --no-dev \
+RUN composer dump-autoload --optimize \
+    && APP_ENV=prod composer run-script post-install-cmd \
     && APP_ENV=prod php bin/console asset-map:compile \
     && mkdir -p public/images/styles \
     && chown -R www-data:www-data var/ public/images/styles \
