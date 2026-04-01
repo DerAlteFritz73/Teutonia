@@ -29,6 +29,7 @@ class LoginCountSubscriber implements EventSubscriberInterface
         }
 
         $user->incrementLoginCount();
+        $user->setLastLoginAt(new \DateTime());
         $this->em->flush();
 
         if (!$user->getEmail()) {

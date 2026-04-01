@@ -23,6 +23,7 @@
                     <th>Name</th>
                     <th>E-Mail</th>
                     <th>Rollen</th>
+                    <th>Letzter Login</th>
                     <th>Aktionen</th>
                 </tr>
             </thead>
@@ -39,6 +40,13 @@
                                     <span class="badge bg-secondary">Mitglied</span>
                                 {% endif %}
                             {% endfor %}
+                        </td>
+                        <td>
+                            {% if user.lastLoginAt %}
+                                {{ user.lastLoginAt|date('d.m.Y H:i') }}
+                            {% else %}
+                                <span class="text-muted">—</span>
+                            {% endif %}
                         </td>
                         <td>
                             <a href="{{ path('admin_users_edit', {id: user.id}) }}" class="btn btn-sm btn-outline-primary">

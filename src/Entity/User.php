@@ -44,6 +44,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column]
     private int $loginCount = 0;
 
+    #[ORM\Column(type: Types::DATETIME_MUTABLE, nullable: true)]
+    private ?\DateTimeInterface $lastLoginAt = null;
+
     public function getId(): ?int
     {
         return $this->id;
@@ -161,6 +164,17 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function incrementLoginCount(): void
     {
         ++$this->loginCount;
+    }
+
+    public function getLastLoginAt(): ?\DateTimeInterface
+    {
+        return $this->lastLoginAt;
+    }
+
+    public function setLastLoginAt(?\DateTimeInterface $lastLoginAt): static
+    {
+        $this->lastLoginAt = $lastLoginAt;
+        return $this;
     }
 
     public function isResetTokenValid(): bool
