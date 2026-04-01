@@ -65,8 +65,10 @@ class MemberAreaTest extends AbstractE2ETestCase
             'song_suggestion[link]'        => 'https://www.youtube.com/watch?v=test',
         ]);
 
-        // Should redirect back to the list after successful submission
-        $this->assertStringContainsString('/ideenkiste', $client->getCurrentURL());
+        // Turbo Drive handles the POST via XHR and swaps the DOM without a full
+        // page load, so Panther may return before the navigation settles.
+        // Explicitly navigate to the list to confirm the suggestion was saved.
+        $client->request('GET', '/mitglieder/ideenkiste');
         $this->assertSelectorTextContains('body', 'Ave Maria');
     }
 

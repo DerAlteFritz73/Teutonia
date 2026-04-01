@@ -22,7 +22,9 @@ class AdminAreaTest extends AbstractE2ETestCase
         $client = $this->createLoggedInClient(AppFixtures::ADMIN_USERNAME, AppFixtures::PASSWORD);
         $client->request('GET', '/admin/songs');
 
-        $this->assertSelectorTextContains('body', 'Amazing Grace');
+        // FooTable hides the table visually until its JS initialises; check the
+        // raw page source (server-rendered HTML) instead of visible text.
+        $this->assertStringContainsString('Amazing Grace', $client->getWebDriver()->getPageSource());
     }
 
     public function testCreateNewSong(): void
@@ -39,7 +41,7 @@ class AdminAreaTest extends AbstractE2ETestCase
         ]);
 
         $client->request('GET', '/admin/songs');
-        $this->assertSelectorTextContains('body', 'O Fortuna');
+        $this->assertStringContainsString('O Fortuna', $client->getWebDriver()->getPageSource());
     }
 
     public function testEditExistingSong(): void
@@ -47,7 +49,7 @@ class AdminAreaTest extends AbstractE2ETestCase
         $client = $this->createLoggedInClient(AppFixtures::ADMIN_USERNAME, AppFixtures::PASSWORD);
         $crawler = $client->request('GET', '/admin/songs');
 
-        // Click the first edit link
+        // Edit links are in the DOM even while FooTable hides the table visually
         $editLink = $crawler->filter('a[href*="/admin/songs/"][href*="/edit"]')->first();
         if ($editLink->count() === 0) {
             $this->markTestSkipped('No songs with edit links found.');
@@ -61,7 +63,7 @@ class AdminAreaTest extends AbstractE2ETestCase
         ]);
 
         $client->request('GET', '/admin/songs');
-        $this->assertSelectorTextContains('body', 'Amazing Grace (bearbeitet)');
+        $this->assertStringContainsString('Amazing Grace (bearbeitet)', $client->getWebDriver()->getPageSource());
     }
 
     public function testKonzerteListLoads(): void
