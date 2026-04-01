@@ -1,0 +1,75 @@
+{% extends 'base.html.twig' %}
+{% block title %}Test-Läufe - {{ parent() }}{% endblock %}
+{% block body %}
+<!-- template: templates/admin/tests/index.html.twig -->
+<div class="container py-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1><i class="bi bi-play-circle me-2"></i>Test-Läufe</h1>
+        <a href="{{ path('admin_tests_run') }}" class="btn btn-success">
+            <i class="bi bi-play-fill me-1"></i>Tests starten
+        </a>
+    </div>
+
+    {% if runs is empty %}
+        <div class="alert alert-info">
+            Noch keine Tests ausgeführt. Klicke auf <strong>Tests starten</strong>, um den ersten Lauf zu starten.
+        </div>
+    {% else %}
+        <div class="table-responsive">
+            <table class="table table-striped align-middle">
+                <thead class="table-dark">
+                    <tr>
+                        <th>#</th>
+                        <th>Gestartet</th>
+                        <th>Dauer</th>
+                        <th>Gesamt</th>
+                        <th><span class="text-success">Bestanden</span></th>
+                        <th><span class="text-danger">Fehlgeschlagen</span></th>
+                        <th><span class="text-warning">Fehler</span></th>
+                        <th>Übersprungen</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for run in runs %}
+                    {% set allOk = run.failed == 0 and run.errored == 0 %}
+                    <tr>
+                        <td><span class="text-muted">#{{ run.id }}</span></td>
+                        <td>{{ run.started_at }}</td>
+                        <td>
+                            {% if run.finished_at %}
+                                {% set secs = (run.finished_at|date('U') - run.started_at|date('U'))|abs %}
+                                {{ secs }}s
+                            {% else %}
+                                <span class="text-muted">—</span>
+                            {% endif %}
+                        </td>
+                        <td><strong>{{ run.total }}</strong></td>
+                        <td><span class="badge bg-success">{{ run.passed }}</span></td>
+                        <td><span class="badge {{ run.failed > 0 ? 'bg-danger' : 'bg-secondary' }}">{{ run.failed }}</span></td>
+                        <td><span class="badge {{ run.errored > 0 ? 'bg-warning text-dark' : 'bg-secondary' }}">{{ run.errored }}</span></td>
+                        <td><span class="badge bg-secondary">{{ run.skipped }}</span></td>
+                        <td>
+                            <span class="me-2">
+                                {% if allOk %}
+                                    <i class="bi bi-check-circle-fill text-success" title="Alle Tests bestanden"></i>
+                                {% else %}
+                                    <i class="bi bi-x-circle-fill text-danger" title="Fehler aufgetreten"></i>
+                                {% endif %}
+                            </span>
+                            <a href="{{ path('admin_tests_show', {id: run.id}) }}" class="btn btn-sm btn-outline-secondary">
+                                Details
+                            </a>
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% endif %}
+
+    <a href="{{ path('admin_dashboard') }}" class="btn btn-outline-secondary mt-3">
+        <i class="bi bi-arrow-left me-1"></i>Zurück zum Dashboard
+    </a>
+</div>
+{% endblock %}

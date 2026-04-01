@@ -1,0 +1,91 @@
+<?php
+
+namespace App\Tests\E2E;
+
+use App\DataFixtures\AppFixtures;
+
+/**
+ * Tests the admin area (requires ROLE_ADMIN).
+ */
+class AdminAreaTest extends AbstractE2ETestCase
+{
+    public function testDashboardShowsStats(): void
+    {
+        $client = $this->createLoggedInClient(AppFixtures::ADMIN_USERNAME, AppFixtures::PASSWORD);
+        $client->request('GET', '/admin');
+
+        $this->assertSelectorTextContains('h1', 'Administration');
+    }
+
+    public function testSongListShowsFixtureData(): void
+    {
+        $client = $this->createLoggedInClient(AppFixtures::ADMIN_USERNAME, AppFixtures::PASSWORD);
+        $client->request('GET', '/admin/songs');
+
+        $this->assertSelectorTextContains('body', 'Amazing Grace');
+    }
+
+    public function testCreateNewSong(): void
+    {
+        $client = $this->createLoggedInClient(AppFixtures::ADMIN_USERNAME, AppFixtures::PASSWORD);
+        $client->request('GET', '/admin/songs/new');
+
+        $this->assertSelectorExists('form');
+
+        $client->submitForm('Speichern', [
+            'song_keyword[songName]'  => 'O Fortuna',
+            'song_keyword[composer]'  => 'Carl Orff',
+            'song_keyword[etikett]'   => 'Blau 01',
+        ]);
+
+        $client->request('GET', '/admin/songs');
+        $this->assertSelectorTextContains('body', 'O Fortuna');
+    }
+
+    public function testEditExistingSong(): void
+    {
+        $client = $this->createLoggedInClient(AppFixtures::ADMIN_USERNAME, AppFixtures::PASSWORD);
+        $crawler = $client->request('GET', '/admin/songs');
+
+        // Click the first edit link
+        $editLink = $crawler->filter('a[href*="/admin/songs/"][href*="/edit"]')->first();
+        if ($editLink->count() === 0) {
+            $this->markTestSkipped('No songs with edit links found.');
+        }
+
+        $client->click($editLink->link());
+        $this->assertSelectorExists('form');
+
+        $client->submitForm('Speichern', [
+            'song_keyword[songName]' => 'Amazing Grace (bearbeitet)',
+        ]);
+
+        $client->request('GET', '/admin/songs');
+        $this->assertSelectorTextContains('body', 'Amazing Grace (bearbeitet)');
+    }
+
+    public function testKonzerteListLoads(): void
+    {
+        $client = $this->createLoggedInClient(AppFixtures::ADMIN_USERNAME, AppFixtures::PASSWORD);
+        $client->request('GET', '/admin/konzerte');
+
+        $this->assertSelectorTextContains('body', 'Sommerkonzert 2024');
+    }
+
+    public function testUserListLoads(): void
+    {
+        $client = $this->createLoggedInClient(AppFixtures::ADMIN_USERNAME, AppFixtures::PASSWORD);
+        $client->request('GET', '/admin/users');
+
+        $this->assertSelectorTextContains('body', AppFixtures::MEMBER_USERNAME);
+        $this->assertSelectorTextContains('body', AppFixtures::ADMIN_USERNAME);
+    }
+
+    public function testStyleListLoads(): void
+    {
+        $client = $this->createLoggedInClient(AppFixtures::ADMIN_USERNAME, AppFixtures::PASSWORD);
+        $client->request('GET', '/admin/styles');
+
+        $this->assertSelectorTextContains('body', 'Gospel');
+    }
+}

@@ -1,0 +1,159 @@
+{% extends 'base.html.twig' %}
+{% block title %}Test-Lauf #{{ run.id }} – {{ parent() }}{% endblock %}
+{% block body %}
+<!-- template: templates/admin/tests/show.html.twig -->
+<div class="container py-5">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>
+            Test-Lauf <span class="text-muted">#{{ run.id }}</span>
+        </h1>
+        <div class="d-flex gap-2">
+            <a href="{{ path('admin_tests_run') }}" class="btn btn-success">
+                <i class="bi bi-play-fill me-1"></i>Neu starten
+            </a>
+            <a href="{{ path('admin_tests') }}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i>Alle Läufe
+            </a>
+        </div>
+    </div>
+
+    {# Summary cards #}
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-2">
+            <div class="card text-center py-3">
+                <div class="h3 mb-0">{{ run.total }}</div>
+                <small class="text-muted">Gesamt</small>
+            </div>
+        </div>
+        <div class="col-6 col-md-2">
+            <div class="card text-center py-3 border-success">
+                <div class="h3 mb-0 text-success">{{ run.passed }}</div>
+                <small class="text-success">Bestanden</small>
+            </div>
+        </div>
+        <div class="col-6 col-md-2">
+            <div class="card text-center py-3 {{ run.failed > 0 ? 'border-danger' : '' }}">
+                <div class="h3 mb-0 {{ run.failed > 0 ? 'text-danger' : 'text-muted' }}">{{ run.failed }}</div>
+                <small class="{{ run.failed > 0 ? 'text-danger' : 'text-muted' }}">Fehlgeschlagen</small>
+            </div>
+        </div>
+        <div class="col-6 col-md-2">
+            <div class="card text-center py-3 {{ run.errored > 0 ? 'border-warning' : '' }}">
+                <div class="h3 mb-0 {{ run.errored > 0 ? 'text-warning' : 'text-muted' }}">{{ run.errored }}</div>
+                <small class="{{ run.errored > 0 ? 'text-warning' : 'text-muted' }}">Fehler</small>
+            </div>
+        </div>
+        <div class="col-6 col-md-2">
+            <div class="card text-center py-3">
+                <div class="h3 mb-0 text-muted">{{ run.skipped }}</div>
+                <small class="text-muted">Übersprungen</small>
+            </div>
+        </div>
+        <div class="col-6 col-md-2">
+            <div class="card text-center py-3">
+                {% if run.finished_at %}
+                    {% set secs = (run.finished_at|date('U') - run.started_at|date('U'))|abs %}
+                    <div class="h3 mb-0">{{ secs }}s</div>
+                {% else %}
+                    <div class="h3 mb-0 text-muted">—</div>
+                {% endif %}
+                <small class="text-muted">Dauer</small>
+            </div>
+        </div>
+    </div>
+
+    <p class="text-muted small mb-4">
+        Gestartet: <strong>{{ run.started_at }}</strong>
+        {% if run.finished_at %}
+            &nbsp;·&nbsp; Beendet: <strong>{{ run.finished_at }}</strong>
+        {% endif %}
+    </p>
+
+    {# Results table #}
+    {% if results is empty %}
+        <div class="alert alert-info">Keine einzelnen Test-Ergebnisse gespeichert.</div>
+    {% else %}
+        {# Filter tabs #}
+        <ul class="nav nav-tabs mb-3" id="filterTabs">
+            <li class="nav-item">
+                <button class="nav-link active" data-filter="all">Alle ({{ results|length }})</button>
+            </li>
+            {% set failedCount = results|filter(r => r.status in ['failed', 'error'])|length %}
+            {% if failedCount > 0 %}
+                <li class="nav-item">
+                    <button class="nav-link text-danger" data-filter="failed">
+                        Fehler ({{ failedCount }})
+                    </button>
+                </li>
+            {% endif %}
+        </ul>
+
+        <div class="table-responsive">
+            <table class="table table-sm align-middle" id="results-table">
+                <thead class="table-dark">
+                    <tr>
+                        <th style="width:2rem"></th>
+                        <th>Klasse</th>
+                        <th>Test</th>
+                        <th style="width:5rem">Dauer</th>
+                        <th>Meldung</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for r in results %}
+                    <tr class="{{ r.status == 'passed' ? '' : (r.status == 'failed' ? 'table-danger' : (r.status == 'error' ? 'table-warning' : 'table-secondary')) }}"
+                        data-status="{{ r.status }}">
+                        <td class="text-center">
+                            {% if r.status == 'passed' %}
+                                <i class="bi bi-check-circle-fill text-success"></i>
+                            {% elseif r.status == 'failed' %}
+                                <i class="bi bi-x-circle-fill text-danger"></i>
+                            {% elseif r.status == 'error' %}
+                                <i class="bi bi-exclamation-triangle-fill text-warning"></i>
+                            {% else %}
+                                <i class="bi bi-skip-forward-fill text-muted"></i>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <small class="text-muted">
+                                {{ r.test_class|replace({'App\\Tests\\E2E\\': '', 'App\\Tests\\': ''}) }}
+                            </small>
+                        </td>
+                        <td>{{ r.test_name }}</td>
+                        <td><small class="text-muted">{{ r.duration_ms }}ms</small></td>
+                        <td>
+                            {% if r.message %}
+                                <small style="font-family:monospace;font-size:0.75rem;white-space:pre-wrap;">{{ r.message|slice(0, 400) }}{% if r.message|length > 400 %}…{% endif %}</small>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% endif %}
+
+</div>
+
+<script>
+pageLoad(function () {
+    document.querySelectorAll('[data-filter]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            document.querySelectorAll('[data-filter]').forEach(function (b) { b.classList.remove('active'); });
+            btn.classList.add('active');
+
+            const filter = btn.dataset.filter;
+            document.querySelectorAll('#results-table tbody tr').forEach(function (row) {
+                if (filter === 'all') {
+                    row.style.display = '';
+                } else {
+                    const status = row.dataset.status;
+                    row.style.display = (status === 'failed' || status === 'error') ? '' : 'none';
+                }
+            });
+        });
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,120 @@
+{% extends 'base.html.twig' %}
+{% block title %}Tests ausführen - {{ parent() }}{% endblock %}
+{% block body %}
+<!-- template: templates/admin/tests/run.html.twig -->
+<div class="container py-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1><i class="bi bi-terminal me-2"></i>Tests ausführen</h1>
+        <a href="{{ path('admin_tests') }}" class="btn btn-outline-secondary">
+            <i class="bi bi-list me-1"></i>Alle Läufe
+        </a>
+    </div>
+
+    <div class="mb-3 d-flex align-items-center gap-3">
+        <button id="btn-start" class="btn btn-success">
+            <i class="bi bi-play-fill me-1"></i>Tests starten
+        </button>
+        <span id="status" class="text-muted small"></span>
+    </div>
+
+    <div id="console-wrap">
+        <pre id="console"
+             style="background:#1e1e1e;color:#d4d4d4;padding:1.5rem;border-radius:8px;
+                    min-height:300px;max-height:620px;overflow-y:auto;
+                    font-size:0.82rem;line-height:1.5;white-space:pre-wrap;word-break:break-all;"
+        ><span class="text-muted" id="console-placeholder">Ausgabe erscheint hier …</span></pre>
+    </div>
+
+    <div id="result-bar" class="mt-3" style="display:none">
+        <a id="btn-results" href="#" class="btn btn-primary">
+            <i class="bi bi-bar-chart-line me-1"></i>Ergebnisse anzeigen
+        </a>
+        <a href="{{ path('admin_tests_run') }}" class="btn btn-outline-success ms-2">
+            <i class="bi bi-arrow-repeat me-1"></i>Erneut starten
+        </a>
+    </div>
+</div>
+
+<script>
+(function () {
+    const STREAM_URL = {{ streamUrl|json_encode|raw }};
+    const BASE_URL   = {{ baseUrl|json_encode|raw }};
+
+    let activeEs = null;
+
+    function ansiStrip(str) {
+        // Strip ANSI escape codes (colour, cursor movement, etc.)
+        return str.replace(/\x1b\[[0-9;]*[mGKHF]/g, '');
+    }
+
+    function startRun() {
+        if (activeEs) {
+            activeEs.close();
+            activeEs = null;
+        }
+
+        const btn        = document.getElementById('btn-start');
+        const consoleEl  = document.getElementById('console');
+        const resultBar  = document.getElementById('result-bar');
+        const btnResults = document.getElementById('btn-results');
+        const statusEl   = document.getElementById('status');
+        const placeholder = document.getElementById('console-placeholder');
+
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status"></span>Läuft…';
+        resultBar.style.display = 'none';
+        statusEl.textContent = 'PHPUnit läuft …';
+
+        if (placeholder) placeholder.remove();
+        consoleEl.textContent = '';
+
+        activeEs = new EventSource(STREAM_URL);
+
+        activeEs.onmessage = function (e) {
+            const raw  = JSON.parse(e.data);
+            const line = ansiStrip(raw);
+            consoleEl.textContent += line + '\n';
+            consoleEl.scrollTop = consoleEl.scrollHeight;
+        };
+
+        activeEs.addEventListener('done', function (e) {
+            activeEs.close();
+            activeEs = null;
+
+            const data = JSON.parse(e.data);
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-play-fill me-1"></i>Tests starten';
+            statusEl.textContent = 'Abgeschlossen.';
+
+            if (data.runId) {
+                btnResults.href = BASE_URL + '/' + data.runId;
+                resultBar.style.display = '';
+            }
+        });
+
+        activeEs.onerror = function () {
+            activeEs.close();
+            activeEs = null;
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-play-fill me-1"></i>Tests starten';
+            statusEl.textContent = 'Verbindung unterbrochen.';
+        };
+    }
+
+    function init() {
+        const btn = document.getElementById('btn-start');
+        btn.addEventListener('click', startRun);
+
+        // Clean up when Turbo navigates away
+        document.addEventListener('turbo:before-visit', function () {
+            if (activeEs) {
+                activeEs.close();
+                activeEs = null;
+            }
+        });
+    }
+
+    pageLoad(init);
+}());
+</script>
+{% endblock %}

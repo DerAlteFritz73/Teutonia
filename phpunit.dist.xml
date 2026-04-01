@@ -40,5 +40,7 @@
     </source>
 
     <extensions>
+        <bootstrap class="Symfony\Component\Panther\ServerExtension" />
+        <bootstrap class="App\Tests\Extension\TestResultsExtension" />
     </extensions>
 </phpunit>
