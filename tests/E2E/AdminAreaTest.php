@@ -53,9 +53,12 @@ class AdminAreaTest extends AbstractE2ETestCase
     public function testEditExistingSong(): void
     {
         $client = $this->createLoggedInClient(AppFixtures::ADMIN_USERNAME, AppFixtures::PASSWORD);
-        $crawler = $client->request('GET', '/admin/songs');
+        $client->request('GET', '/admin/songs');
 
-        // Edit links are in the DOM even while FooTable hides the table visually
+        // Wait for the table to be present in the live DOM before querying links.
+        // (The crawler from request() may be a snapshot taken before JS settles.)
+        $crawler = $client->waitFor('#songs-table');
+
         $editLink = $crawler->filter('a[href*="/admin/songs/"][href*="/edit"]')->first();
         if ($editLink->count() === 0) {
             $this->markTestSkipped('No songs with edit links found.');
