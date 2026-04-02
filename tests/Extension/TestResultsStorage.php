@@ -100,9 +100,16 @@ class TestResultsStorage
 
     public function startRun(): void
     {
-        $stmt = $this->pdo->prepare('INSERT INTO test_runs (started_at) VALUES (NOW())');
-        $stmt->execute();
-        $this->runId = (int) $this->pdo->lastInsertId();
+        try {
+            $stmt = $this->pdo->prepare('INSERT INTO test_runs (started_at) VALUES (NOW())');
+            $stmt->execute();
+            $this->runId = (int) $this->pdo->lastInsertId();
+        } catch (\Throwable) {
+            $this->ensureTables();
+            $stmt = $this->pdo->prepare('INSERT INTO test_runs (started_at) VALUES (NOW())');
+            $stmt->execute();
+            $this->runId = (int) $this->pdo->lastInsertId();
+        }
     }
 
     public function setTestStatus(string $testId, string $status, string $message = ''): void
@@ -115,16 +122,26 @@ class TestResultsStorage
         $info = $this->pending[$testId] ?? ['status' => 'passed', 'message' => ''];
         unset($this->pending[$testId]);
 
-        $stmt = $this->pdo->prepare(
-            'INSERT INTO test_results (run_id, test_class, test_name, status, duration_ms, message)
-             VALUES (?, ?, ?, ?, ?, ?)'
-        );
-        $stmt->execute([$this->runId, $className, $testName, $info['status'], $durationMs, $info['message']]);
+        $sql = 'INSERT INTO test_results (run_id, test_class, test_name, status, duration_ms, message)
+                VALUES (?, ?, ?, ?, ?, ?)';
+        $args = [$this->runId, $className, $testName, $info['status'], $durationMs, $info['message']];
+
+        try {
+            $this->pdo->prepare($sql)->execute($args);
+        } catch (\Throwable) {
+            // Tables may have been dropped by doctrine:schema:update --complete mid-run; recreate and retry.
+            $this->ensureTables();
+            try {
+                $this->pdo->prepare($sql)->execute($args);
+            } catch (\Throwable) {
+                // Give up silently — test results are non-critical.
+            }
+        }
     }
 
     public function finishRun(): void
     {
-        $stmt = $this->pdo->prepare('
+        $sql = '
             UPDATE test_runs SET
                 finished_at = NOW(),
                 total   = (SELECT COUNT(*)                              FROM test_results WHERE run_id = :id),
@@ -133,8 +150,17 @@ class TestResultsStorage
                 errored = (SELECT COUNT(*) FROM test_results WHERE run_id = :id AND status = "error"),
                 skipped = (SELECT COUNT(*) FROM test_results WHERE run_id = :id AND status = "skipped")
             WHERE id = :id
-        ');
-        $stmt->execute([':id' => $this->runId]);
+        ';
+        try {
+            $this->pdo->prepare($sql)->execute([':id' => $this->runId]);
+        } catch (\Throwable) {
+            $this->ensureTables();
+            try {
+                $this->pdo->prepare($sql)->execute([':id' => $this->runId]);
+            } catch (\Throwable) {
+                // Give up silently.
+            }
+        }
     }
 
     public function getRunId(): int

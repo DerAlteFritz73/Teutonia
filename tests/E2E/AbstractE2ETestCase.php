@@ -22,6 +22,12 @@ abstract class AbstractE2ETestCase extends PantherTestCase
 
     public static function setUpBeforeClass(): void
     {
+        // Keep the PHP server and browser alive between test classes.
+        // tearDownAfterClass() in PantherTestCaseTrait kills them by default,
+        // which causes ERR_CONNECTION_REFUSED if the next class's tests reach
+        // the server before it has finished restarting.
+        static::$stopServerOnTeardown = false;
+
         parent::setUpBeforeClass();
 
         if (!self::$dbReady) {
