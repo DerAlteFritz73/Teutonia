@@ -55,16 +55,20 @@ class AdminAreaTest extends AbstractE2ETestCase
         $client = $this->createLoggedInClient(AppFixtures::ADMIN_USERNAME, AppFixtures::PASSWORD);
         $client->request('GET', '/admin/songs');
 
-        // Wait for the table to be present in the live DOM before querying links.
-        // (The crawler from request() may be a snapshot taken before JS settles.)
-        $crawler = $client->waitFor('#songs-table');
+        // Wait for at least one data row to appear (gives WebDriver a stable DOM).
+        $client->waitFor('#songs-table tbody tr[data-id]');
 
-        $editLink = $crawler->filter('a[href*="/admin/songs/"][href*="/edit"]')->first();
-        if ($editLink->count() === 0) {
-            $this->markTestSkipped('No songs with edit links found.');
+        // Read the song ID from the data attribute — avoids href-filter issues
+        // caused by Panther serializing relative URLs to absolute in getPageSource().
+        $row = $client->getWebDriver()->findElement(
+            \Facebook\WebDriver\WebDriverBy::cssSelector('#songs-table tbody tr[data-id]')
+        );
+        $songId = $row->getAttribute('data-id');
+        if (!$songId) {
+            $this->markTestSkipped('No songs found in table.');
         }
 
-        $client->click($editLink->link());
+        $client->request('GET', '/admin/songs/' . $songId . '/edit');
         $this->assertSelectorExists('form');
 
         $client->submitForm('Speichern', [
