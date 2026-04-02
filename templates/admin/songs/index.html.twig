@@ -67,7 +67,9 @@
     {# Search filter #}
     <div class="mb-3" style="max-width:500px;">
         <input type="search" id="songsSearch" class="form-control"
-               placeholder="Lied suchen…" autocomplete="off" autofocus>
+               placeholder="Lied suchen… (Enter für alle Seiten)"
+               autocomplete="off" autofocus
+               value="{{ search|e('html_attr') }}">
     </div>
     <div id="songsNoResults" class="text-muted d-none">Kein Lied gefunden.</div>
 
@@ -483,6 +485,16 @@ document.querySelectorAll('.btn-expand-movements').forEach(btn => {
         });
 
         noResult.classList.toggle('d-none', visible > 0 || !q);
+    });
+
+    // Enter submits a server-side search so pagination is correct across all pages
+    input.addEventListener('keydown', function (e) {
+        if (e.key !== 'Enter') return;
+        e.preventDefault();
+        var url = new URL(window.location.href);
+        url.searchParams.set('q', input.value.trim());
+        url.searchParams.set('page', '1');
+        window.location.href = url.toString();
     });
 }());
 </script>
