@@ -42,7 +42,11 @@ class AdminAreaTest extends AbstractE2ETestCase
             'song_keyword[etikett]'   => 'Blau 01',
         ]);
 
-        $client->request('GET', '/admin/songs');
+        // Turbo intercepts the form POST as an XHR; calling request() immediately
+        // would cancel the in-flight request before the server creates the song.
+        // Wait for Turbo to complete its navigation to /admin/songs instead.
+        $client->waitFor('#songs-table');
+
         $this->assertStringContainsString('O Fortuna', $client->getWebDriver()->getPageSource());
     }
 
@@ -64,7 +68,7 @@ class AdminAreaTest extends AbstractE2ETestCase
             'song_keyword[songName]' => 'Amazing Grace (bearbeitet)',
         ]);
 
-        $client->request('GET', '/admin/songs');
+        $client->waitFor('#songs-table');
         $this->assertStringContainsString('Amazing Grace (bearbeitet)', $client->getWebDriver()->getPageSource());
     }
 
