@@ -58,6 +58,31 @@ class AuthTest extends AbstractE2ETestCase
         $this->assertStringNotContainsString('/mitglieder', $client->getCurrentURL());
     }
 
+    public function testUserDropdownExpandsOnClick(): void
+    {
+        $client = $this->createLoggedInClient(AppFixtures::MEMBER_USERNAME, AppFixtures::PASSWORD);
+
+        $client->findElement(WebDriverBy::cssSelector('.nav-item.dropdown .dropdown-toggle'))->click();
+        $client->waitFor('.dropdown-menu.show');
+
+        $this->assertSelectorExists('.dropdown-menu.show');
+    }
+
+    public function testLogoutViaDropdownAfterTurboNavigation(): void
+    {
+        $client = $this->createLoggedInClient(AppFixtures::MEMBER_USERNAME, AppFixtures::PASSWORD);
+
+        // Navigate via Turbo to a second page, then use the dropdown to log out
+        $client->request('GET', '/');
+        $client->findElement(WebDriverBy::cssSelector('.nav-item.dropdown .dropdown-toggle'))->click();
+        $client->waitFor('.dropdown-menu.show');
+        $client->findElement(WebDriverBy::linkText('Abmelden'))->click();
+
+        $client->waitFor('body');
+        $this->assertStringNotContainsString('/mitglieder', $client->getCurrentURL());
+        $this->assertSelectorNotExists('.nav-item.dropdown');
+    }
+
     public function testMemberAreaRedirectsUnauthenticatedUser(): void
     {
         $client = static::createPantherClient();
