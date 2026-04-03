@@ -463,38 +463,28 @@ document.querySelectorAll('.btn-expand-movements').forEach(btn => {
 </script>
 <script>
 (function () {
-    var input    = document.getElementById('songsSearch');
-    var noResult = document.getElementById('songsNoResults');
+    var input = document.getElementById('songsSearch');
     if (!input) return;
 
-    input.addEventListener('input', function () {
-        var q     = input.value.trim().toLowerCase();
-        var rows  = document.querySelectorAll('#songs-table tbody tr:not(.movement-row)');
-        var visible = 0;
+    var debounceTimer = null;
 
-        rows.forEach(function (row) {
-            var text = [
-                row.querySelector('[data-field="songName"] .display-val'),
-                row.querySelector('[data-field="composer"] .display-val'),
-                row.querySelector('[data-field="etikett"] .display-val'),
-            ].map(function (el) { return el ? el.textContent.trim().toLowerCase() : ''; }).join(' ');
-
-            var show = !q || text.includes(q);
-            row.style.display = show ? '' : 'none';
-            if (show) visible++;
-        });
-
-        noResult.classList.toggle('d-none', visible > 0 || !q);
-    });
-
-    // Enter submits a server-side search so pagination is correct across all pages
-    input.addEventListener('keydown', function (e) {
-        if (e.key !== 'Enter') return;
-        e.preventDefault();
+    function submitSearch() {
         var url = new URL(window.location.href);
         url.searchParams.set('q', input.value.trim());
         url.searchParams.set('page', '1');
         window.location.href = url.toString();
+    }
+
+    input.addEventListener('input', function () {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(submitSearch, 400);
+    });
+
+    input.addEventListener('keydown', function (e) {
+        if (e.key !== 'Enter') return;
+        e.preventDefault();
+        clearTimeout(debounceTimer);
+        submitSearch();
     });
 }());
 </script>
