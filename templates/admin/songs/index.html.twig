@@ -67,7 +67,7 @@
     <div class="mb-3" style="max-width:500px;">
         <input type="search" id="songsSearch" class="form-control"
                placeholder="Lied suchen… (Enter für alle Seiten)"
-               autocomplete="off" autofocus
+               autocomplete="off"
                value="{{ search|e('html_attr') }}">
     </div>
     <div id="songsNoResults" class="text-muted d-none">Kein Lied gefunden.</div>
@@ -444,6 +444,11 @@ window.SONGS_CONFIG = {
 (function () {
     var input = document.getElementById('songsSearch');
     if (!input) return;
+
+    // Focus and place cursor at end (autofocus resets to position 0 after Turbo navigation)
+    input.focus();
+    var end = input.value.length;
+    input.setSelectionRange(end, end);
 
     var debounceTimer = null;
 
