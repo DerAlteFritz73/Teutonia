@@ -441,25 +441,6 @@ window.SONGS_CONFIG = {
     csrfSync:  '{{ csrf_token('sync_dropbox') }}',
     syncUrl:   '{{ path('admin_songs_sync_dropbox') }}'
 };
-
-// Expand / collapse movement rows
-document.querySelectorAll('.btn-expand-movements').forEach(btn => {
-    btn.addEventListener('click', e => {
-        e.stopPropagation();
-        const parentId = btn.dataset.parent;
-        const rows  = document.querySelectorAll('.movement-parent-' + parentId);
-        const chev  = document.getElementById('chev-' + parentId);
-        const open  = rows[0] && rows[0].style.display !== 'none';
-        rows.forEach(r => {
-            r.style.display = open ? 'none' : '';
-            if (open) {
-                const det = r.nextElementSibling;
-                if (det && det.classList.contains('footable-detail-row')) det.style.display = 'none';
-            }
-        });
-        chev.className = open ? 'bi bi-chevron-right text-muted' : 'bi bi-chevron-down text-primary';
-    });
-});
 </script>
 <script>
 (function () {

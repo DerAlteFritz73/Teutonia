@@ -34,3 +34,18 @@
     font-size: .95rem;
 }
 .style-songs li:last-child { border-bottom: none; }
+
+@media (max-width: 575.98px) {
+    .word-cloud-section {
+        margin-left: -0.75rem;
+        margin-right: -0.75rem;
+    }
+    .word-cloud-section .card {
+        border-radius: 0;
+        border-left: none;
+        border-right: none;
+    }
+    #wordcloud-container {
+        height: 300px !important;
+    }
+}
