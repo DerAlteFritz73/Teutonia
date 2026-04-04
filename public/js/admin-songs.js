@@ -93,24 +93,17 @@ if (!window._adminSongsInit) {
 
     /* ── Event delegation — works regardless of when DOM is ready ────── */
 
-    // Expand / collapse movement rows — capture phase fires before FooTable's bubble handlers
+    // Expand / collapse movement rows
     document.addEventListener('click', e => {
         const btn = e.target.closest('.btn-expand-movements');
         if (!btn) return;
-        e.stopPropagation();
         const parentId = btn.dataset.parent;
         const rows = document.querySelectorAll('.movement-parent-' + parentId);
         const chev = document.getElementById('chev-' + parentId);
         const open = rows[0] && rows[0].style.display !== 'none';
-        rows.forEach(r => {
-            r.style.display = open ? 'none' : '';
-            if (open) {
-                const det = r.nextElementSibling;
-                if (det && det.classList.contains('footable-detail-row')) det.style.display = 'none';
-            }
-        });
+        rows.forEach(r => { r.style.display = open ? 'none' : ''; });
         if (chev) chev.className = open ? 'bi bi-chevron-right text-muted' : 'bi bi-chevron-down text-primary';
-    }, true);
+    });
 
     // Click cell → activate
     document.addEventListener('click', e => {

@@ -22,7 +22,6 @@
 <meta name="turbo-cache-control" content="no-cache">
 {% set months_de = ['Jan.','Feb.','Mär.','Apr.','Mai','Jun.','Jul.','Aug.','Sep.','Okt.','Nov.','Dez.'] %}
 <link rel="stylesheet" href="{{ asset('css/admin-songs.css') }}">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/footable-v3/compiled/footable.core.standalone.min.css">
 
 <div class="container-fluid py-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
@@ -83,13 +82,12 @@
         <table class="table table-striped table-hover table-sm align-middle" id="songs-table">
             <thead class="table-dark">
                 <tr>
-                    <th data-toggle="true" style="width:26px;padding:0;"></th>
-                    {{ _self.sort_th('Etikett',         'etikett',       sort, dir, search, 'width:115px', 'data-breakpoints="xs sm" data-title="Etikett" data-type="html"') }}
-                    {{ _self.sort_th('Liedtitel',        'songName',      sort, dir, search, null,         'data-title="Liedtitel"') }}
-                    {{ _self.sort_th('Komponist',        'composer',      sort, dir, search, 'width:190px','data-title="Komponist"') }}
-                    <th data-breakpoints="xs sm" data-title="Stile" data-type="html">Stile</th>
-                    {{ _self.sort_th('Letzte Aufführung', 'latestKonzert', sort, dir, search, 'width:130px', 'data-breakpoints="xs sm" data-title="Letztes Konzert" data-type="html"') }}
-                    {{ _self.sort_th('Dropbox',          'dropboxlink',   sort, dir, search, 'width:40px',  'data-breakpoints="xs sm" data-title="Dropbox" data-type="html"') }}
+                    {{ _self.sort_th('Etikett',           'etikett',       sort, dir, search, 'width:115px', 'class="d-none d-md-table-cell"') }}
+                    {{ _self.sort_th('Liedtitel',          'songName',      sort, dir, search, null,         '') }}
+                    {{ _self.sort_th('Komponist',          'composer',      sort, dir, search, 'width:190px', 'class="d-none d-md-table-cell"') }}
+                    <th class="d-none d-md-table-cell">Stile</th>
+                    {{ _self.sort_th('Letzte Aufführung',  'latestKonzert', sort, dir, search, 'width:130px', 'class="d-none d-md-table-cell"') }}
+                    {{ _self.sort_th('Dropbox',            'dropboxlink',   sort, dir, search, 'width:40px',  'class="d-none d-md-table-cell"') }}
                     <th class="text-end" style="width:80px">Aktionen</th>
                 </tr>
             </thead>
@@ -202,9 +200,8 @@
                         'extrabox': 'bg-secondary text-white'
                     }[prefix] ?? 'bg-light text-dark border' %}
                     <tr data-id="{{ song.id }}">
-                        <td></td>
                         {# Etikett #}
-                        <td class="editable-cell" data-field="etikett">
+                        <td class="editable-cell d-none d-md-table-cell" data-field="etikett">
                             <span class="display-val">
                                 {% if song.etikett %}
                                     <span class="badge {{ badgeClass }} fw-normal">{{ song.etikett }}</span>
@@ -218,25 +215,26 @@
                                    placeholder="z.B. Blau 29">
                         </td>
 
-                        {# Liedtitel — with expand toggle if has children #}
-                        <td class="editable-cell fw-semibold" data-field="songName">
+                        {# Liedtitel — expand trigger on line 1 (if children), editable name on line 2 #}
+                        <td class="fw-semibold">
                             {% if song.children|length > 0 %}
-                                <button type="button"
-                                        class="btn btn-sm p-0 me-1 border-0 bg-transparent btn-expand-movements"
-                                        data-parent="{{ song.id }}"
-                                        title="{{ song.children|length }} Satz/Sätze ein-/ausblenden">
+                                <div class="btn-expand-movements d-flex align-items-center gap-1 mb-1"
+                                     data-parent="{{ song.id }}" role="button"
+                                     title="{{ song.children|length }} Satz/Sätze ein-/ausblenden">
                                     <i class="bi bi-chevron-right text-muted" id="chev-{{ song.id }}"></i>
-                                </button>
-                                <span class="badge bg-secondary rounded-pill" style="font-size:.6rem">{{ song.children|length }}</span>
+                                    <span class="badge bg-secondary rounded-pill" style="font-size:.6rem">{{ song.children|length }}</span>
+                                </div>
                             {% endif %}
-                            <span class="display-val">{{ song.songName }}</span>
-                            <input class="edit-input form-control form-control-sm d-none"
-                                   type="text"
-                                   value="{{ song.songName|e('html_attr') }}">
+                            <div class="editable-cell" data-field="songName">
+                                <span class="display-val">{{ song.songName }}</span>
+                                <input class="edit-input form-control form-control-sm d-none"
+                                       type="text"
+                                       value="{{ song.songName|e('html_attr') }}">
+                            </div>
                         </td>
 
                         {# Komponist #}
-                        <td class="editable-cell" data-field="composer">
+                        <td class="editable-cell d-none d-md-table-cell" data-field="composer">
                             <span class="display-val text-muted">{{ song.composer ?? '—' }}</span>
                             <input class="edit-input form-control form-control-sm d-none"
                                    type="text"
@@ -245,14 +243,14 @@
                         </td>
 
                         {# Stile #}
-                        <td>
+                        <td class="d-none d-md-table-cell">
                             {% for style in song.styles %}
                                 <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle fw-normal">{{ style.name }}</span>
                             {% endfor %}
                         </td>
 
                         {# Letztes Konzert #}
-                        <td>
+                        <td class="d-none d-md-table-cell">
                             {% set latestDate = song.latestKonzertDate %}
                             <span class="text-muted">
                                 {{ latestDate ? latestDate|date('d.m.Y') : '—' }}
@@ -260,7 +258,7 @@
                         </td>
 
                         {# Dropbox #}
-                        <td class="editable-cell" data-field="dropboxlink">
+                        <td class="editable-cell d-none d-md-table-cell" data-field="dropboxlink">
                             <span class="display-val">
                                 {% if song.dropboxlink %}
                                     <i class="bi bi-folder-check text-success" title="{{ song.dropboxlink }}"></i>
@@ -306,8 +304,7 @@
                             style="background:#f0f3ff; display:none;"
                             draggable="true">
 
-                            <td></td>
-                            <td class="editable-cell" data-field="etikett">
+                            <td class="editable-cell d-none d-md-table-cell" data-field="etikett">
                                 <span class="drag-handle" title="Verschieben"><i class="bi bi-grip-vertical"></i></span>
                                 <span class="text-primary opacity-50 ps-1">↳</span>
                                 <span class="display-val">
@@ -322,13 +319,14 @@
                             </td>
 
                             <td class="editable-cell" data-field="songName">
+                                <span class="text-primary opacity-50 d-md-none me-1">↳</span>
                                 <span class="display-val fst-italic text-secondary">{{ child.songName }}</span>
                                 <input class="edit-input form-control form-control-sm d-none"
                                        type="text"
                                        value="{{ child.songName|e('html_attr') }}">
                             </td>
 
-                            <td class="editable-cell" data-field="composer">
+                            <td class="editable-cell d-none d-md-table-cell" data-field="composer">
                                 <span class="display-val text-muted">{{ child.composer ?? '—' }}</span>
                                 <input class="edit-input form-control form-control-sm d-none"
                                        type="text"
@@ -336,20 +334,20 @@
                                        placeholder="Komponist">
                             </td>
 
-                            <td>
+                            <td class="d-none d-md-table-cell">
                                 {% for style in child.styles %}
                                     <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle fw-normal">{{ style.name }}</span>
                                 {% endfor %}
                             </td>
 
-                            <td>
+                            <td class="d-none d-md-table-cell">
                                 {% set latestDate = child.latestKonzertDate %}
                                 <span class="text-muted">
                                     {{ latestDate ? latestDate|date('d.m.Y') : '—' }}
                                 </span>
                             </td>
 
-                            <td class="editable-cell" data-field="dropboxlink">
+                            <td class="editable-cell d-none d-md-table-cell" data-field="dropboxlink">
                                 <span class="display-val">
                                     {% if child.dropboxlink %}
                                         <i class="bi bi-folder-check text-success" title="{{ child.dropboxlink }}"></i>
@@ -379,7 +377,7 @@
                     {% endfor %}
                 {% else %}
                     <tr>
-                        <td colspan="8" class="text-center text-muted py-4">
+                        <td colspan="7" class="text-center text-muted py-4">
                             Keine Lieder gefunden{% if search %} für „{{ search }}"{% endif %}.
                         </td>
                     </tr>
@@ -470,13 +468,4 @@ window.SONGS_CONFIG = {
 }());
 </script>
 <script src="{{ asset('js/admin-songs.js') }}"></script>
-<script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.slim.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/footable-v3/compiled/footable.core.min.js"></script>
-<script>
-document.addEventListener('turbo:load', function () {
-    if (typeof jQuery !== 'undefined' && typeof jQuery.fn.footable !== 'undefined') {
-        jQuery('#songs-table').footable();
-    }
-}, { once: true });
-</script>
 {% endblock %}
