@@ -215,22 +215,16 @@
                                    placeholder="z.B. Blau 29">
                         </td>
 
-                        {# Liedtitel — expand triggers + editable name #}
+                        {# Liedtitel — expand trigger on line 1 (if children), editable name on line 2 #}
                         <td class="fw-semibold">
-                            <div class="d-flex align-items-center gap-2 mb-1">
-                                <span class="btn-expand-detail text-muted" data-song="{{ song.id }}"
-                                      role="button" title="Dateien &amp; Links ein-/ausblenden" style="cursor:pointer; line-height:1">
-                                    <i class="bi bi-chevron-right" id="detail-chev-{{ song.id }}"></i>
-                                </span>
-                                {% if song.children|length > 0 %}
-                                    <div class="btn-expand-movements d-flex align-items-center gap-1"
-                                         data-parent="{{ song.id }}" role="button"
-                                         title="{{ song.children|length }} Satz/Sätze ein-/ausblenden">
-                                        <i class="bi bi-chevron-right text-muted" id="chev-{{ song.id }}"></i>
-                                        <span class="badge bg-secondary rounded-pill" style="font-size:.6rem">{{ song.children|length }}</span>
-                                    </div>
-                                {% endif %}
-                            </div>
+                            {% if song.children|length > 0 %}
+                                <div class="btn-expand-movements d-flex align-items-center gap-1 mb-1"
+                                     data-parent="{{ song.id }}" role="button"
+                                     title="{{ song.children|length }} Satz/Sätze ein-/ausblenden">
+                                    <i class="bi bi-chevron-right text-muted" id="chev-{{ song.id }}"></i>
+                                    <span class="badge bg-secondary rounded-pill" style="font-size:.6rem">{{ song.children|length }}</span>
+                                </div>
+                            {% endif %}
                             <div class="editable-cell" data-field="songName">
                                 <span class="display-val">{{ song.songName }}</span>
                                 <input class="edit-input form-control form-control-sm d-none"
@@ -292,42 +286,6 @@
                                     <i class="bi bi-trash"></i>
                                 </button>
                             </form>
-                        </td>
-                    </tr>
-
-                    {# ── Detail row (hidden by default) ────────────── #}
-                    <tr class="song-detail-row" data-song-id="{{ song.id }}" style="display:none">
-                        <td colspan="7" class="p-0">
-                            <div class="p-3 bg-light border-bottom">
-                                {% if song.links|length > 0 %}
-                                    <div class="d-flex flex-wrap gap-2 mb-3">
-                                        {% for link in song.links %}
-                                            {% set isYoutube = 'youtube.com' in link.url or 'youtu.be' in link.url %}
-                                            <a href="{{ link.url }}" target="_blank" rel="noopener noreferrer"
-                                               class="btn btn-sm btn-outline-secondary">
-                                                {% if isYoutube %}
-                                                    <i class="bi bi-youtube text-danger me-1"></i>
-                                                {% else %}
-                                                    <i class="bi bi-link-45deg me-1"></i>
-                                                {% endif %}
-                                                {{ link.label ?? link.url }}
-                                            </a>
-                                        {% endfor %}
-                                    </div>
-                                {% endif %}
-                                {% if song.dropboxlink %}
-                                    <div class="list-group song-files-container" data-dropbox-path="{{ song.dropboxlink }}">
-                                        <div class="text-center text-muted py-3 file-loading-spinner">
-                                            <span class="spinner-border spinner-border-sm me-2" role="status"></span>
-                                            Lade Dateien…
-                                        </div>
-                                    </div>
-                                {% elseif song.links|length == 0 %}
-                                    <p class="text-muted mb-0 small">
-                                        <i class="bi bi-info-circle me-1"></i>Keine Dateien oder Links hinterlegt.
-                                    </p>
-                                {% endif %}
-                            </div>
                         </td>
                     </tr>
 
@@ -479,10 +437,7 @@
 window.SONGS_CONFIG = {
     csrfPatch: '{{ csrf_token('song_patch') }}',
     csrfSync:  '{{ csrf_token('sync_dropbox') }}',
-    syncUrl:   '{{ path('admin_songs_sync_dropbox') }}',
-    filesUrl:  '{{ path('api_dropbox_song_files') }}',
-    linkUrl:   '{{ path('api_dropbox_link') }}',
-    viewUrl:   '{{ path('api_dropbox_view') }}'
+    syncUrl:   '{{ path('admin_songs_sync_dropbox') }}'
 };
 </script>
 <script>
@@ -499,7 +454,7 @@ window.SONGS_CONFIG = {
 
     input.addEventListener('input', function () {
         var q    = input.value.trim().toLowerCase();
-        var rows = document.querySelectorAll('#songs-table tbody tr:not(.movement-row):not(.song-detail-row)');
+        var rows = document.querySelectorAll('#songs-table tbody tr:not(.movement-row)');
         var visible = 0;
 
         rows.forEach(function (row) {
@@ -510,15 +465,12 @@ window.SONGS_CONFIG = {
             row.style.display = show ? '' : 'none';
             if (show) visible++;
 
+            // Keep movement rows in sync with their parent visibility
             var parentId = row.getAttribute('data-id');
             if (parentId) {
-                // Hide movement rows for hidden parents
                 document.querySelectorAll('.movement-parent-' + parentId).forEach(function (child) {
                     if (!show) child.style.display = 'none';
                 });
-                // Hide detail row for hidden parents
-                var detailRow = document.querySelector('.song-detail-row[data-song-id="' + parentId + '"]');
-                if (detailRow && !show) detailRow.style.display = 'none';
             }
         });
 
@@ -527,79 +479,4 @@ window.SONGS_CONFIG = {
 }());
 </script>
 <script src="{{ asset('js/admin-songs.js') }}"></script>
-
-<!-- PDF Viewer Modal -->
-<div class="modal fade" id="pdfViewerModal" tabindex="-1" aria-labelledby="pdfViewerModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-xl modal-fullscreen-lg-down">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="pdfViewerModalLabel">
-                    <i class="bi bi-file-pdf-fill text-danger me-2"></i>
-                    <span id="pdfFileName"></span>
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body p-0" style="height: 80vh;">
-                <iframe id="pdfViewerFrame" style="width: 100%; height: 100%; border: none;"></iframe>
-            </div>
-            <div class="modal-footer">
-                <a id="pdfDownloadLink" href="#" download class="btn btn-primary">
-                    <i class="bi bi-download me-2"></i>Herunterladen
-                </a>
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Schließen</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Audio Player Modal -->
-<div class="modal fade" id="audioPlayerModal" tabindex="-1" aria-labelledby="audioPlayerModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="audioPlayerModalLabel">
-                    <i class="bi bi-music-note-beamed text-primary me-2"></i>
-                    <span id="audioFileName"></span>
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <audio id="audioPlayer" controls class="w-100 mb-4" style="outline: none;">
-                    Ihr Browser unterstützt das Audio-Element nicht.
-                </audio>
-                <div class="card">
-                    <div class="card-body">
-                        <h6 class="card-title mb-3">
-                            <i class="bi bi-speedometer2 me-2"></i>Wiedergabegeschwindigkeit
-                        </h6>
-                        <div class="d-flex align-items-center gap-3 mb-3">
-                            <label for="speedSlider" class="form-label mb-0" style="min-width: 60px;">
-                                <span id="speedValue">1.0</span>x
-                            </label>
-                            <input type="range" class="form-range flex-grow-1" id="speedSlider"
-                                   min="0.25" max="2.0" step="0.05" value="1.0">
-                        </div>
-                        <div class="d-flex gap-2 flex-wrap">
-                            <button class="btn btn-sm btn-outline-secondary speed-preset" data-speed="0.5">0.5x</button>
-                            <button class="btn btn-sm btn-outline-secondary speed-preset" data-speed="0.75">0.75x</button>
-                            <button class="btn btn-sm btn-outline-primary speed-preset" data-speed="1">1.0x</button>
-                            <button class="btn btn-sm btn-outline-secondary speed-preset" data-speed="1.25">1.25x</button>
-                            <button class="btn btn-sm btn-outline-secondary speed-preset" data-speed="1.5">1.5x</button>
-                            <button class="btn btn-sm btn-outline-secondary speed-preset" data-speed="2">2.0x</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-success" id="audioPlayBtn">
-                    <i class="bi bi-play-fill me-1"></i>Abspielen
-                </button>
-                <a id="audioDownloadLink" href="#" download class="btn btn-primary">
-                    <i class="bi bi-download me-2"></i>Herunterladen
-                </a>
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Schließen</button>
-            </div>
-        </div>
-    </div>
-</div>
 {% endblock %}
