@@ -66,7 +66,7 @@
     {# Search filter #}
     <div class="mb-3" style="max-width:500px;">
         <input type="search" id="songsSearch" class="form-control"
-               placeholder="Lied suchen… (Enter für alle Seiten)"
+               placeholder="Lied suchen…"
                autocomplete="off"
                value="{{ search|e('html_attr') }}">
     </div>
@@ -442,7 +442,9 @@ window.SONGS_CONFIG = {
 </script>
 <script>
 (function () {
-    var input = document.getElementById('songsSearch');
+    'use strict';
+    var input    = document.getElementById('songsSearch');
+    var noResult = document.getElementById('songsNoResults');
     if (!input) return;
 
     // Focus and place cursor at end (autofocus resets to position 0 after Turbo navigation)
@@ -450,25 +452,29 @@ window.SONGS_CONFIG = {
     var end = input.value.length;
     input.setSelectionRange(end, end);
 
-    var debounceTimer = null;
-
-    function submitSearch() {
-        var url = new URL(window.location.href);
-        url.searchParams.set('q', input.value.trim());
-        url.searchParams.set('page', '1');
-        window.location.href = url.toString();
-    }
-
     input.addEventListener('input', function () {
-        clearTimeout(debounceTimer);
-        debounceTimer = setTimeout(submitSearch, 400);
-    });
+        var q    = input.value.trim().toLowerCase();
+        var rows = document.querySelectorAll('#songs-table tbody tr:not(.movement-row)');
+        var visible = 0;
 
-    input.addEventListener('keydown', function (e) {
-        if (e.key !== 'Enter') return;
-        e.preventDefault();
-        clearTimeout(debounceTimer);
-        submitSearch();
+        rows.forEach(function (row) {
+            var nameEl     = row.querySelector('[data-field="songName"] .display-val');
+            var composerEl = row.querySelector('[data-field="composer"] .display-val');
+            var text       = (nameEl ? nameEl.textContent : '') + ' ' + (composerEl ? composerEl.textContent : '');
+            var show       = !q || text.toLowerCase().includes(q);
+            row.style.display = show ? '' : 'none';
+            if (show) visible++;
+
+            // Keep movement rows in sync with their parent visibility
+            var parentId = row.getAttribute('data-id');
+            if (parentId) {
+                document.querySelectorAll('.movement-parent-' + parentId).forEach(function (child) {
+                    if (!show) child.style.display = 'none';
+                });
+            }
+        });
+
+        noResult.classList.toggle('d-none', visible > 0 || !q);
     });
 }());
 </script>
