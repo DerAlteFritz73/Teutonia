@@ -162,7 +162,8 @@
             <div class="accordion" id="allFilesAccordion">
                 {% for song in notenSongs %}
                     {% set allFolderId = 'noten-' ~ loop.index %}
-                    {% set hasDropbox = song.dropboxlink is not null and song.dropboxlink != '' %}
+                    {% set notenPath = song.dropboxlink ?? song.aktuelleDropboxlink %}
+                    {% set hasDropbox = notenPath is not null and notenPath != '' %}
                     {% set hasMovements = song.children|length > 0 %}
                     <div class="accordion-item">
                         <h2 class="accordion-header">
@@ -171,7 +172,7 @@
                                     data-bs-toggle="collapse"
                                     data-bs-target="#{{ allFolderId }}"
                                     aria-expanded="false"
-                                    {% if hasDropbox %}data-dropbox-path="{{ song.dropboxlink }}"{% endif %}>
+                                    {% if hasDropbox %}data-dropbox-path="{{ notenPath }}"{% endif %}>
                                 {% if hasDropbox or hasMovements %}
                                     <i class="bi bi-folder2-open me-2 text-warning"></i>
                                 {% else %}

@@ -135,7 +135,7 @@
     <div class="card mb-4">
         <div class="card-header fw-semibold"><i class="bi bi-folder2-open me-2"></i>Dateien (Dropbox)</div>
         <div class="card-body p-0">
-            {% set mainPath = song.dropboxlink %}
+            {% set mainPath = song.dropboxlink ?? song.aktuelleDropboxlink %}
             {% if mainPath %}
             <div class="accordion" id="editFilesAccordion">
                 <div class="accordion-item border-0">
