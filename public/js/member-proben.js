@@ -113,44 +113,77 @@
         });
     }
 
-    /* ── Pre-fetch file counts for aktuelle Proben on page load ─────────
-       Fetches file lists eagerly so badge counts (PDF/Audio) are visible
-       in collapsed accordion headers without needing to open them first.
-       Also pre-populates the containers so opening is instant.           */
-    (function prefetchProbenFiles() {
+    /* ── Shared: pre-fetch files for one accordion button ───────────────
+       Fetches files, populates the badge counts and pre-fills the
+       container so opening the accordion is instant.                     */
+    function prefetchAccordionBtn(btn) {
+        const cfg         = window.PROBEN_CONFIG || {};
+        const dropboxPath = btn.dataset.dropboxPath;
+        const badgeSpan   = btn.querySelector('.file-count-badges');
+        const targetId    = btn.dataset.bsTarget;
+        const panel       = targetId && document.querySelector(targetId);
+        const container   = panel && panel.querySelector('.song-files-container');
+
+        fetch(cfg.filesUrl + '?path=' + encodeURIComponent(dropboxPath))
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                const files  = data.files || [];
+                const pdfs   = files.filter(function (f) { return f.type === 'pdf'; }).length;
+                const audios = files.filter(function (f) { return f.type === 'audio'; }).length;
+                let badges = '';
+                if (pdfs)   badges += '<span class="badge bg-danger" title="PDF-Dateien"><i class="bi bi-file-pdf"></i> ' + pdfs + '</span>';
+                if (audios) badges += '<span class="badge bg-success" title="Audio-Dateien"><i class="bi bi-music-note"></i> ' + audios + '</span>';
+                if (badgeSpan) badgeSpan.innerHTML = badges;
+
+                if (container && !container.dataset.loaded) {
+                    container.dataset.loaded = '1';
+                    if (files.length === 0) {
+                        container.innerHTML = '<p class="text-muted p-3">Keine Dateien gefunden.</p>';
+                    } else {
+                        container.innerHTML = files.map(fileItemHtml).join('');
+                        attachFileHandlers(container);
+                    }
+                }
+            })
+            .catch(function () { /* silently ignore */ });
+    }
+
+    /* ── Aktuelle Proben: eager pre-fetch (few songs) ────────────────── */
+    (function () {
+        const cfg = window.PROBEN_CONFIG || {};
+        if (!cfg.filesUrl) return;
+        document.querySelectorAll('#probenAccordion .accordion-btn-files[data-dropbox-path]').forEach(prefetchAccordionBtn);
+    }());
+
+    /* ── Noten und Aufnahmen: IntersectionObserver pre-fetch ───────────
+       Fetches counts just before each row scrolls into view so the list
+       is not hammered all at once (can be hundreds of songs).            */
+    (function () {
         const cfg = window.PROBEN_CONFIG || {};
         if (!cfg.filesUrl) return;
 
-        document.querySelectorAll('#probenAccordion .accordion-btn-files[data-dropbox-path]').forEach(function (btn) {
-            const dropboxPath = btn.dataset.dropboxPath;
-            const badgeSpan   = btn.querySelector('.file-count-badges');
-            const targetId    = btn.dataset.bsTarget;
-            const panel       = targetId && document.querySelector(targetId);
-            const container   = panel && panel.querySelector('.song-files-container');
+        const items = document.querySelectorAll('#allFilesAccordion .accordion-item');
+        if (!items.length) return;
 
-            fetch(cfg.filesUrl + '?path=' + encodeURIComponent(dropboxPath))
-                .then(function (r) { return r.json(); })
-                .then(function (data) {
-                    const files  = data.files || [];
-                    const pdfs   = files.filter(function (f) { return f.type === 'pdf'; }).length;
-                    const audios = files.filter(function (f) { return f.type === 'audio'; }).length;
-                    let badges = '';
-                    if (pdfs)   badges += '<span class="badge bg-danger" title="PDF-Dateien"><i class="bi bi-file-pdf"></i> ' + pdfs + '</span>';
-                    if (audios) badges += '<span class="badge bg-success" title="Audio-Dateien"><i class="bi bi-music-note"></i> ' + audios + '</span>';
-                    if (badgeSpan) badgeSpan.innerHTML = badges;
+        if (!('IntersectionObserver' in window)) {
+            // Fallback: eager-fetch if IntersectionObserver not supported
+            items.forEach(function (item) {
+                const btn = item.querySelector('.accordion-btn-files[data-dropbox-path]');
+                if (btn) prefetchAccordionBtn(btn);
+            });
+            return;
+        }
 
-                    if (container && !container.dataset.loaded) {
-                        container.dataset.loaded = '1';
-                        if (files.length === 0) {
-                            container.innerHTML = '<p class="text-muted p-3">Keine Dateien gefunden.</p>';
-                        } else {
-                            container.innerHTML = files.map(fileItemHtml).join('');
-                            attachFileHandlers(container);
-                        }
-                    }
-                })
-                .catch(function () { /* silently ignore pre-fetch errors */ });
-        });
+        const observer = new IntersectionObserver(function (entries) {
+            entries.forEach(function (entry) {
+                if (!entry.isIntersecting) return;
+                observer.unobserve(entry.target);
+                const btn = entry.target.querySelector('.accordion-btn-files[data-dropbox-path]');
+                if (btn) prefetchAccordionBtn(btn);
+            });
+        }, { rootMargin: '300px' });
+
+        items.forEach(function (item) { observer.observe(item); });
     }());
 
     /* ── Lazy-load files when an accordion opens ─────────────────────────
