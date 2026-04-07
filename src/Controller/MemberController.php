@@ -50,7 +50,8 @@ class MemberController extends AbstractController
     public function konzerte(KonzertRepository $konzertRepository): Response
     {
         return $this->render('admin/konzerte/index.html.twig', [
-            'konzerte' => $konzertRepository->findAllOrdered(),
+            'konzerte'         => $konzertRepository->findAllOrdered(),
+            'showAdminActions' => false,
         ]);
     }
 
