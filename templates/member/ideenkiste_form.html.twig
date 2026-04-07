@@ -12,7 +12,7 @@
                 {{ isNew ? 'Neuer Song-Vorschlag' : 'Vorschlag bearbeiten' }}
             </h1>
             <div class="d-flex gap-2">
-                <a href="{{ path('member_ideenkiste') }}" class="btn btn-secondary">
+                <a href="{{ path('member_ideenkiste') }}" class="btn btn-secondary" data-unsaved-cancel>
                     <i class="bi bi-x-lg me-1"></i>Abbrechen
                 </a>
                 <button type="submit" form="suggestion-form" class="btn btn-primary">
@@ -35,7 +35,7 @@
             </div>
         {% endfor %}
 
-        {{ form_start(form, {'attr': {'class': 'mt-4', 'id': 'suggestion-form'}}) }}
+        {{ form_start(form, {'attr': {'class': 'mt-4', 'id': 'suggestion-form', 'data-unsaved-check': ''}}) }}
             <div class="row">
                 <div class="col-md-6 mb-3">
                     {{ form_row(form.title) }}

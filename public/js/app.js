@@ -112,6 +112,36 @@ pageLoad(function () {
         e.returnValue = '';
     });
 
+    function getSaveButtons(form) {
+        var btns = [];
+        Array.from(form.querySelectorAll('button[type=submit]')).forEach(function (b) { btns.push(b); });
+        if (form.id) {
+            Array.from(document.querySelectorAll('button[form="' + form.id + '"]')).forEach(function (b) { btns.push(b); });
+        }
+        return btns;
+    }
+
+    function updateActionButtons(saveButtons, cancelLinks) {
+        var dirty = isDirty();
+        saveButtons.forEach(function (btn) {
+            btn.disabled = !dirty;
+        });
+        cancelLinks.forEach(function (link) {
+            link.classList.toggle('disabled', !dirty);
+            link.setAttribute('aria-disabled', dirty ? 'false' : 'true');
+            link.setAttribute('tabindex', dirty ? '0' : '-1');
+        });
+    }
+
+    // Allow page-specific JS to mark the form as dirty (e.g. Konzert song picker)
+    window.markFormDirty = function () {
+        window.unsavedChangesForced = true;
+        if (trackedForm) updateActionButtons(_saveButtons, _cancelLinks);
+    };
+
+    var _saveButtons = [];
+    var _cancelLinks = [];
+
     pageLoad(function () {
         // Reset per-page state on each navigation
         trackedForm = null;
@@ -120,6 +150,8 @@ pageLoad(function () {
         window.unsavedChangesForced = false;
         pendingUrl = null;
         bsModal = null;
+        _saveButtons = [];
+        _cancelLinks = [];
 
         var form = document.querySelector('form[data-unsaved-check]');
         if (!form) return;
@@ -128,6 +160,16 @@ pageLoad(function () {
         bsModal = bootstrap.Modal.getOrCreateInstance(modalEl);
         trackedForm = form;
         initialSnapshot = getSnapshot(form);
+
+        _saveButtons = getSaveButtons(form);
+        _cancelLinks = Array.from(document.querySelectorAll('[data-unsaved-cancel]'));
+
+        // Disable save/cancel initially (no changes yet)
+        updateActionButtons(_saveButtons, _cancelLinks);
+
+        // Re-evaluate on any input event within the form
+        form.addEventListener('input',  function () { updateActionButtons(_saveButtons, _cancelLinks); });
+        form.addEventListener('change', function () { updateActionButtons(_saveButtons, _cancelLinks); });
 
         document.getElementById('unsaved-stay').onclick = function () {
             bsModal.hide();

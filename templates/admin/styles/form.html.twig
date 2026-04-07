@@ -15,7 +15,7 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1 class="mb-0">{{ isNew ? 'Neuer Stil' : ('Stil bearbeiten: ' ~ style.name) }}</h1>
         <div class="d-flex gap-2">
-            <a href="{{ path('admin_styles') }}" class="btn btn-secondary">
+            <a href="{{ path('admin_styles') }}" class="btn btn-secondary" data-unsaved-cancel>
                 <i class="bi bi-x-lg me-1"></i>Abbrechen
             </a>
             <button type="submit" form="style-form" class="btn btn-primary">

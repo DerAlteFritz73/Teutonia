@@ -15,7 +15,7 @@
             {% if song.composer %}<div class="text-muted small">{{ song.composer }}</div>{% endif %}
         </div>
         <div class="d-flex gap-2">
-            <a href="{{ path('member_proben') }}" class="btn btn-secondary">
+            <a href="{{ path('member_proben') }}" class="btn btn-secondary" data-unsaved-cancel>
                 <i class="bi bi-x-lg me-1"></i>Abbrechen
             </a>
             <button type="submit" form="links-form" class="btn btn-primary">
@@ -24,7 +24,7 @@
         </div>
     </div>
 
-    {{ form_start(form, {attr: {id: 'links-form'}}) }}
+    {{ form_start(form, {attr: {id: 'links-form', 'data-unsaved-check': ''}}) }}
 
     <div class="card">
         <div class="card-header fw-semibold">
