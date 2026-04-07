@@ -244,6 +244,9 @@ class AdminController extends AbstractController
             return $this->json(['error' => 'CSRF-Token ungültig'], 403);
         }
 
+        // Clear stale file-name cache so renames/moves are picked up immediately
+        $dropboxService->clearFileCache();
+
         // Fetch immediate subfolders from both Dropbox locations
         try {
             $notenFolders    = $dropboxService->listSubfolders('/Chorgemeinschaft Teutonia/Noten');

@@ -384,6 +384,18 @@ class DropboxService
     }
 
     /**
+     * Delete all Dropbox file-structure cache files so the next request fetches
+     * fresh data from Dropbox (e.g. after files are renamed or moved).
+     */
+    public function clearFileCache(): void
+    {
+        foreach (glob(sys_get_temp_dir() . '/dropbox_cache_*.json') as $file) {
+            @unlink($file);
+        }
+        error_log('Dropbox: file structure cache cleared');
+    }
+
+    /**
      * Get the list of files for a specific song folder path, read from local cache.
      * Falls back to a live Dropbox call if the cache is missing.
      *
