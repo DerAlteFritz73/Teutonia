@@ -17,8 +17,10 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1 class="mb-0">{{ isNew ? 'Neues Lied' : song.songName }}</h1>
         <div class="d-flex gap-2">
-            <a href="{{ path('admin_songs') }}" class="btn btn-secondary">Abbrechen</a>
-            <button type="submit" class="btn btn-primary">
+            <a href="{{ path('admin_songs') }}" class="btn btn-secondary"
+               data-tooltip="Zurück zur Liederliste, Änderungen verwerfen">Abbrechen</a>
+            <button type="submit" class="btn btn-primary"
+                    data-tooltip="Änderungen speichern">
                 <i class="bi bi-floppy me-1"></i>Speichern
             </button>
         </div>
@@ -65,7 +67,8 @@
                     <div class="link-row input-group mb-2">
                         {{ form_widget(linkForm.url,   {attr: {class: 'form-control', placeholder: 'https://…'}}) }}
                         {{ form_widget(linkForm.label, {attr: {class: 'form-control', placeholder: 'Bezeichnung (optional)'}}) }}
-                        <button type="button" class="btn btn-outline-danger remove-link" title="Entfernen">
+                        <button type="button" class="btn btn-outline-danger remove-link"
+                                data-tooltip="Link entfernen">
                             <i class="bi bi-trash"></i>
                         </button>
                     </div>
@@ -74,7 +77,8 @@
                     {% endfor %}
                 {% endfor %}
             </div>
-            <button type="button" class="btn btn-outline-secondary btn-sm mt-1" id="add-link-btn">
+            <button type="button" class="btn btn-outline-secondary btn-sm mt-1" id="add-link-btn"
+                    data-tooltip="Neuen YouTube-Link hinzufügen">
                 <i class="bi bi-plus-lg me-1"></i>Link hinzufügen
             </button>
         </div>
@@ -127,7 +131,8 @@
                                 type="button"
                                 data-bs-toggle="collapse"
                                 data-bs-target="#editFilesMain"
-                                data-dropbox-path="{{ mainPath }}">
+                                data-dropbox-path="{{ mainPath }}"
+                                data-tooltip="Notenmaterial aus Dropbox laden">
                             <i class="bi bi-folder2-open me-2 text-warning"></i>
                             Notenmaterial
                             <span class="ps-3 d-flex gap-1 file-count-badges"></span>
@@ -158,6 +163,7 @@
                                     data-bs-toggle="collapse"
                                     data-bs-target="#editMov{{ movement.id }}"
                                     data-dropbox-path="{{ movement.dropboxlink }}"
+                                    data-tooltip="Dateien für diesen Satz laden"
                                     {% endif %}>
                                 <i class="bi bi-music-note me-2 text-primary"></i>
                                 <span class="flex-grow-1">{{ movement.songName }}</span>
@@ -198,7 +204,8 @@
         <form action="{{ path('admin_songs_delete', {id: song.id}) }}" method="post"
               class="ms-auto" onsubmit="return confirm('Lied wirklich löschen?')">
             <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ song.id) }}">
-            <button class="btn btn-outline-danger">
+            <button class="btn btn-outline-danger"
+                    data-tooltip="Lied unwiderruflich löschen">
                 <i class="bi bi-trash me-1"></i>Löschen
             </button>
         </form>
@@ -212,14 +219,17 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title"><i class="bi bi-file-pdf-fill text-danger me-2"></i><span id="pdfFileName"></span></h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"
+                        data-tooltip="Vorschau schließen"></button>
             </div>
             <div class="modal-body p-0" style="height:80vh;">
                 <iframe id="pdfViewerFrame" style="width:100%;height:100%;border:none;"></iframe>
             </div>
             <div class="modal-footer">
-                <a id="pdfDownloadLink" href="#" download class="btn btn-primary"><i class="bi bi-download me-2"></i>Herunterladen</a>
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Schließen</button>
+                <a id="pdfDownloadLink" href="#" download class="btn btn-primary"
+                   data-tooltip="PDF-Datei herunterladen"><i class="bi bi-download me-2"></i>Herunterladen</a>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"
+                        data-tooltip="Vorschau schließen">Schließen</button>
             </div>
         </div>
     </div>
@@ -231,7 +241,8 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title"><i class="bi bi-music-note-beamed text-primary me-2"></i><span id="audioFileName"></span></h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"
+                        data-tooltip="Player schließen"></button>
             </div>
             <div class="modal-body">
                 <audio id="audioPlayer" controls class="w-100 mb-4">Ihr Browser unterstützt das Audio-Element nicht.</audio>
@@ -254,9 +265,12 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-success" id="audioPlayBtn"><i class="bi bi-play-fill me-1"></i>Abspielen</button>
-                <a id="audioDownloadLink" href="#" download class="btn btn-primary"><i class="bi bi-download me-2"></i>Herunterladen</a>
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Schließen</button>
+                <button type="button" class="btn btn-success" id="audioPlayBtn"
+                        data-tooltip="Wiedergabe starten"><i class="bi bi-play-fill me-1"></i>Abspielen</button>
+                <a id="audioDownloadLink" href="#" download class="btn btn-primary"
+                   data-tooltip="Audio-Datei herunterladen"><i class="bi bi-download me-2"></i>Herunterladen</a>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"
+                        data-tooltip="Player schließen">Schließen</button>
             </div>
         </div>
     </div>
@@ -291,11 +305,12 @@ window.PROBEN_CONFIG = {
         const prototype = container.dataset.prototype;
         const html      = prototype.replace(/__name__/g, index);
         const div       = document.createElement('div');
-        div.innerHTML   = `<div class="link-row input-group mb-2">${html}<button type="button" class="btn btn-outline-danger remove-link" title="Entfernen"><i class="bi bi-trash"></i></button></div>`;
+        div.innerHTML   = `<div class="link-row input-group mb-2">${html}<button type="button" class="btn btn-outline-danger remove-link" data-tooltip="Link entfernen"><i class="bi bi-trash"></i></button></div>`;
         const row       = div.firstElementChild;
         attachRemove(row);
         container.appendChild(row);
         container.dataset.index = index + 1;
+        row.querySelector('[data-tooltip]') && new bootstrap.Tooltip(row.querySelector('[data-tooltip]'), { title: row.querySelector('[data-tooltip]').dataset.tooltip, trigger: 'hover' });
         row.querySelector('input[type="text"], input[type="url"]').focus();
     });
 }());
@@ -342,5 +357,10 @@ window.PROBEN_CONFIG = {
         });
     }
 }());
+
+/* ── Tooltips ── */
+document.querySelectorAll('[data-tooltip]').forEach(function (el) {
+    new bootstrap.Tooltip(el, { title: el.dataset.tooltip, trigger: 'hover' });
+});
 </script>
 {% endblock %}
