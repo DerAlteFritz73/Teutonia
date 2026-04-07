@@ -14,12 +14,17 @@
             <h1 class="mb-0 fs-4">{{ song.songName }}</h1>
             {% if song.composer %}<div class="text-muted small">{{ song.composer }}</div>{% endif %}
         </div>
-        <a href="{{ path('member_proben') }}" class="btn btn-secondary btn-sm">
-            <i class="bi bi-arrow-left me-1"></i>Zurück
-        </a>
+        <div class="d-flex gap-2">
+            <a href="{{ path('member_proben') }}" class="btn btn-secondary">
+                <i class="bi bi-x-lg me-1"></i>Abbrechen
+            </a>
+            <button type="submit" form="links-form" class="btn btn-primary">
+                <i class="bi bi-floppy me-1"></i>Speichern
+            </button>
+        </div>
     </div>
 
-    {{ form_start(form) }}
+    {{ form_start(form, {attr: {id: 'links-form'}}) }}
 
     <div class="card">
         <div class="card-header fw-semibold">
@@ -46,13 +51,6 @@
                 <i class="bi bi-plus-lg me-1"></i>Link hinzufügen
             </button>
         </div>
-    </div>
-
-    <div class="d-flex gap-2 mt-3">
-        <a href="{{ path('member_proben') }}" class="btn btn-secondary">Abbrechen</a>
-        <button type="submit" class="btn btn-primary ms-auto">
-            <i class="bi bi-floppy me-1"></i>Speichern
-        </button>
     </div>
 
     {{ form_end(form) }}

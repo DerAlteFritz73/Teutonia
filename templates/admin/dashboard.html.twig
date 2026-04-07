@@ -14,7 +14,7 @@
                 <div class="card-body">
                     <h5 class="card-title">Benutzer</h5>
                     <p class="display-4">{{ userCount }}</p>
-                    <a href="{{ path('admin_users') }}" class="btn btn-light stretched-link">Verwalten</a>
+                    <a href="{{ path('admin_users') }}" class="btn btn-light stretched-link"><i class="bi bi-pencil-square me-1"></i>Verwalten</a>
                 </div>
             </div>
         </div>
@@ -23,7 +23,7 @@
                 <div class="card-body">
                     <h5 class="card-title">Beiträge</h5>
                     <p class="display-4">{{ postCount }}</p>
-                    <a href="{{ path('admin_posts') }}" class="btn btn-light stretched-link">Verwalten</a>
+                    <a href="{{ path('admin_posts') }}" class="btn btn-light stretched-link"><i class="bi bi-pencil-square me-1"></i>Verwalten</a>
                 </div>
             </div>
         </div>
@@ -32,7 +32,7 @@
                 <div class="card-body">
                     <h5 class="card-title">Lieder</h5>
                     <p class="display-4">{{ songCount }}</p>
-                    <a href="{{ path('admin_songs') }}" class="btn btn-light stretched-link">Verwalten</a>
+                    <a href="{{ path('admin_songs') }}" class="btn btn-light stretched-link"><i class="bi bi-pencil-square me-1"></i>Verwalten</a>
                 </div>
             </div>
         </div>
@@ -41,7 +41,7 @@
                 <div class="card-body">
                     <h5 class="card-title">Stile</h5>
                     <p class="card-text">Musikstile verwalten &amp; Ellipsen für Répertoire konfigurieren</p>
-                    <a href="{{ path('admin_styles') }}" class="btn btn-light stretched-link">Verwalten</a>
+                    <a href="{{ path('admin_styles') }}" class="btn btn-light stretched-link"><i class="bi bi-pencil-square me-1"></i>Verwalten</a>
                 </div>
             </div>
         </div>
@@ -50,7 +50,7 @@
                 <div class="card-body">
                     <h5 class="card-title"><i class="bi bi-music-note-beamed me-1"></i>Konzerte</h5>
                     <p class="display-4">{{ konzertCount }}</p>
-                    <a href="{{ path('admin_konzerte') }}" class="btn btn-light stretched-link">Verwalten</a>
+                    <a href="{{ path('admin_konzerte') }}" class="btn btn-light stretched-link"><i class="bi bi-pencil-square me-1"></i>Verwalten</a>
                 </div>
             </div>
         </div>
@@ -59,7 +59,7 @@
                 <div class="card-body">
                     <h5 class="card-title">Datenbank</h5>
                     <p class="card-text">MariaDB verwalten</p>
-                    <a href="/phpmyadmin" target="_blank" class="btn btn-light stretched-link">PHPMyAdmin öffnen</a>
+                    <a href="/phpmyadmin" target="_blank" class="btn btn-light stretched-link"><i class="bi bi-database me-1"></i>PHPMyAdmin öffnen</a>
                 </div>
             </div>
         </div>
@@ -68,7 +68,7 @@
                 <div class="card-body">
                     <h5 class="card-title"><i class="bi bi-play-circle me-1"></i>Tests</h5>
                     <p class="card-text">E2E-Tests starten und Ergebnisse einsehen</p>
-                    <a href="{{ path('admin_tests') }}" class="btn btn-light stretched-link">Zu den Tests</a>
+                    <a href="{{ path('admin_tests') }}" class="btn btn-light stretched-link"><i class="bi bi-play-circle me-1"></i>Zu den Tests</a>
                 </div>
             </div>
         </div>
@@ -78,7 +78,7 @@
                     <h5 class="card-title" style="color:#0061ff"><i class="bi bi-cloud-arrow-down me-1"></i>Dropbox</h5>
                     <p class="card-text text-muted small">Dropbox-Ordner mit Lied-Einträgen abgleichen und fehlende Verknüpfungen automatisch setzen.</p>
                     <button id="btn-sync-dropbox-dash" class="btn btn-outline-primary btn-sm">
-                        Jetzt synchronisieren
+                        <i class="bi bi-cloud-arrow-down me-1"></i>Jetzt synchronisieren
                     </button>
                     <div id="sync-dash-result" class="mt-2 small"></div>
                 </div>

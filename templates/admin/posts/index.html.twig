@@ -27,8 +27,12 @@
             <a href="#" class="btn btn-outline-primary" id="goto-page-btn" style="white-space: nowrap;">
                 <i class="bi bi-box-arrow-up-right"></i> Zur Seite gehen
             </a>
-            <a href="{{ path('admin_dashboard') }}" class="btn btn-secondary">Zurück</a>
-            <a href="{{ path('admin_posts_new', filterPage and filterPage != 'all' ? {filter_page: filterPage} : {}) }}" class="btn btn-primary">Neuer Beitrag</a>
+            <a href="{{ path('admin_dashboard') }}" class="btn btn-secondary">
+                <i class="bi bi-arrow-left me-1"></i>Zurück
+            </a>
+            <a href="{{ path('admin_posts_new', filterPage and filterPage != 'all' ? {filter_page: filterPage} : {}) }}" class="btn btn-primary">
+                <i class="bi bi-plus-lg me-1"></i>Neuer Beitrag
+            </a>
         </div>
     </div>
 

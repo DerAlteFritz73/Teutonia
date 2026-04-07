@@ -7,9 +7,14 @@
 <div class="container py-5">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1>Benutzer</h1>
-        <a href="{{ path('admin_users_new') }}" class="btn btn-primary">
-            Neuer Benutzer
-        </a>
+        <div class="d-flex gap-2">
+            <a href="{{ path('admin_dashboard') }}" class="btn btn-secondary">
+                <i class="bi bi-arrow-left me-1"></i>Zurück
+            </a>
+            <a href="{{ path('admin_users_new') }}" class="btn btn-primary">
+                <i class="bi bi-plus-lg me-1"></i>Neuer Benutzer
+            </a>
+        </div>
     </div>
 
     {% for message in app.flashes('success') %}
@@ -50,17 +55,21 @@
                         </td>
                         <td>
                             <a href="{{ path('admin_users_edit', {id: user.id}) }}" class="btn btn-sm btn-outline-primary">
-                                Bearbeiten
+                                <i class="bi bi-pencil"></i>
                             </a>
                             <form action="{{ path('admin_users_reset_password', {id: user.id}) }}" method="post" class="d-inline"
                                   onsubmit="return confirm('Passwort von {{ user.fullName }} auf &quot;teutonia&quot; zurücksetzen?')">
                                 <input type="hidden" name="_token" value="{{ csrf_token('reset-password' ~ user.id) }}">
-                                <button type="submit" class="btn btn-sm btn-outline-warning">Passwort zurücksetzen</button>
+                                <button type="submit" class="btn btn-sm btn-outline-warning" title="Passwort zurücksetzen">
+                                    <i class="bi bi-key"></i>
+                                </button>
                             </form>
                             <form action="{{ path('admin_users_delete', {id: user.id}) }}" method="post" class="d-inline"
                                   onsubmit="return confirm('Wirklich löschen?')">
                                 <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ user.id) }}">
-                                <button type="submit" class="btn btn-sm btn-outline-danger">Löschen</button>
+                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Löschen">
+                                    <i class="bi bi-trash"></i>
+                                </button>
                             </form>
                         </td>
                     </tr>
@@ -73,6 +82,5 @@
         </table>
     </div>
 
-    <a href="{{ path('admin_dashboard') }}" class="btn btn-secondary">Zurück</a>
 </div>
 {% endblock %}
