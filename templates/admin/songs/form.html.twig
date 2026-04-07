@@ -16,7 +16,17 @@
 
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1 class="mb-0">{{ isNew ? 'Neues Lied' : song.songName }}</h1>
-        <div class="d-flex gap-2">
+        <div class="d-flex gap-2 align-items-center">
+            {% if not isNew %}
+            <form action="{{ path('admin_songs_delete', {id: song.id}) }}" method="post"
+                  onsubmit="return confirm('Lied wirklich löschen?')">
+                <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ song.id) }}">
+                <button class="btn btn-outline-danger"
+                        data-tooltip="Lied unwiderruflich löschen">
+                    <i class="bi bi-trash me-1"></i>Löschen
+                </button>
+            </form>
+            {% endif %}
             <a href="{{ path('admin_songs') }}" class="btn btn-secondary"
                data-tooltip="Zurück zur Liederliste, Änderungen verwerfen">Abbrechen</a>
             <button type="submit" class="btn btn-primary"
@@ -199,18 +209,6 @@
 
     {{ form_end(form) }}
 
-    {% if not isNew %}
-    <div class="d-flex gap-2 mt-2">
-        <form action="{{ path('admin_songs_delete', {id: song.id}) }}" method="post"
-              class="ms-auto" onsubmit="return confirm('Lied wirklich löschen?')">
-            <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ song.id) }}">
-            <button class="btn btn-outline-danger"
-                    data-tooltip="Lied unwiderruflich löschen">
-                <i class="bi bi-trash me-1"></i>Löschen
-            </button>
-        </form>
-    </div>
-    {% endif %}
 </div>
 
 <!-- PDF Viewer Modal -->
