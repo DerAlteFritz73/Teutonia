@@ -10,8 +10,10 @@ use App\Entity\User;
 use App\Form\KonzertType;
 use App\Form\PostType;
 use App\Form\SongKeywordType;
+use App\Form\SongLinkType;
 use App\Form\StyleType;
 use App\Form\UserType;
+use Symfony\Component\Form\Extension\Core\Type\CollectionType;
 use App\Repository\KonzertRepository;
 use App\Repository\PostRepository;
 use App\Repository\SongKeywordRepository;
@@ -124,6 +126,32 @@ class AdminController extends AbstractController
             'form'  => $form,
             'song'  => $song,
             'isNew' => false,
+        ]);
+    }
+
+    #[Route('/songs/{id}/links', name: 'admin_songs_links_edit')]
+    public function songsLinksEdit(SongKeyword $song, Request $request, EntityManagerInterface $em): Response
+    {
+        $form = $this->createFormBuilder($song)
+            ->add('links', CollectionType::class, [
+                'entry_type'    => SongLinkType::class,
+                'allow_add'     => true,
+                'allow_delete'  => true,
+                'by_reference'  => false,
+            ])
+            ->getForm();
+
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && $form->isValid()) {
+            $em->flush();
+            $this->addFlash('success', 'Links gespeichert.');
+            return $this->redirectToRoute('member_proben');
+        }
+
+        return $this->render('admin/songs/links_edit.html.twig', [
+            'form' => $form,
+            'song' => $song,
         ]);
     }
 

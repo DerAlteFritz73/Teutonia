@@ -77,8 +77,8 @@
                                             </a>
                                         {% endfor %}
                                         {% if is_granted('ROLE_ADMIN') %}
-                                            <a href="{{ path('admin_songs_edit', {id: song.id}) }}"
-                                               class="btn btn-sm btn-outline-warning" title="Lied bearbeiten">
+                                            <a href="{{ path('admin_songs_links_edit', {id: song.id}) }}"
+                                               class="btn btn-sm btn-outline-warning" title="Links bearbeiten">
                                                 <i class="bi bi-pencil"></i>
                                             </a>
                                         {% endif %}
@@ -228,8 +228,8 @@
                                             </a>
                                         {% endfor %}
                                         {% if is_granted('ROLE_ADMIN') %}
-                                            <a href="{{ path('admin_songs_edit', {id: song.id}) }}"
-                                               class="btn btn-sm btn-outline-warning" title="Lied bearbeiten">
+                                            <a href="{{ path('admin_songs_links_edit', {id: song.id}) }}"
+                                               class="btn btn-sm btn-outline-warning" title="Links bearbeiten">
                                                 <i class="bi bi-pencil"></i>
                                             </a>
                                         {% endif %}
