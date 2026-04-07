@@ -70,8 +70,6 @@
                autocomplete="off"
                value="{{ search|e('html_attr') }}">
     </div>
-    <div id="songsNoResults" class="text-muted d-none">Kein Lied gefunden.</div>
-
     <p class="text-muted small mb-2">
         <i class="bi bi-pencil-square me-1"></i>Auf eine Zelle klicken zum direkten Bearbeiten.
         <kbd>Enter</kbd> speichern &middot; <kbd>Esc</kbd> abbrechen.
@@ -443,8 +441,7 @@ window.SONGS_CONFIG = {
 <script>
 (function () {
     'use strict';
-    var input    = document.getElementById('songsSearch');
-    var noResult = document.getElementById('songsNoResults');
+    var input = document.getElementById('songsSearch');
     if (!input) return;
 
     // Focus and place cursor at end (autofocus resets to position 0 after Turbo navigation)
@@ -452,29 +449,16 @@ window.SONGS_CONFIG = {
     var end = input.value.length;
     input.setSelectionRange(end, end);
 
+    var debounceTimer;
     input.addEventListener('input', function () {
-        var q    = input.value.trim().toLowerCase();
-        var rows = document.querySelectorAll('#songs-table tbody tr:not(.movement-row)');
-        var visible = 0;
-
-        rows.forEach(function (row) {
-            var nameEl     = row.querySelector('[data-field="songName"] .display-val');
-            var composerEl = row.querySelector('[data-field="composer"] .display-val');
-            var text       = (nameEl ? nameEl.textContent : '') + ' ' + (composerEl ? composerEl.textContent : '');
-            var show       = !q || text.toLowerCase().includes(q);
-            row.style.display = show ? '' : 'none';
-            if (show) visible++;
-
-            // Keep movement rows in sync with their parent visibility
-            var parentId = row.getAttribute('data-id');
-            if (parentId) {
-                document.querySelectorAll('.movement-parent-' + parentId).forEach(function (child) {
-                    if (!show) child.style.display = 'none';
-                });
-            }
-        });
-
-        noResult.classList.toggle('d-none', visible > 0 || !q);
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(function () {
+            var q   = input.value.trim();
+            var url = new URL(window.location.href);
+            if (q) { url.searchParams.set('q', q); } else { url.searchParams.delete('q'); }
+            url.searchParams.set('page', '1');
+            if (window.Turbo) { Turbo.visit(url.toString()); } else { window.location.href = url.toString(); }
+        }, 350);
     });
 }());
 </script>

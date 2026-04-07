@@ -113,6 +113,46 @@
         });
     }
 
+    /* ── Pre-fetch file counts for aktuelle Proben on page load ─────────
+       Fetches file lists eagerly so badge counts (PDF/Audio) are visible
+       in collapsed accordion headers without needing to open them first.
+       Also pre-populates the containers so opening is instant.           */
+    (function prefetchProbenFiles() {
+        const cfg = window.PROBEN_CONFIG || {};
+        if (!cfg.filesUrl) return;
+
+        document.querySelectorAll('#probenAccordion .accordion-btn-files[data-dropbox-path]').forEach(function (btn) {
+            const dropboxPath = btn.dataset.dropboxPath;
+            const badgeSpan   = btn.querySelector('.file-count-badges');
+            const targetId    = btn.dataset.bsTarget;
+            const panel       = targetId && document.querySelector(targetId);
+            const container   = panel && panel.querySelector('.song-files-container');
+
+            fetch(cfg.filesUrl + '?path=' + encodeURIComponent(dropboxPath))
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    const files  = data.files || [];
+                    const pdfs   = files.filter(function (f) { return f.type === 'pdf'; }).length;
+                    const audios = files.filter(function (f) { return f.type === 'audio'; }).length;
+                    let badges = '';
+                    if (pdfs)   badges += '<span class="badge bg-danger" title="PDF-Dateien"><i class="bi bi-file-pdf"></i> ' + pdfs + '</span>';
+                    if (audios) badges += '<span class="badge bg-success" title="Audio-Dateien"><i class="bi bi-music-note"></i> ' + audios + '</span>';
+                    if (badgeSpan) badgeSpan.innerHTML = badges;
+
+                    if (container && !container.dataset.loaded) {
+                        container.dataset.loaded = '1';
+                        if (files.length === 0) {
+                            container.innerHTML = '<p class="text-muted p-3">Keine Dateien gefunden.</p>';
+                        } else {
+                            container.innerHTML = files.map(fileItemHtml).join('');
+                            attachFileHandlers(container);
+                        }
+                    }
+                })
+                .catch(function () { /* silently ignore pre-fetch errors */ });
+        });
+    }());
+
     /* ── Lazy-load files when an accordion opens ─────────────────────────
        Uses event delegation on `document` so it survives Turbo body
        replacements without accumulating duplicate listeners.

@@ -56,7 +56,7 @@
     </div>
 
     <div class="card mb-4">
-        <div class="card-header fw-semibold">Dropbox &amp; Proben</div>
+        <div class="card-header fw-semibold">Dropbox</div>
         <div class="card-body">
             <div class="form-check mb-3">
                 {{ form_widget(form.isAktuelleProben, {attr: {class: 'form-check-input'}}) }}
@@ -74,7 +74,7 @@
     </div>
 
     <div class="card mb-4">
-        <div class="card-header fw-semibold">Links</div>
+        <div class="card-header fw-semibold">Links auf Youtube</div>
         <div class="card-body">
             <div id="song-links-container"
                  data-prototype="{{ form_widget(form.links.vars.prototype)|e('html_attr') }}"
@@ -114,6 +114,83 @@
         </div>
     </div>
 
+    {% if not isNew and (song.dropboxlink or song.aktuelleDropboxlink or song.children|length > 0) %}
+    <div class="card mb-4">
+        <div class="card-header fw-semibold"><i class="bi bi-folder2-open me-2"></i>Dateien (Dropbox)</div>
+        <div class="card-body p-0">
+            {% set mainPath = song.dropboxlink %}
+            {% if mainPath %}
+            <div class="accordion" id="editFilesAccordion">
+                <div class="accordion-item border-0">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed accordion-btn-files"
+                                type="button"
+                                data-bs-toggle="collapse"
+                                data-bs-target="#editFilesMain"
+                                data-dropbox-path="{{ mainPath }}">
+                            <i class="bi bi-folder2-open me-2 text-warning"></i>
+                            Notenmaterial
+                            <span class="ps-3 d-flex gap-1 file-count-badges"></span>
+                        </button>
+                    </h2>
+                    <div id="editFilesMain" class="accordion-collapse collapse">
+                        <div class="accordion-body pt-2 pb-3">
+                            <div class="list-group song-files-container" data-dropbox-path="{{ mainPath }}">
+                                <div class="text-center text-muted py-3 file-loading-spinner">
+                                    <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                                    Lade Dateien…
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            {% if song.children|length > 0 %}
+            <div class="accordion {% if mainPath %}border-top{% endif %}" id="editMovementsAccordion">
+                {% for movement in song.children %}
+                    {% set movHasDropbox = movement.dropboxlink is not null and movement.dropboxlink != '' %}
+                    <div class="accordion-item border-0">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed {% if movHasDropbox %}accordion-btn-files{% endif %} py-2"
+                                    type="button"
+                                    {% if movHasDropbox %}
+                                    data-bs-toggle="collapse"
+                                    data-bs-target="#editMov{{ movement.id }}"
+                                    data-dropbox-path="{{ movement.dropboxlink }}"
+                                    {% endif %}>
+                                <i class="bi bi-music-note me-2 text-primary"></i>
+                                <span class="flex-grow-1">{{ movement.songName }}</span>
+                                {% if movHasDropbox %}
+                                    <span class="ps-3 d-flex gap-1 file-count-badges"></span>
+                                {% else %}
+                                    <span class="badge bg-secondary ms-2 fw-normal">kein Dropbox-Pfad</span>
+                                {% endif %}
+                            </button>
+                        </h2>
+                        {% if movHasDropbox %}
+                        <div id="editMov{{ movement.id }}" class="accordion-collapse collapse">
+                            <div class="accordion-body py-2">
+                                <div class="list-group song-files-container" data-dropbox-path="{{ movement.dropboxlink }}">
+                                    <div class="text-center text-muted py-3 file-loading-spinner">
+                                        <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                                        Lade Dateien…
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            {% if not mainPath and song.children|length == 0 %}
+                <p class="text-muted p-3 mb-0"><i class="bi bi-info-circle me-1"></i>Kein Dropbox-Pfad hinterlegt.</p>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
     {{ form_end(form) }}
 
     {% if not isNew %}
@@ -128,6 +205,71 @@
     </div>
     {% endif %}
 </div>
+
+<!-- PDF Viewer Modal -->
+<div class="modal fade" id="pdfViewerModal" tabindex="-1">
+    <div class="modal-dialog modal-xl modal-fullscreen-lg-down">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-file-pdf-fill text-danger me-2"></i><span id="pdfFileName"></span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-0" style="height:80vh;">
+                <iframe id="pdfViewerFrame" style="width:100%;height:100%;border:none;"></iframe>
+            </div>
+            <div class="modal-footer">
+                <a id="pdfDownloadLink" href="#" download class="btn btn-primary"><i class="bi bi-download me-2"></i>Herunterladen</a>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Schließen</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Audio Player Modal -->
+<div class="modal fade" id="audioPlayerModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-music-note-beamed text-primary me-2"></i><span id="audioFileName"></span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <audio id="audioPlayer" controls class="w-100 mb-4">Ihr Browser unterstützt das Audio-Element nicht.</audio>
+                <div class="card">
+                    <div class="card-body">
+                        <h6 class="card-title mb-3"><i class="bi bi-speedometer2 me-2"></i>Wiedergabegeschwindigkeit</h6>
+                        <div class="d-flex align-items-center gap-3 mb-3">
+                            <label class="form-label mb-0" style="min-width:60px;"><span id="speedValue">1.0</span>x</label>
+                            <input type="range" class="form-range flex-grow-1" id="speedSlider" min="0.25" max="2.0" step="0.05" value="1.0">
+                        </div>
+                        <div class="d-flex gap-2 flex-wrap">
+                            <button class="btn btn-sm btn-outline-secondary speed-preset" data-speed="0.5">0.5x</button>
+                            <button class="btn btn-sm btn-outline-secondary speed-preset" data-speed="0.75">0.75x</button>
+                            <button class="btn btn-sm btn-outline-primary speed-preset" data-speed="1">1.0x</button>
+                            <button class="btn btn-sm btn-outline-secondary speed-preset" data-speed="1.25">1.25x</button>
+                            <button class="btn btn-sm btn-outline-secondary speed-preset" data-speed="1.5">1.5x</button>
+                            <button class="btn btn-sm btn-outline-secondary speed-preset" data-speed="2">2.0x</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-success" id="audioPlayBtn"><i class="bi bi-play-fill me-1"></i>Abspielen</button>
+                <a id="audioDownloadLink" href="#" download class="btn btn-primary"><i class="bi bi-download me-2"></i>Herunterladen</a>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Schließen</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+window.PROBEN_CONFIG = {
+    filesUrl: '{{ path('api_dropbox_song_files') }}',
+    linkUrl:  '{{ path('api_dropbox_link') }}',
+    viewUrl:  '{{ path('api_dropbox_view') }}'
+};
+</script>
+<script src="{{ asset('js/member-proben.js') }}"></script>
 
 <script>
 /* ── Song links collection ── */
