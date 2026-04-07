@@ -1,0 +1,22 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: teutonia-willstaett.de
+          username: root
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            set -e
+            git -C /var/www/teutonia pull
+            docker compose -f /var/www/teutonia/compose.yaml --env-file /var/www/teutonia/.env.local --project-directory /var/www/teutonia build php
+            docker compose -f /var/www/teutonia/compose.yaml --env-file /var/www/teutonia/.env.local --project-directory /var/www/teutonia up -d
