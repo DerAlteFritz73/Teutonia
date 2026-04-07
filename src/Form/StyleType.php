@@ -28,12 +28,12 @@ class StyleType extends AbstractType
             ->add('color', TextType::class, [
                 'label'    => 'Farbe 1 (Verlauf Anfang)',
                 'required' => false,
-                'attr'     => ['class' => 'form-control form-control-color', 'type' => 'color'],
+                'attr'     => ['class' => 'form-control form-control-color'],
             ])
             ->add('color2', TextType::class, [
                 'label'    => 'Farbe 2 (Verlauf Ende)',
                 'required' => false,
-                'attr'     => ['class' => 'form-control form-control-color', 'type' => 'color'],
+                'attr'     => ['class' => 'form-control form-control-color'],
             ])
             ->add('imageFile', FileType::class, [
                 'label'    => 'Bild hochladen',

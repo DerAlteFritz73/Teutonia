@@ -41,7 +41,7 @@
         <div class="col">
             {{ form_label(form.color) }}
             <div class="input-group">
-                {{ form_widget(form.color, {attr: {type: 'color', class: 'form-control form-control-color', style: 'max-width:60px'}}) }}
+                {{ form_widget(form.color, {'type': 'color', attr: {class: 'form-control form-control-color', style: 'max-width:60px'}}) }}
                 <input type="text" id="color-hex" class="form-control form-control-sm"
                        value="{{ style.color ?? '#4e6fc4' }}" maxlength="30"
                        placeholder="#4e6fc4" style="max-width:100px">
@@ -50,7 +50,7 @@
         <div class="col">
             {{ form_label(form.color2) }}
             <div class="input-group">
-                {{ form_widget(form.color2, {attr: {type: 'color', class: 'form-control form-control-color', style: 'max-width:60px'}}) }}
+                {{ form_widget(form.color2, {'type': 'color', attr: {class: 'form-control form-control-color', style: 'max-width:60px'}}) }}
                 <input type="text" id="color2-hex" class="form-control form-control-sm"
                        value="{{ style.color2 ?? '#7b3fc4' }}" maxlength="30"
                        placeholder="#7b3fc4" style="max-width:100px">
