@@ -302,15 +302,22 @@ class AdminAreaTest extends AbstractE2ETestCase
         // Now open the edit form again and remove the link
         $client->request('GET', '/admin/songs/' . $songId . '/edit');
         $client->waitFor('#song-links-container .link-row');
-        $client->getWebDriver()->findElement(
-            \Facebook\WebDriver\WebDriverBy::cssSelector('#song-links-container .link-row .remove-link')
-        )->click();
 
-        // The row should be removed from the DOM immediately
-        $rows = $client->getWebDriver()->findElements(
-            \Facebook\WebDriver\WebDriverBy::cssSelector('#song-links-container .link-row')
+        // Find the specific row containing 'toremove' and click its remove button
+        $targetRow = $client->getWebDriver()->findElement(
+            \Facebook\WebDriver\WebDriverBy::xpath(
+                '//*[@id="song-links-container"]//*[contains(@class,"link-row")][.//input[contains(@value,"toremove")]]'
+            )
         );
-        $this->assertEmpty($rows, 'Link row should be removed from DOM after clicking remove.');
+        $targetRow->findElement(\Facebook\WebDriver\WebDriverBy::cssSelector('.remove-link'))->click();
+
+        // That specific row should be gone from the DOM immediately
+        $remainingRows = $client->getWebDriver()->findElements(
+            \Facebook\WebDriver\WebDriverBy::xpath(
+                '//*[@id="song-links-container"]//*[contains(@class,"link-row")][.//input[contains(@value,"toremove")]]'
+            )
+        );
+        $this->assertEmpty($remainingRows, 'The toremove link row should be removed from DOM after clicking remove.');
 
         // Link removal is a DOM operation — it does not fire input/change events, so the
         // unsaved-changes tracker won't enable the save button automatically. Mark the form
