@@ -18,14 +18,11 @@
         <h1 class="mb-0">{{ isNew ? 'Neues Lied' : song.songName }}</h1>
         <div class="d-flex gap-2 align-items-center">
             {% if not isNew %}
-            <form action="{{ path('admin_songs_delete', {id: song.id}) }}" method="post"
-                  onsubmit="return confirm('Lied wirklich löschen?')">
-                <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ song.id) }}">
-                <button class="btn btn-outline-danger"
-                        data-tooltip="Lied unwiderruflich löschen">
-                    <i class="bi bi-trash me-1"></i>Löschen
-                </button>
-            </form>
+            <button type="button" class="btn btn-outline-danger"
+                    data-tooltip="Lied unwiderruflich löschen"
+                    onclick="if(confirm('Lied wirklich löschen?')) document.getElementById('song-delete-form').submit()">
+                <i class="bi bi-trash me-1"></i>Löschen
+            </button>
             {% endif %}
             <a href="{{ path('admin_songs') }}" class="btn btn-secondary"
                data-tooltip="Zurück zur Liederliste, Änderungen verwerfen"
@@ -211,6 +208,12 @@
     {% endif %}
 
     {{ form_end(form) }}
+
+    {% if not isNew %}
+    <form id="song-delete-form" action="{{ path('admin_songs_delete', {id: song.id}) }}" method="post">
+        <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ song.id) }}">
+    </form>
+    {% endif %}
 
 </div>
 
