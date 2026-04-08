@@ -255,10 +255,10 @@ class AdminAreaTest extends AbstractE2ETestCase
             \Facebook\WebDriver\WebDriverBy::id('add-link-btn')
         )->click();
 
-        // Fill the URL field in the new link row
-        $client->waitFor('#song-links-container .link-row input');
+        // Fill the URL field in the newly added (last) link row
+        $client->waitFor('#song-links-container .link-row:last-child input');
         $urlInput = $client->getWebDriver()->findElement(
-            \Facebook\WebDriver\WebDriverBy::cssSelector('#song-links-container .link-row input[type="url"], #song-links-container .link-row input[type="text"]')
+            \Facebook\WebDriver\WebDriverBy::cssSelector('#song-links-container .link-row:last-child input')
         );
         $urlInput->sendKeys('https://www.youtube.com/watch?v=test123');
 
@@ -291,9 +291,9 @@ class AdminAreaTest extends AbstractE2ETestCase
         $client->request('GET', '/admin/songs/' . $songId . '/edit');
         $client->waitFor('#add-link-btn');
         $client->getWebDriver()->findElement(\Facebook\WebDriver\WebDriverBy::id('add-link-btn'))->click();
-        $client->waitFor('#song-links-container .link-row input');
+        $client->waitFor('#song-links-container .link-row:last-child input');
         $urlInput = $client->getWebDriver()->findElement(
-            \Facebook\WebDriver\WebDriverBy::cssSelector('#song-links-container .link-row input[type="url"], #song-links-container .link-row input[type="text"]')
+            \Facebook\WebDriver\WebDriverBy::cssSelector('#song-links-container .link-row:last-child input')
         );
         $urlInput->sendKeys('https://www.youtube.com/watch?v=toremove');
         $client->getWebDriver()->findElement(\Facebook\WebDriver\WebDriverBy::cssSelector('button[type="submit"]'))->click();
