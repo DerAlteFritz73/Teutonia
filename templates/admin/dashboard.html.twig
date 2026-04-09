@@ -73,6 +73,18 @@
             </div>
         </div>
         <div class="col-md-4 mb-4">
+            <div class="card text-white h-100 position-relative" style="background:linear-gradient(135deg,#17a2b8,#20c997);cursor:pointer" id="card-cache-clear">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="bi bi-trash2 me-1"></i>Cache leeren</h5>
+                    <p class="card-text small">Symfony-Cache, OPcache und Browser-Cache zurücksetzen – damit neue Änderungen sofort sichtbar sind.</p>
+                    <button id="btn-cache-clear" class="btn btn-light btn-sm">
+                        <i class="bi bi-trash2 me-1"></i>Jetzt leeren
+                    </button>
+                    <div id="cache-clear-result" class="mt-2 small"></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-4">
             <div class="card h-100 position-relative" style="border-color:#0061ff;cursor:pointer" id="card-dropbox-dash">
                 <div class="card-body">
                     <h5 class="card-title" style="color:#0061ff"><i class="bi bi-cloud-arrow-down me-1"></i>Dropbox</h5>
@@ -113,12 +125,19 @@ document.getElementById('card-dropbox-dash').addEventListener('click', function(
         document.getElementById('btn-sync-dropbox-dash').click();
     }
 });
+document.getElementById('card-cache-clear').addEventListener('click', function(e) {
+    if (!e.target.closest('button')) {
+        document.getElementById('btn-cache-clear').click();
+    }
+});
 </script>
 
 <script>
 window.DASHBOARD_CONFIG = {
-    csrfToken: '{{ csrf_token('sync_dropbox') }}',
-    syncUrl:   '{{ path('admin_songs_sync_dropbox') }}'
+    csrfToken:      '{{ csrf_token('sync_dropbox') }}',
+    syncUrl:        '{{ path('admin_songs_sync_dropbox') }}',
+    cacheClearToken: '{{ csrf_token('cache_clear') }}',
+    cacheClearUrl:  '{{ path('admin_cache_clear') }}'
 };
 </script>
 <script src="{{ asset('js/admin-dashboard.js') }}"></script>

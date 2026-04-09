@@ -27,11 +27,39 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
+use Symfony\Component\Process\Process;
 use Symfony\Component\Routing\Attribute\Route;
 
 #[Route('/admin')]
 class AdminController extends AbstractController
 {
+    #[Route('/cache/clear', name: 'admin_cache_clear', methods: ['POST'])]
+    public function clearCache(Request $request): JsonResponse
+    {
+        if (!$this->isCsrfTokenValid('cache_clear', $request->request->get('_token'))) {
+            return new JsonResponse(['error' => 'Ungültiges CSRF-Token'], Response::HTTP_FORBIDDEN);
+        }
+
+        $projectDir = $this->getParameter('kernel.project_dir');
+
+        $process = new Process(['php', 'bin/console', 'cache:clear'], $projectDir);
+        $process->run();
+
+        if (!$process->isSuccessful()) {
+            return new JsonResponse(['error' => 'Cache-Fehler: ' . $process->getErrorOutput()], 500);
+        }
+
+        if (function_exists('opcache_reset')) {
+            opcache_reset();
+        }
+
+        if (function_exists('apcu_clear_cache')) {
+            apcu_clear_cache();
+        }
+
+        return new JsonResponse(['success' => true]);
+    }
+
     #[Route('', name: 'admin_dashboard')]
     public function dashboard(
         UserRepository $userRepository,

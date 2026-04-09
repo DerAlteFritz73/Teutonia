@@ -1,4 +1,43 @@
 document.addEventListener('click', async (e) => {
+    if (e.target.closest('#btn-cache-clear')) {
+        const cfg    = window.DASHBOARD_CONFIG || {};
+        const btn    = document.getElementById('btn-cache-clear');
+        const result = document.getElementById('cache-clear-result');
+
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Wird geleert…';
+        result.innerHTML = '';
+
+        try {
+            const form = new FormData();
+            form.append('_token', cfg.cacheClearToken);
+            const res  = await fetch(cfg.cacheClearUrl, { method: 'POST', body: form });
+            const data = await res.json();
+
+            if (!res.ok || data.error) {
+                result.innerHTML = `<span class="text-warning">${data.error ?? 'Fehler beim Leeren'}</span>`;
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bi bi-trash2 me-1"></i>Jetzt leeren';
+                return;
+            }
+
+            result.innerHTML = '<span class="text-white"><i class="bi bi-check2-circle me-1"></i>Cache geleert – Seite wird neu geladen…</span>';
+            // Hard-reload bypassing browser cache
+            setTimeout(() => {
+                const url = new URL(window.location.href);
+                url.searchParams.set('_cb', Date.now());
+                window.location.href = url.toString();
+            }, 800);
+        } catch (err) {
+            result.innerHTML = `<span class="text-warning">Netzwerkfehler: ${err.message}</span>`;
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-trash2 me-1"></i>Jetzt leeren';
+        }
+        return;
+    }
+});
+
+document.addEventListener('click', async (e) => {
     if (!e.target.closest('#btn-sync-dropbox-dash')) return;
 
     const cfg   = window.DASHBOARD_CONFIG || {};
