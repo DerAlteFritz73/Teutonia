@@ -7,7 +7,9 @@ function showCacheToast(message, type) {
     const el   = document.createElement('div');
     el.id        = 'cache-toast';
     el.className = `toast align-items-center text-white ${bg} border-0 position-fixed bottom-0 end-0 m-4`;
-    el.style.zIndex = 9999;
+    el.style.zIndex    = 9999;
+    el.style.maxWidth  = '500px';
+    el.style.whiteSpace = 'pre-wrap';
     el.setAttribute('role', 'alert');
     el.innerHTML = `
         <div class="d-flex">

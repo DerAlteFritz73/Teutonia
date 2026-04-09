@@ -42,11 +42,13 @@ class AdminController extends AbstractController
 
         $projectDir = $this->getParameter('kernel.project_dir');
 
-        $process = new Process([PHP_BINARY, 'bin/console', 'cache:clear'], $projectDir);
+        $process = new Process([PHP_BINARY, 'bin/console', 'cache:clear', '--no-warmup'], $projectDir);
+        $process->setEnv(['APP_ENV' => $_SERVER['APP_ENV'] ?? 'prod', 'APP_DEBUG' => '0']);
         $process->run();
 
         if (!$process->isSuccessful()) {
-            return new JsonResponse(['error' => 'Cache-Fehler: ' . $process->getErrorOutput()], 500);
+            $detail = trim($process->getErrorOutput() ?: $process->getOutput());
+            return new JsonResponse(['error' => 'cache:clear fehlgeschlagen: ' . $detail], 500);
         }
 
         if (function_exists('opcache_reset')) {
