@@ -42,7 +42,7 @@ class AdminController extends AbstractController
 
         $projectDir = $this->getParameter('kernel.project_dir');
 
-        $process = new Process(['php', 'bin/console', 'cache:clear'], $projectDir);
+        $process = new Process([PHP_BINARY, 'bin/console', 'cache:clear'], $projectDir);
         $process->run();
 
         if (!$process->isSuccessful()) {
