@@ -27,7 +27,6 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
-use Symfony\Component\Process\Process;
 use Symfony\Component\Routing\Attribute\Route;
 
 #[Route('/admin')]
@@ -38,17 +37,6 @@ class AdminController extends AbstractController
     {
         if (!$this->isCsrfTokenValid('cache_clear', $request->request->get('_token'))) {
             return new JsonResponse(['error' => 'Ungültiges CSRF-Token'], Response::HTTP_FORBIDDEN);
-        }
-
-        $projectDir = $this->getParameter('kernel.project_dir');
-
-        $process = new Process([PHP_BINARY, 'bin/console', 'cache:clear', '--no-warmup'], $projectDir);
-        $process->setEnv(['APP_ENV' => $_SERVER['APP_ENV'] ?? 'prod', 'APP_DEBUG' => '0']);
-        $process->run();
-
-        if (!$process->isSuccessful()) {
-            $detail = trim($process->getErrorOutput() ?: $process->getOutput());
-            return new JsonResponse(['error' => 'cache:clear fehlgeschlagen: ' . $detail], 500);
         }
 
         if (function_exists('opcache_reset')) {
