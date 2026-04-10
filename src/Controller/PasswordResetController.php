@@ -22,14 +22,16 @@ class PasswordResetController extends AbstractController
         EntityManagerInterface $em,
         MailerInterface $mailer
     ): Response {
-        $error = null;
-        $success = false;
-        $noEmail = false;
-        $maskedEmail = null;
+        $error = $request->query->get('error') === 'mail'
+            ? 'Die E-Mail konnte nicht gesendet werden. Bitte versuchen Sie es später erneut oder wenden Sie sich an einen Administrator.'
+            : null;
+        $success = $request->query->has('sent');
+        $noEmail = $request->query->has('no_email');
+        $maskedEmail = $request->query->get('email');
 
         $identifier = $request->isMethod('POST')
             ? $request->request->get('identifier')
-            : $request->query->get('identifier');
+            : null;
 
         if ($identifier) {
             // Find user by username or email
@@ -37,7 +39,7 @@ class PasswordResetController extends AbstractController
                 ?? $userRepository->findOneBy(['email' => $identifier]);
 
             if ($user && !$user->getEmail()) {
-                $noEmail = true;
+                return $this->redirectToRoute('app_forgot_password', ['no_email' => 1]);
             } elseif ($user && $user->getEmail()) {
                 $maskedEmail = $this->maskEmail($user->getEmail());
 
@@ -62,14 +64,17 @@ class PasswordResetController extends AbstractController
                         ]));
 
                     $mailer->send($email);
-                    $success = true;
                 } catch (\Exception $e) {
-                    $error = 'Die E-Mail konnte nicht gesendet werden. Bitte versuchen Sie es später erneut oder wenden Sie sich an einen Administrator.';
+                    return $this->redirectToRoute('app_forgot_password', ['error' => 'mail']);
                 }
-            } else {
-                // User not found — show success anyway to not reveal whether account exists
-                $success = true;
             }
+
+            // Redirect after POST so Turbo (and browser refresh) work correctly.
+            // Always redirect on success (even if user not found) to avoid revealing account existence.
+            return $this->redirectToRoute('app_forgot_password', [
+                'sent' => 1,
+                'email' => $maskedEmail,
+            ]);
         }
 
         return $this->render('security/forgot_password.html.twig', [
