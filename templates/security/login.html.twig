@@ -45,7 +45,8 @@
                         </button>
 
                         <div class="text-center">
-                            <a href="{{ path('app_forgot_password') }}" class="text-muted">
+                            <a href="{{ path('app_forgot_password') }}" class="text-muted"
+                               onclick="var u=document.getElementById('inputUsername').value; if(u) this.href='{{ path('app_forgot_password') }}?identifier='+encodeURIComponent(u);">
                                 Passwort vergessen?
                             </a>
                         </div>

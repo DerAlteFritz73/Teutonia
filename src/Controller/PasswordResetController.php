@@ -25,10 +25,13 @@ class PasswordResetController extends AbstractController
         $error = null;
         $success = false;
         $noEmail = false;
+        $maskedEmail = null;
 
-        if ($request->isMethod('POST')) {
-            $identifier = $request->request->get('identifier');
+        $identifier = $request->isMethod('POST')
+            ? $request->request->get('identifier')
+            : $request->query->get('identifier');
 
+        if ($identifier) {
             // Find user by username or email
             $user = $userRepository->findOneBy(['username' => $identifier])
                 ?? $userRepository->findOneBy(['email' => $identifier]);
@@ -36,6 +39,8 @@ class PasswordResetController extends AbstractController
             if ($user && !$user->getEmail()) {
                 $noEmail = true;
             } elseif ($user && $user->getEmail()) {
+                $maskedEmail = $this->maskEmail($user->getEmail());
+
                 // Generate reset token
                 $token = bin2hex(random_bytes(32));
                 $user->setResetToken($token);
@@ -63,7 +68,6 @@ class PasswordResetController extends AbstractController
             }
 
             if (!$noEmail) {
-                // Always show success message (don't reveal if user exists)
                 $success = true;
             }
         }
@@ -72,7 +76,15 @@ class PasswordResetController extends AbstractController
             'error' => $error,
             'success' => $success,
             'no_email' => $noEmail,
+            'masked_email' => $maskedEmail,
         ]);
+    }
+
+    private function maskEmail(string $email): string
+    {
+        [$local, $domain] = explode('@', $email, 2);
+        $visible = min(3, strlen($local));
+        return substr($local, 0, $visible) . str_repeat('*', max(3, strlen($local) - $visible)) . '@' . $domain;
     }
 
     #[Route('/passwort-zuruecksetzen/{token}', name: 'app_reset_password')]
