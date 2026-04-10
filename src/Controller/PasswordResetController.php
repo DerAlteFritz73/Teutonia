@@ -62,12 +62,12 @@ class PasswordResetController extends AbstractController
                         ]));
 
                     $mailer->send($email);
+                    $success = true;
                 } catch (\Exception $e) {
-                    // Log error but don't reveal to user
+                    $error = 'Die E-Mail konnte nicht gesendet werden. Bitte versuchen Sie es später erneut oder wenden Sie sich an einen Administrator.';
                 }
-            }
-
-            if (!$noEmail) {
+            } else {
+                // User not found — show success anyway to not reveal whether account exists
                 $success = true;
             }
         }
