@@ -53,7 +53,7 @@ class PasswordResetController extends AbstractController
                 // Send email
                 try {
                     $email = (new Email())
-                        ->from('chor-teutonia@gmail.com')
+                        ->from('chor.teutonia@gmail.com')
                         ->to($user->getEmail())
                         ->subject('Passwort zurücksetzen - Chorgemeinschaft Teutonia')
                         ->html($this->renderView('emails/password_reset.html.twig', [
