@@ -44,14 +44,15 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
 
     public function lastLoginAtExcluding(string $username): ?\DateTimeInterface
     {
-        return $this->createQueryBuilder('u')
-            ->select('u.lastLoginAt')
+        $user = $this->createQueryBuilder('u')
             ->where('u.username != :username')
             ->andWhere('u.lastLoginAt IS NOT NULL')
             ->setParameter('username', $username)
             ->orderBy('u.lastLoginAt', 'DESC')
             ->setMaxResults(1)
             ->getQuery()
-            ->getSingleColumnResult()[0] ?? null;
+            ->getOneOrNullResult();
+
+        return $user?->getLastLoginAt();
     }
 }
