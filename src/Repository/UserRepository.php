@@ -29,4 +29,16 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
         $this->getEntityManager()->persist($user);
         $this->getEntityManager()->flush();
     }
+
+    public function sumLoginCountExcluding(string $username): int
+    {
+        $result = $this->createQueryBuilder('u')
+            ->select('SUM(u.loginCount)')
+            ->where('u.username != :username')
+            ->setParameter('username', $username)
+            ->getQuery()
+            ->getSingleScalarResult();
+
+        return (int) $result;
+    }
 }

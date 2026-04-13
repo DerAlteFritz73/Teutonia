@@ -58,10 +58,11 @@ class AdminController extends AbstractController
         KonzertRepository $konzertRepository
     ): Response {
         return $this->render('admin/dashboard.html.twig', [
-            'userCount'    => count($userRepository->findAll()),
-            'postCount'    => count($postRepository->findAll()),
-            'songCount'    => $songRepository->countAllIncludingMovements(),
-            'konzertCount' => count($konzertRepository->findAll()),
+            'userCount'      => count($userRepository->findAll()),
+            'postCount'      => count($postRepository->findAll()),
+            'songCount'      => $songRepository->countAllIncludingMovements(),
+            'konzertCount'   => count($konzertRepository->findAll()),
+            'memberLoginSum' => $userRepository->sumLoginCountExcluding('joel'),
         ]);
     }
 
