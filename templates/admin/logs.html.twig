@@ -1,0 +1,75 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Logs - Admin - {{ parent() }}{% endblock %}
+
+{% block body %}
+<!-- template: templates/admin/logs.html.twig -->
+<div class="container-fluid py-4">
+    <div class="d-flex align-items-center gap-3 mb-3">
+        <a href="{{ path('admin_dashboard') }}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-left me-1"></i>Dashboard
+        </a>
+        <h1 class="h3 mb-0"><i class="bi bi-file-text me-2"></i>Logs <small class="text-muted fs-6">{{ logFile }}</small></h1>
+    </div>
+
+    <form class="d-flex align-items-center gap-2 mb-3" method="get">
+        <label class="form-label mb-0 fw-semibold">Mindest-Level:</label>
+        <select name="level" class="form-select form-select-sm w-auto" onchange="this.form.submit()">
+            {% for lvl in levels %}
+            <option value="{{ lvl }}" {% if lvl == minLevel %}selected{% endif %}>{{ lvl }}</option>
+            {% endfor %}
+        </select>
+        <span class="text-muted small">({{ entries|length }} Einträge)</span>
+    </form>
+
+    {% if entries is empty %}
+    <div class="alert alert-success">
+        <i class="bi bi-check-circle me-1"></i>Keine Einträge auf diesem Level gefunden.
+    </div>
+    {% else %}
+    <div class="table-responsive">
+        <table class="table table-sm table-hover align-middle" style="font-size:0.82rem">
+            <thead class="table-dark sticky-top">
+                <tr>
+                    <th style="width:140px">Zeitstempel</th>
+                    <th style="width:80px">Kanal</th>
+                    <th style="width:80px">Level</th>
+                    <th>Meldung</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for entry in entries %}
+                {% set rowClass = '' %}
+                {% set badgeClass = 'bg-secondary' %}
+                {% if entry.level in ['CRITICAL','ALERT','EMERGENCY'] %}
+                    {% set rowClass = 'table-danger' %}
+                    {% set badgeClass = 'bg-danger' %}
+                {% elseif entry.level == 'ERROR' %}
+                    {% set rowClass = 'table-danger' %}
+                    {% set badgeClass = 'bg-danger' %}
+                {% elseif entry.level == 'WARNING' %}
+                    {% set rowClass = 'table-warning' %}
+                    {% set badgeClass = 'bg-warning text-dark' %}
+                {% elseif entry.level == 'NOTICE' %}
+                    {% set badgeClass = 'bg-info text-dark' %}
+                {% elseif entry.level == 'INFO' %}
+                    {% set badgeClass = 'bg-primary' %}
+                {% endif %}
+                <tr class="{{ rowClass }}">
+                    <td class="text-nowrap font-monospace small">{{ entry.timestamp|date('d.m.Y H:i:s') }}</td>
+                    <td><span class="badge bg-secondary">{{ entry.channel }}</span></td>
+                    <td><span class="badge {{ badgeClass }}">{{ entry.level }}</span></td>
+                    <td>
+                        <div class="font-monospace">{{ entry.message }}</div>
+                        {% if entry.context %}
+                        <div class="text-muted small mt-1" style="white-space:pre-wrap;word-break:break-all">{{ entry.context }}</div>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

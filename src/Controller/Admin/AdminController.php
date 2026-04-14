@@ -27,6 +27,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
+use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\Routing\Attribute\Route;
 
 #[Route('/admin')]
@@ -55,8 +56,12 @@ class AdminController extends AbstractController
         UserRepository $userRepository,
         PostRepository $postRepository,
         SongKeywordRepository $songRepository,
-        KonzertRepository $konzertRepository
+        KonzertRepository $konzertRepository,
+        #[Autowire('%kernel.logs_dir%')] string $logsDir,
+        #[Autowire('%kernel.environment%')] string $env,
     ): Response {
+        $logStats = $this->getLogStats("$logsDir/$env.log");
+
         return $this->render('admin/dashboard.html.twig', [
             'userCount'      => count($userRepository->findAll()),
             'postCount'      => count($postRepository->findAll()),
@@ -64,7 +69,132 @@ class AdminController extends AbstractController
             'konzertCount'   => count($konzertRepository->findAll()),
             'memberLoginSum'       => $userRepository->sumLoginCountExcluding('joel'),
             'memberLastLoginAt'    => $userRepository->lastLoginAtExcluding('joel'),
+            'logErrorCount'  => $logStats['errorCount'],
+            'logLastErrorAt' => $logStats['lastErrorAt'],
         ]);
+    }
+
+    #[Route('/logs', name: 'admin_logs')]
+    public function logs(
+        Request $request,
+        #[Autowire('%kernel.logs_dir%')] string $logsDir,
+        #[Autowire('%kernel.environment%')] string $env,
+    ): Response {
+        $logFile  = "$logsDir/$env.log";
+        $minLevel = $request->query->get('level', 'WARNING');
+        $levels   = ['DEBUG', 'INFO', 'NOTICE', 'WARNING', 'ERROR', 'CRITICAL', 'ALERT', 'EMERGENCY'];
+        if (!in_array($minLevel, $levels, true)) {
+            $minLevel = 'WARNING';
+        }
+
+        $rawLines = $this->readLastLines($logFile, 3000);
+        $entries  = [];
+        foreach (array_reverse($rawLines) as $line) {
+            $entry = $this->parseLogLine($line);
+            if ($entry === null) {
+                continue;
+            }
+            if (array_search($entry['level'], $levels) < array_search($minLevel, $levels)) {
+                continue;
+            }
+            $entries[] = $entry;
+        }
+
+        return $this->render('admin/logs.html.twig', [
+            'entries'  => $entries,
+            'minLevel' => $minLevel,
+            'levels'   => $levels,
+            'logFile'  => basename($logFile),
+        ]);
+    }
+
+    private function getLogStats(string $logFile): array
+    {
+        $errorCount  = 0;
+        $lastErrorAt = null;
+        $errorLevels = ['WARNING', 'ERROR', 'CRITICAL', 'ALERT', 'EMERGENCY'];
+
+        foreach ($this->readLastLines($logFile, 500) as $line) {
+            $entry = $this->parseLogLine($line);
+            if ($entry === null) {
+                continue;
+            }
+            if (in_array($entry['level'], $errorLevels, true)) {
+                $errorCount++;
+                if ($lastErrorAt === null || $entry['timestamp'] > $lastErrorAt) {
+                    $lastErrorAt = $entry['timestamp'];
+                }
+            }
+        }
+
+        return ['errorCount' => $errorCount, 'lastErrorAt' => $lastErrorAt];
+    }
+
+    private function readLastLines(string $filePath, int $maxLines): array
+    {
+        if (!file_exists($filePath) || !is_readable($filePath)) {
+            return [];
+        }
+
+        $file = new \SplFileObject($filePath, 'r');
+        $file->seek(PHP_INT_MAX);
+        $totalLines = $file->key();
+        $startLine  = max(0, $totalLines - $maxLines);
+        $file->seek($startLine);
+
+        $lines = [];
+        while (!$file->eof()) {
+            $line = $file->fgets();
+            if (trim($line) !== '') {
+                $lines[] = $line;
+            }
+        }
+
+        return $lines;
+    }
+
+    private function parseLogLine(string $line): ?array
+    {
+        // Format: [2026-01-01T12:00:00.000000+00:00] channel.LEVEL: message {context} {extra}
+        if (!preg_match(
+            '/^\[(\d{4}-\d{2}-\d{2}T[\d:.]+[+-]\d{2}:\d{2})\] (\w+)\.(\w+): (.*?)(\{.*\})\s+(\[.*\])\s*$/s',
+            trim($line),
+            $m
+        )) {
+            // Fallback: simpler match without context
+            if (!preg_match('/^\[(\d{4}-\d{2}-\d{2}T[\d:.]+[+-]\d{2}:\d{2})\] (\w+)\.(\w+): (.+)$/', trim($line), $m)) {
+                return null;
+            }
+            return [
+                'timestamp' => new \DateTimeImmutable($m[1]),
+                'channel'   => strtolower($m[2]),
+                'level'     => strtoupper($m[3]),
+                'message'   => trim($m[4]),
+                'context'   => '',
+            ];
+        }
+
+        // Extract short message (before the first { or end of line)
+        $message = trim($m[4]);
+        $context = $m[5] !== '{}' ? $m[5] : '';
+
+        // If context contains an exception, extract the short message from it
+        if ($context && str_contains($context, '"exception"')) {
+            $decoded = json_decode($context, true);
+            if (isset($decoded['exception'])) {
+                // Keep only first line of exception
+                $firstLine = explode("\n", $decoded['exception'])[0];
+                $context = $firstLine;
+            }
+        }
+
+        return [
+            'timestamp' => new \DateTimeImmutable($m[1]),
+            'channel'   => strtolower($m[2]),
+            'level'     => strtoupper($m[3]),
+            'message'   => $message,
+            'context'   => $context,
+        ];
     }
 
     // ==================== SONGS ====================

@@ -67,6 +67,23 @@
             </div>
         </div>
         <div class="col-md-4 mb-4">
+            <div class="card text-white h-100 position-relative" style="background:linear-gradient(135deg,#6c1d1d,#c0392b);cursor:pointer">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="bi bi-exclamation-triangle me-1"></i>Logs</h5>
+                    {% if logErrorCount > 0 %}
+                    <p class="display-4">{{ logErrorCount }}</p>
+                    <p class="card-text small mb-0">Warnungen / Fehler (letzte 500 Einträge)</p>
+                    {% if logLastErrorAt %}
+                    <p class="card-text small mt-1 mb-0 opacity-75">Letzter Fehler: {{ logLastErrorAt|date('d.m.Y H:i') }}</p>
+                    {% endif %}
+                    {% else %}
+                    <p class="card-text mt-2">Keine Fehler in den letzten 500 Einträgen.</p>
+                    {% endif %}
+                    <a href="{{ path('admin_logs') }}" class="btn btn-light btn-sm mt-2 stretched-link"><i class="bi bi-file-text me-1"></i>Logs anzeigen</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-4">
             <div class="card text-white bg-dark h-100 position-relative" style="cursor:pointer">
                 <div class="card-body">
                     <h5 class="card-title">Datenbank</h5>
