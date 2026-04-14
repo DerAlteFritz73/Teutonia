@@ -124,5 +124,15 @@
             </div>
         </footer>
 
+        <script>
+        pageLoad(function () {
+            document.querySelectorAll('.alert.alert-dismissible').forEach(function (el) {
+                setTimeout(function () {
+                    var bsAlert = bootstrap.Alert.getOrCreateInstance(el);
+                    bsAlert.close();
+                }, 15000);
+            });
+        });
+        </script>
     </body>
 </html>

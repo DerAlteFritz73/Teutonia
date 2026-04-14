@@ -1,5 +1,7 @@
 <?php
 
+date_default_timezone_set('Europe/Berlin');
+
 use App\Kernel;
 
 // Sync process environment into $_SERVER so DotEnv respects APP_ENV set by Panther/CLI

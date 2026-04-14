@@ -79,7 +79,10 @@
                     {% else %}
                     <p class="card-text mt-2">Keine Fehler in den letzten 500 Einträgen.</p>
                     {% endif %}
-                    <a href="{{ path('admin_logs') }}" class="btn btn-light btn-sm mt-2 stretched-link"><i class="bi bi-file-text me-1"></i>Logs anzeigen</a>
+                    <div class="d-flex gap-2 mt-2">
+                        <a href="{{ path('admin_logs') }}" class="btn btn-light btn-sm stretched-link position-relative"><i class="bi bi-file-text me-1"></i>Logs anzeigen</a>
+                        <button type="button" class="btn btn-outline-light btn-sm position-relative" id="btn-hetzner-terminal" style="z-index:2"><i class="bi bi-terminal me-1"></i>Prod Terminal</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -158,6 +161,99 @@ document.getElementById('card-cache-clear').addEventListener('click', function(e
         document.getElementById('btn-cache-clear').click();
     }
 });
+</script>
+
+<!-- Hetzner SSH Terminal Modal -->
+<div class="modal fade" id="hetznerTerminalModal" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content bg-dark text-white border-0">
+            <div class="modal-header border-secondary py-2">
+                <span class="modal-title small"><i class="bi bi-terminal me-2"></i>root@teutonia-willstaett.de</span>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-0">
+                <div id="hetzner-terminal" style="height:500px;background:#0d0d0d"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@5.3.0/css/xterm.min.css">
+<script src="https://cdn.jsdelivr.net/npm/xterm@5.3.0/lib/xterm.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xterm-addon-fit@0.8.0/lib/xterm-addon-fit.min.js"></script>
+
+<script>
+(function () {
+    const modal   = document.getElementById('hetznerTerminalModal');
+    const termEl  = document.getElementById('hetzner-terminal');
+    let term      = null;
+    let fitAddon  = null;
+    let sessionId = null;
+    let evtSource = null;
+
+    function initTerminal() {
+        if (term) { term.dispose(); }
+        termEl.innerHTML = '';
+        term = new Terminal({
+            cursorBlink:     true,
+            fontFamily:      'Menlo, Consolas, "Courier New", monospace',
+            fontSize:        13,
+            theme:           { background: '#0d0d0d' },
+            convertEol:      true,
+            scrollback:      2000,
+        });
+        fitAddon = new FitAddon.FitAddon();
+        term.loadAddon(fitAddon);
+        term.open(termEl);
+        fitAddon.fit();
+
+        term.onData(data => {
+            if (!sessionId) return;
+            fetch('{{ path('admin_hetzner_terminal_input', {'id': '__ID__'}) }}'.replace('__ID__', sessionId), {
+                method:  'POST',
+                body:    data,
+                headers: { 'Content-Type': 'application/octet-stream' },
+            });
+        });
+    }
+
+    function connect() {
+        fetch('{{ path('admin_hetzner_terminal_connect') }}', { method: 'POST' })
+            .then(r => r.json())
+            .then(({ id }) => {
+                sessionId = id;
+                evtSource = new EventSource('{{ path('admin_hetzner_terminal_stream', {'id': '__ID__'}) }}'.replace('__ID__', id));
+                evtSource.onmessage = e => term.write(Uint8Array.from(atob(e.data), c => c.charCodeAt(0)));
+                evtSource.addEventListener('close', () => {
+                    term.writeln('\r\n\x1b[33m[Verbindung getrennt]\x1b[0m');
+                    evtSource.close();
+                });
+                evtSource.onerror = () => {
+                    term.writeln('\r\n\x1b[31m[Verbindungsfehler]\x1b[0m');
+                    evtSource.close();
+                };
+            })
+            .catch(() => term.writeln('\x1b[31m[Fehler beim Verbindungsaufbau]\x1b[0m'));
+    }
+
+    function disconnect() {
+        if (evtSource) { evtSource.close(); evtSource = null; }
+        sessionId = null;
+    }
+
+    document.getElementById('btn-hetzner-terminal').addEventListener('click', () => {
+        const bsModal = new bootstrap.Modal(modal);
+        bsModal.show();
+    });
+
+    modal.addEventListener('shown.bs.modal', () => {
+        initTerminal();
+        connect();
+        window.addEventListener('resize', () => fitAddon && fitAddon.fit());
+    });
+
+    modal.addEventListener('hidden.bs.modal', disconnect);
+})();
 </script>
 
 <script>
