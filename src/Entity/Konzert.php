@@ -102,11 +102,12 @@ class Konzert
         $usedCustIdxs = [];
 
         foreach ($this->songOrder as $entry) {
-            if (is_int($entry)) {
-                if (isset($songMap[$entry])) {
-                    $song          = $songMap[$entry];
-                    $result[]      = ['type' => 'song', 'composer' => (string) $song->getComposer(), 'title' => (string) $song->getSongName(), 'videoLink' => $this->videoLinks[(string) $entry] ?? ''];
-                    $usedSongIds[] = $entry;
+            if (is_int($entry) || (is_string($entry) && ctype_digit($entry))) {
+                $id = (int) $entry;
+                if (isset($songMap[$id])) {
+                    $song          = $songMap[$id];
+                    $result[]      = ['type' => 'song', 'composer' => (string) $song->getComposer(), 'title' => (string) $song->getSongName(), 'videoLink' => $this->videoLinks[(string) $id] ?? ''];
+                    $usedSongIds[] = $id;
                 }
             } elseif (is_string($entry) && isset($entry[0]) && $entry[0] === 'c') {
                 $idx = (int) substr($entry, 1);

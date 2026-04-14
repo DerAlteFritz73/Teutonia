@@ -19,6 +19,8 @@ class KonzertRepository extends ServiceEntityRepository
     public function findAllOrdered(): array
     {
         return $this->createQueryBuilder('k')
+            ->leftJoin('k.songs', 's')
+            ->addSelect('s')
             ->orderBy('k.date', 'DESC')
             ->getQuery()
             ->getResult();
