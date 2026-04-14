@@ -7,9 +7,12 @@ use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpFoundation\RedirectResponse;
+use Symfony\Component\Mailer\MailerInterface;
+use Symfony\Component\Mime\Email;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Component\Security\Http\Event\LoginFailureEvent;
 use Symfony\Component\Security\Http\Event\LoginSuccessEvent;
+use Twig\Environment;
 
 class LoginCountSubscriber implements EventSubscriberInterface
 {
@@ -17,6 +20,8 @@ class LoginCountSubscriber implements EventSubscriberInterface
         private EntityManagerInterface $em,
         private UrlGeneratorInterface $urlGenerator,
         private LoggerInterface $securityLogger,
+        private MailerInterface $mailer,
+        private Environment $twig,
     ) {}
 
     public static function getSubscribedEvents(): array
@@ -62,5 +67,23 @@ class LoginCountSubscriber implements EventSubscriberInterface
             'ip'       => $ip,
             'reason'   => $reason,
         ]);
+
+        try {
+            $email = (new Email())
+                ->from('chor.teutonia@gmail.com')
+                ->to('joel-marie@kreilos.com')
+                ->subject('⚠ Fehlgeschlagener Login-Versuch – Teutonia')
+                ->html($this->twig->render('emails/login_failure.html.twig', [
+                    'username' => $username,
+                    'ip'       => $ip,
+                    'reason'   => $reason,
+                ]));
+
+            $this->mailer->send($email);
+        } catch (\Exception $e) {
+            $this->securityLogger->error('Failed to send login-failure notification email', [
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 }

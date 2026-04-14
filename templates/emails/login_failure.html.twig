@@ -1,0 +1,40 @@
+<!-- template: templates/emails/login_failure.html.twig -->
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background-color: #c0392b; color: white; padding: 20px; text-align: center; }
+        .content { padding: 30px; background-color: #f8f9fa; }
+        .detail { background: #fff; border-left: 4px solid #c0392b; padding: 12px 16px; margin: 16px 0; font-family: monospace; font-size: 14px; }
+        .footer { padding: 20px; text-align: center; font-size: 12px; color: #6c757d; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>⚠ Fehlgeschlagener Login-Versuch</h1>
+            <p style="margin:0;opacity:.85">Chorgemeinschaft Teutonia Willstätt</p>
+        </div>
+        <div class="content">
+            <p>Ein Login-Versuch ist fehlgeschlagen:</p>
+
+            <div class="detail">
+                <strong>Benutzername:</strong> {{ username }}<br>
+                <strong>IP-Adresse:</strong> {{ ip }}<br>
+                <strong>Grund:</strong> {{ reason }}<br>
+                <strong>Zeitpunkt:</strong> {{ 'now'|date('d.m.Y H:i:s') }} UTC
+            </div>
+
+            <p>Falls dies ein legitimer Benutzer war, der sein Passwort vergessen hat, ist keine Aktion erforderlich.</p>
+            <p>Bei wiederholten Versuchen oder unbekannten IP-Adressen sollten Sie das Benutzeraccount überprüfen.</p>
+        </div>
+        <div class="footer">
+            <p>Diese E-Mail wurde automatisch vom Sicherheitssystem generiert.</p>
+            <p>Chorgemeinschaft Teutonia Willstätt e.V.</p>
+        </div>
+    </div>
+</body>
+</html>
