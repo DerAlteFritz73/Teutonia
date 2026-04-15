@@ -44,14 +44,22 @@ document.addEventListener('click', async (e) => {
             const data = await res.json();
 
             if (!res.ok || data.error) {
-                showCacheToast(data.error ?? 'Fehler beim Leeren des Caches.', 'error');
+                const msg = (data.error ?? 'Fehler beim Leeren des Caches.')
+                    + (data.cleared?.length ? '\nErfolgreich: ' + data.cleared.join(', ') : '');
+                showCacheToast(msg, 'error');
                 btn.disabled = false;
                 btn.innerHTML = '<i class="bi bi-trash2 me-1"></i>Jetzt leeren';
                 return;
             }
 
+            // Clear Turbo's in-memory page cache so no stale previews show after reload
+            if (window.Turbo) Turbo.clearCache();
+
+            const what = Array.isArray(data.cleared) && data.cleared.length
+                ? data.cleared.join(', ')
+                : 'cache';
             sessionStorage.setItem('cacheClearSuccess', '1');
-            showCacheToast('Cache geleert – Seite wird neu geladen…', 'success');
+            showCacheToast('Geleert: ' + what + '\nSeite wird neu geladen…', 'success');
             setTimeout(() => {
                 const url = new URL(window.location.href);
                 url.searchParams.set('_cb', Date.now());

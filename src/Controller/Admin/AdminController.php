@@ -29,26 +29,51 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Contracts\Cache\CacheInterface;
 
 #[Route('/admin')]
 class AdminController extends AbstractController
 {
     #[Route('/cache/clear', name: 'admin_cache_clear', methods: ['POST'])]
-    public function clearCache(Request $request): JsonResponse
-    {
+    public function clearCache(
+        Request $request,
+        #[Autowire(service: 'cache.app')] CacheInterface $appCache,
+    ): JsonResponse {
         if (!$this->isCsrfTokenValid('cache_clear', $request->request->get('_token'))) {
-            return new JsonResponse(['error' => 'Ungültiges CSRF-Token'], Response::HTTP_FORBIDDEN);
+            return new JsonResponse(['error' => 'Ungültiges CSRF-Token – bitte Seite neu laden und erneut versuchen.'], Response::HTTP_FORBIDDEN);
         }
 
+        $cleared = [];
+        $errors  = [];
+
+        // Symfony app cache pools (file-based in prod)
+        try {
+            $appCache->clear();
+            $cleared[] = 'symfony-cache';
+        } catch (\Throwable $e) {
+            $errors[] = 'symfony-cache: ' . $e->getMessage();
+        }
+
+        // OPcache (compiled PHP bytecode)
         if (function_exists('opcache_reset')) {
-            opcache_reset();
+            if (opcache_reset()) {
+                $cleared[] = 'opcache';
+            } else {
+                $errors[] = 'opcache: reset() returned false';
+            }
         }
 
+        // APCu user cache
         if (function_exists('apcu_clear_cache')) {
             apcu_clear_cache();
+            $cleared[] = 'apcu';
         }
 
-        return new JsonResponse(['success' => true]);
+        if ($errors) {
+            return new JsonResponse(['error' => implode("\n", $errors), 'cleared' => $cleared], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+
+        return new JsonResponse(['success' => true, 'cleared' => $cleared]);
     }
 
     #[Route('', name: 'admin_dashboard')]
