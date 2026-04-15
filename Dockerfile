@@ -12,6 +12,7 @@ RUN apk add --no-cache \
     libpng-dev \
     chromium \
     chromium-chromedriver \
+    openssh-client \
     $PHPIZE_DEPS \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install -j$(nproc) \

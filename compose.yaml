@@ -13,6 +13,7 @@ services:
       - style_images:/var/www/html/public/images/styles
       - assets:/var/assets
       - pdfs:/var/www/html/public/pdfs
+      - /root/.ssh/id_ed25519:/run/hetzner_key:ro
     depends_on:
       database:
         condition: service_healthy

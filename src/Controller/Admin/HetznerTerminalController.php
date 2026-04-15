@@ -37,7 +37,7 @@ class HetznerTerminalController extends AbstractController
             $inputFile = $this->inputFile($id);
 
             $cmd = sprintf(
-                'ssh -tt -o StrictHostKeyChecking=accept-new -o ConnectTimeout=10 -i %s %s@%s',
+                'ssh -tt -o StrictHostKeyChecking=accept-new -o ConnectTimeout=10 -o UserKnownHostsFile=/tmp/hetzner_known_hosts -i %s %s@%s',
                 escapeshellarg($this->sshKey),
                 escapeshellarg($this->sshUser),
                 escapeshellarg($this->sshHost),
