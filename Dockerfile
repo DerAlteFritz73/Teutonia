@@ -29,6 +29,9 @@ RUN apk add --no-cache \
     && sed -i 's/<policy domain="coder" rights="none" pattern="PDF" \/>/<policy domain="coder" rights="read|write" pattern="PDF" \/>/' \
         /etc/ImageMagick-7/policy.xml || true
 
+# Pre-create the SSH key target so Docker bind-mounts it as a file (not a directory)
+RUN touch /run/hetzner_key
+
 # Install Composer
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
