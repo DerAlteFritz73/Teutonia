@@ -66,7 +66,7 @@
     <div class="row g-2 align-items-stretch">
 
         {# Left — available songs #}
-        <div class="col">
+        <div class="col-12 col-md">
             <div class="d-flex justify-content-between align-items-center mb-1">
                 <span class="fw-semibold text-muted">Nicht verknüpft</span>
                 <span class="badge bg-secondary" id="left-count">0</span>
@@ -83,21 +83,23 @@
         </div>
 
         {# Middle — action buttons #}
-        <div class="col-auto d-flex flex-column justify-content-center gap-2 px-2">
+        <div class="col-12 col-md-auto d-flex flex-row flex-md-column justify-content-center gap-2 px-2">
             <button type="button" id="btn-link"
                     class="btn btn-primary btn-sm"
                     title="Zum Konzert hinzufügen">
-                <i class="bi bi-chevron-right"></i>
+                <i class="bi bi-chevron-right d-none d-md-inline"></i>
+                <i class="bi bi-chevron-down d-inline d-md-none"></i>
             </button>
             <button type="button" id="btn-unlink"
                     class="btn btn-outline-secondary btn-sm"
                     title="Aus Konzert entfernen">
-                <i class="bi bi-chevron-left"></i>
+                <i class="bi bi-chevron-left d-none d-md-inline"></i>
+                <i class="bi bi-chevron-up d-inline d-md-none"></i>
             </button>
         </div>
 
         {# Right — songs in this concert (drag-to-reorder) #}
-        <div class="col">
+        <div class="col-12 col-md">
             <div class="d-flex justify-content-between align-items-center mb-1">
                 <span class="fw-semibold text-primary">Im Konzert</span>
                 <span class="badge bg-primary" id="right-count">0</span>
