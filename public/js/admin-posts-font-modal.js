@@ -172,6 +172,7 @@ function initFontModal(fieldCap, field, modalId) {
 
         bootstrap.Modal.getInstance(document.getElementById(modalId)).hide();
 
+        if (window.markFormDirty) window.markFormDirty();
         // Notify the page preview to re-render with new font settings
         document.dispatchEvent(new CustomEvent('font:applied'));
     };

@@ -390,7 +390,7 @@
                 e.stopPropagation();
                 const idx = rightItems.findIndex(x => x.type === 'custom' && x.uid === item.uid);
                 if (idx !== -1) rightItems.splice(idx, 1);
-                render();
+                renderAndDirty();
             });
         }
         row.appendChild(del);
@@ -498,6 +498,12 @@
     leftListEl.addEventListener('click',  e => handleClick(leftListEl,  e));
     rightListEl.addEventListener('click', e => handleClick(rightListEl, e));
 
+    // ── Dirty helper ───────────────────────────────────────────────────
+    function renderAndDirty() {
+        render();
+        if (window.markFormDirty) window.markFormDirty();
+    }
+
     // ── Move left → right ──────────────────────────────────────────────
     document.getElementById('btn-link').addEventListener('click', () => {
         const sel = new Set(Array.from(leftListEl.querySelectorAll('.song-row.selected')).map(r => r.dataset.value));
@@ -505,7 +511,7 @@
         for (let i = unlinked.length - 1; i >= 0; i--) {
             if (sel.has(unlinked[i].value)) rightItems.push(...unlinked.splice(i, 1));
         }
-        render();
+        renderAndDirty();
     });
 
     // ── Move right → left (only regular songs) ────────────────────────
@@ -524,10 +530,11 @@
             }
             // custom items are simply removed
         }
-        render();
+        renderAndDirty();
     });
 
     // ── Double-click shortcut ──────────────────────────────────────────
+    // (btn-link / btn-unlink clicks call renderAndDirty themselves)
     leftListEl.addEventListener('dblclick', e => {
         const row = e.target.closest('.song-row');
         if (!row) return;
@@ -562,7 +569,7 @@
         customComposerEl.value = '';
         customTitleEl.value    = '';
         customComposerEl.focus();
-        render();
+        renderAndDirty();
         // Scroll right list to bottom so new item is visible
         rightListEl.scrollTop = rightListEl.scrollHeight;
     }
@@ -616,7 +623,7 @@
         const toIdx    = rightItems.findIndex(x => (x.type === 'custom' ? x.uid : x.value) === targetRow.dataset.uid);
         const mid      = targetRow.getBoundingClientRect().top + targetRow.getBoundingClientRect().height / 2;
         rightItems.splice(e.clientY < mid ? toIdx : toIdx + 1, 0, moved);
-        render();
+        renderAndDirty();
     });
 
     function clearIndicators() {

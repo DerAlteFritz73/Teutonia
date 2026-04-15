@@ -63,7 +63,10 @@
     if (!container || !addBtn) return;
 
     function attachRemove(row) {
-        row.querySelector('.remove-link').addEventListener('click', function () { row.remove(); });
+        row.querySelector('.remove-link').addEventListener('click', function () {
+            row.remove();
+            if (window.markFormDirty) window.markFormDirty();
+        });
     }
 
     container.querySelectorAll('.link-row').forEach(attachRemove);

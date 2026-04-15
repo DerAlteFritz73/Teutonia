@@ -102,6 +102,7 @@ pageLoad(function () {
     function applyRotation() {
         if (currentImage) currentImage.style.transform = 'rotate(' + currentRotation + 'deg)';
         if (rotationInput) rotationInput.value = currentRotation;
+        if (window.markFormDirty) window.markFormDirty();
         updatePreviewPost();
     }
 
@@ -176,6 +177,7 @@ pageLoad(function () {
 
     quill.on('text-change', function () {
         paragraphInput.value = quill.root.innerHTML;
+        if (window.markFormDirty) window.markFormDirty();
         updatePreviewPost();
     });
 
@@ -432,6 +434,7 @@ pageLoad(function () {
             const dt = new DataTransfer();
             dt.items.add(file);
             imageInput.files = dt.files;
+            if (window.markFormDirty) window.markFormDirty();
             currentPreviewImage = canvas.toDataURL('image/jpeg', 0.92);
             currentRotation = 0;
             const sizeInMB = (blob.size / (1024 * 1024)).toFixed(2);
