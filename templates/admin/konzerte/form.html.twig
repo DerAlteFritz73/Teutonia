@@ -15,7 +15,7 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1 class="mb-0">{{ isNew ? 'Neues Konzert' : konzert.name }}</h1>
         <div class="d-flex gap-2">
-            <a href="{{ path('admin_konzerte') }}" class="btn btn-secondary" data-unsaved-cancel>
+            <a href="{{ path('admin_konzerte') }}" class="btn btn-secondary">
                 <i class="bi bi-x-lg me-1"></i>Abbrechen
             </a>
             <button type="submit" form="konzert-form" class="btn btn-primary">
