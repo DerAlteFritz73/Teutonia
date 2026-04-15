@@ -63,10 +63,10 @@
     </script>
 
     {# ── Dual-list song picker ──────────────────────────────────────── #}
-    <div class="row g-2 align-items-stretch">
+    <div class="d-flex flex-column flex-md-row gap-2 align-items-md-stretch">
 
         {# Left — available songs #}
-        <div class="col-12 col-md-5">
+        <div class="flex-grow-1" style="min-width:0">
             <div class="d-flex justify-content-between align-items-center mb-1">
                 <span class="fw-semibold text-muted">Nicht verknüpft</span>
                 <span class="badge bg-secondary" id="left-count">0</span>
@@ -83,7 +83,7 @@
         </div>
 
         {# Middle — action buttons #}
-        <div class="col-12 col-md-auto d-flex flex-row flex-md-column justify-content-center gap-2 px-2">
+        <div class="d-flex flex-row flex-md-column justify-content-center gap-2 px-2 flex-shrink-0">
             <button type="button" id="btn-link"
                     class="btn btn-primary btn-sm"
                     title="Zum Konzert hinzufügen">
@@ -99,7 +99,7 @@
         </div>
 
         {# Right — songs in this concert (drag-to-reorder) #}
-        <div class="col-12 col-md-5">
+        <div class="flex-grow-1" style="min-width:0">
             <div class="d-flex justify-content-between align-items-center mb-1">
                 <span class="fw-semibold text-primary">Im Konzert</span>
                 <span class="badge bg-primary" id="right-count">0</span>
