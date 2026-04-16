@@ -33,6 +33,9 @@ class HetznerTerminalController extends AbstractController
         return new StreamedResponse(function () use ($id) {
             set_time_limit(0);
             ignore_user_abort(true);
+            while (ob_get_level() > 0) {
+                ob_end_clean();
+            }
 
             $inputFile = $this->inputFile($id);
 
@@ -51,7 +54,6 @@ class HetznerTerminalController extends AbstractController
 
             if (!is_resource($process)) {
                 echo "event: error\ndata: SSH-Prozess konnte nicht gestartet werden\n\n";
-                ob_flush();
                 flush();
                 return;
             }
@@ -82,21 +84,18 @@ class HetznerTerminalController extends AbstractController
                 $out = fread($pipes[1], 4096);
                 if ($out !== false && strlen($out) > 0) {
                     echo 'data: ' . base64_encode($out) . "\n\n";
-                    ob_flush();
                     flush();
                 }
 
                 $err = fread($pipes[2], 4096);
                 if ($err !== false && strlen($err) > 0) {
                     echo 'data: ' . base64_encode($err) . "\n\n";
-                    ob_flush();
                     flush();
                 }
 
                 $status = proc_get_status($process);
                 if (!$status['running']) {
                     echo "event: close\ndata: disconnected\n\n";
-                    ob_flush();
                     flush();
                     break;
                 }
