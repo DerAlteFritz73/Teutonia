@@ -112,14 +112,18 @@ class AdminController extends AbstractController
             $minLevel = 'WARNING';
         }
 
-        $rawLines = $this->readLastLines($logFile, 3000);
-        $entries  = [];
+        $rawLines   = $this->readLastLines($logFile, 3000);
+        $entries    = [];
+        $infoIdx    = array_search('INFO', $levels);
+        $minLevelIdx = array_search($minLevel, $levels);
         foreach (array_reverse($rawLines) as $line) {
             $entry = $this->parseLogLine($line);
             if ($entry === null) {
                 continue;
             }
-            if (array_search($entry['level'], $levels) < array_search($minLevel, $levels)) {
+            $entryIdx = array_search($entry['level'], $levels);
+            $threshold = ($entry['channel'] === 'security') ? min($minLevelIdx, $infoIdx) : $minLevelIdx;
+            if ($entryIdx < $threshold) {
                 continue;
             }
             $entries[] = $entry;
