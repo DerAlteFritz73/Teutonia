@@ -42,6 +42,19 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
         return (int) $result;
     }
 
+    public function countUsersWithLoginsExcluding(string $username): int
+    {
+        $result = $this->createQueryBuilder('u')
+            ->select('COUNT(u.id)')
+            ->where('u.username != :username')
+            ->andWhere('u.loginCount > 0')
+            ->setParameter('username', $username)
+            ->getQuery()
+            ->getSingleScalarResult();
+
+        return (int) $result;
+    }
+
     public function lastLoginAtExcluding(string $username): ?\DateTimeInterface
     {
         $user = $this->createQueryBuilder('u')

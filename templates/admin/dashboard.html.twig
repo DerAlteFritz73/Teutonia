@@ -60,6 +60,7 @@
                     <h5 class="card-title"><i class="bi bi-box-arrow-in-right me-1"></i>Logins der Mitglieder</h5>
                     <p class="display-4">{{ memberLoginSum }}</p>
                     <p class="card-text small mb-0">Gesamtanzahl Anmeldungen aller Mitglieder</p>
+                    <p class="card-text small mb-0 opacity-75">{{ memberUniqueLoginCount }} Mitglied{{ memberUniqueLoginCount != 1 ? 'er' : '' }} haben sich mindestens einmal angemeldet</p>
                     {% if memberLastLoginAt %}
                     <p class="card-text small mt-1 mb-0 opacity-75">Letzte Anmeldung: {{ memberLastLoginAt|date('d.m.Y H:i') }}</p>
                     {% endif %}
