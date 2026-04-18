@@ -77,8 +77,14 @@ function initFontModal(fieldCap, field, modalId) {
 
         renderFonts();
 
-        fontSearch.addEventListener('input', function () {
-            renderFonts(this.value);
+        const fontSearchBtn = document.getElementById('fontSearchBtn' + fieldCap);
+        if (fontSearchBtn) {
+            fontSearchBtn.addEventListener('click', function () {
+                renderFonts(fontSearch.value);
+            });
+        }
+        fontSearch.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') { e.preventDefault(); renderFonts(this.value); }
         });
 
         sizeSlider.addEventListener('input', function () {
