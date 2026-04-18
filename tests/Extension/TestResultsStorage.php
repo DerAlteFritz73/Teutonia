@@ -144,19 +144,20 @@ class TestResultsStorage
         $sql = '
             UPDATE test_runs SET
                 finished_at = NOW(),
-                total   = (SELECT COUNT(*)                              FROM test_results WHERE run_id = :id),
-                passed  = (SELECT COUNT(*) FROM test_results WHERE run_id = :id AND status = "passed"),
-                failed  = (SELECT COUNT(*) FROM test_results WHERE run_id = :id AND status = "failed"),
-                errored = (SELECT COUNT(*) FROM test_results WHERE run_id = :id AND status = "error"),
-                skipped = (SELECT COUNT(*) FROM test_results WHERE run_id = :id AND status = "skipped")
-            WHERE id = :id
+                total   = (SELECT COUNT(*)                              FROM test_results WHERE run_id = ?),
+                passed  = (SELECT COUNT(*) FROM test_results WHERE run_id = ? AND status = "passed"),
+                failed  = (SELECT COUNT(*) FROM test_results WHERE run_id = ? AND status = "failed"),
+                errored = (SELECT COUNT(*) FROM test_results WHERE run_id = ? AND status = "error"),
+                skipped = (SELECT COUNT(*) FROM test_results WHERE run_id = ? AND status = "skipped")
+            WHERE id = ?
         ';
+        $args = array_fill(0, 6, $this->runId);
         try {
-            $this->pdo->prepare($sql)->execute([':id' => $this->runId]);
+            $this->pdo->prepare($sql)->execute($args);
         } catch (\Throwable) {
             $this->ensureTables();
             try {
-                $this->pdo->prepare($sql)->execute([':id' => $this->runId]);
+                $this->pdo->prepare($sql)->execute($args);
             } catch (\Throwable) {
                 // Give up silently.
             }
