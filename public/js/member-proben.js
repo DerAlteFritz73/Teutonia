@@ -289,28 +289,22 @@
 (function () {
     'use strict';
     const input    = document.getElementById('notenSearch');
-    const btn      = document.getElementById('notenSearchBtn');
     const noResult = document.getElementById('notenNoResults');
     if (!input) return;
 
-    function doSearch() {
+    input.addEventListener('input', function () {
         const q     = input.value.trim().toLowerCase();
         const items = document.querySelectorAll('#allFilesAccordion .accordion-item');
         let visible = 0;
 
         items.forEach(function (item) {
-            const accordionBtn = item.querySelector('.accordion-button');
-            const name = accordionBtn ? accordionBtn.textContent.trim().toLowerCase() : '';
+            const btn  = item.querySelector('.accordion-button');
+            const name = btn ? btn.textContent.trim().toLowerCase() : '';
             const show = !q || name.includes(q);
             item.style.display = show ? '' : 'none';
             if (show) visible++;
         });
 
         noResult.classList.toggle('d-none', visible > 0 || !q);
-    }
-
-    if (btn) { btn.addEventListener('click', doSearch); }
-    input.addEventListener('keydown', function (e) {
-        if (e.key === 'Enter') { e.preventDefault(); doSearch(); }
     });
 }());
