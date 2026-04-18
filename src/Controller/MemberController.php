@@ -10,6 +10,7 @@ use App\Repository\PostRepository;
 use App\Repository\SongKeywordRepository;
 use App\Repository\SongSuggestionLikeRepository;
 use App\Repository\SongSuggestionRepository;
+use App\Service\GoogleCalendarService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -56,9 +57,11 @@ class MemberController extends AbstractController
     }
 
     #[Route('/google-kalender', name: 'member_google_kalender')]
-    public function googleKalender(): Response
+    public function googleKalender(GoogleCalendarService $calendarService): Response
     {
-        return $this->render('member/google-kalender.html.twig');
+        return $this->render('member/google-kalender.html.twig', [
+            'events' => $calendarService->getUpcomingEvents(15),
+        ]);
     }
 
     #[Route('/ideenkiste', name: 'member_ideenkiste')]

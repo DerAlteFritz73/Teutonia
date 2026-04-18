@@ -113,13 +113,17 @@ class AdminController extends AbstractController
             $minLevel = 'WARNING';
         }
 
-        $rawLines   = $this->readLastLines($logFile, 3000);
-        $entries    = [];
-        $infoIdx    = array_search('INFO', $levels);
+        $rawLines    = $this->readLastLines($logFile, 3000);
+        $entries     = [];
+        $infoIdx     = array_search('INFO', $levels);
         $minLevelIdx = array_search($minLevel, $levels);
+        $cutoff      = new \DateTimeImmutable('-2 weeks');
         foreach (array_reverse($rawLines) as $line) {
             $entry = $this->parseLogLine($line);
             if ($entry === null) {
+                continue;
+            }
+            if ($entry['timestamp'] < $cutoff) {
                 continue;
             }
             $entryIdx = array_search($entry['level'], $levels);

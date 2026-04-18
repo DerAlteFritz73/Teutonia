@@ -43,11 +43,61 @@ class AppFixtures extends Fixture
         $style->setColor('#7c3aed');
         $manager->persist($style);
 
+        // Song in Noten (no Dropbox link)
         $song = new SongKeyword();
         $song->setSongName('Amazing Grace');
         $song->setComposer('John Newton');
         $song->setFolder('Noten');
         $manager->persist($song);
+
+        // Song in Noten with Dropbox link (tests API call flow)
+        $songWithDropbox = new SongKeyword();
+        $songWithDropbox->setSongName('Ave Maria');
+        $songWithDropbox->setComposer('Franz Schubert');
+        $songWithDropbox->setFolder('Noten');
+        $songWithDropbox->setDropboxlink('/Noten/Ave Maria');
+        $manager->persist($songWithDropbox);
+
+        // Song with child movements
+        $parentSong = new SongKeyword();
+        $parentSong->setSongName('Requiem');
+        $parentSong->setComposer('Wolfgang A. Mozart');
+        $parentSong->setFolder('Noten');
+        $parentSong->setDropboxlink('/Noten/Requiem');
+        $manager->persist($parentSong);
+
+        $movement1 = new SongKeyword();
+        $movement1->setSongName('I. Introitus');
+        $movement1->setFolder('Noten');
+        $movement1->setDropboxlink('/Noten/Requiem/Introitus');
+        $movement1->setParent($parentSong);
+        $movement1->setSortOrder(1);
+        $manager->persist($movement1);
+
+        $movement2 = new SongKeyword();
+        $movement2->setSongName('II. Kyrie');
+        $movement2->setFolder('Noten');
+        $movement2->setDropboxlink('/Noten/Requiem/Kyrie');
+        $movement2->setParent($parentSong);
+        $movement2->setSortOrder(2);
+        $manager->persist($movement2);
+
+        // Aktuelle Proben song (no Dropbox)
+        $probenSong = new SongKeyword();
+        $probenSong->setSongName('Dona Nobis Pacem');
+        $probenSong->setComposer('Traditional');
+        $probenSong->setFolder('Aktuelle Proben');
+        $probenSong->setIsAktuelleProben(true);
+        $manager->persist($probenSong);
+
+        // Aktuelle Proben song with Dropbox link
+        $probenSongWithDropbox = new SongKeyword();
+        $probenSongWithDropbox->setSongName('Halleluja Chorus');
+        $probenSongWithDropbox->setComposer('Georg F. Händel');
+        $probenSongWithDropbox->setFolder('Aktuelle Proben');
+        $probenSongWithDropbox->setIsAktuelleProben(true);
+        $probenSongWithDropbox->setAktuelleDropboxlink('/Aktuelle Proben/Halleluja Chorus');
+        $manager->persist($probenSongWithDropbox);
 
         $konzert = new Konzert();
         $konzert->setName('Sommerkonzert 2024');
