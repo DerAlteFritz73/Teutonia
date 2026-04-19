@@ -115,9 +115,15 @@ pageLoad(function () {
             eventTextColor:       '#212529',
             displayEventTime: false,
             events: _fcEvents.flatMap(function (e) {
+                var startDate = e.start.substring(0, 10);
+                var endDate   = e.end ? e.end.substring(0, 10) : startDate;
+                if (endDate <= startDate) {
+                    var d = new Date(startDate); d.setDate(d.getDate() + 1);
+                    endDate = d.toISOString().substring(0, 10);
+                }
                 return [
                     e,
-                    Object.assign({}, e, { display: 'background', color: 'rgba(40,167,69,0.25)', title: '' })
+                    { display: 'background', color: 'rgba(40,167,69,0.25)', title: '', allDay: true, start: startDate, end: endDate }
                 ];
             })
         });
