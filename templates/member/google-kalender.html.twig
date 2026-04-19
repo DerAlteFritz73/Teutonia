@@ -118,29 +118,35 @@ var _fcEvents   = {{ fcEvents|json_encode|raw }};
 pageLoad(function () {
     var el = document.getElementById('fullcalendar');
     if (!el) return;
-    if (_fcInstance) { _fcInstance.destroy(); _fcInstance = null; }
 
-    _fcInstance = new FullCalendar.Calendar(el, {
-        initialView:  'dayGridMonth',
-        locale:       'de',
-        firstDay:     1,
-        headerToolbar: { left: 'prev,next today', center: 'title', right: '' },
-        height:       'auto',
-        eventColor:   '#0d6efd',
-        displayEventTime: false,
-        events: _fcEvents.flatMap(function (e) {
-            return [
-                e,
-                Object.assign({}, e, { display: 'background', color: 'rgba(13,110,253,0.12)', title: '' })
-            ];
-        })
-    });
-    _fcInstance.render();
+    function initCalendar() {
+        if (_fcInstance) { _fcInstance.destroy(); _fcInstance = null; }
+        _fcInstance = new FullCalendar.Calendar(el, {
+            initialView:      'dayGridMonth',
+            locale:           'de',
+            firstDay:         1,
+            headerToolbar:    { left: 'prev,next today', center: 'title', right: '' },
+            height:           'auto',
+            eventColor:       '#0d6efd',
+            displayEventTime: false,
+            events: _fcEvents.flatMap(function (e) {
+                return [
+                    e,
+                    Object.assign({}, e, { display: 'background', color: 'rgba(13,110,253,0.12)', title: '' })
+                ];
+            })
+        });
+        _fcInstance.render();
+    }
+
+    if (window.FullCalendar) {
+        initCalendar();
+    } else {
+        var s = document.createElement('script');
+        s.src = 'https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js';
+        s.onload = initCalendar;
+        document.head.appendChild(s);
+    }
 });
 </script>
-{% endblock %}
-
-{% block javascripts %}
-    {{ parent() }}
-    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
 {% endblock %}
