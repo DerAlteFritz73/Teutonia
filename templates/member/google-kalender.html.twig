@@ -45,8 +45,9 @@
                 #fullcalendar, #fullcalendar .fc { background-color: #fff !important; }
                 .fc .fc-col-header-cell-cushion { text-decoration: none; color: inherit; }
                 .fc .fc-daygrid-day-number { text-decoration: none; }
-                #events-sidebar .fc-sidebar-active { background-color: rgba(40,167,69,0.12); border-left: 3px solid rgba(40,167,69,0.6); }
                 #events-sidebar [data-fc-date] { border-left: 3px solid transparent; }
+                #events-sidebar .fc-sidebar-active { background-color: rgba(40,167,69,0.12); border-left: 3px solid rgba(40,167,69,0.6); }
+                #events-sidebar .fc-sidebar-selected { background-color: rgba(40,167,69,0.25) !important; border-left: 3px solid rgb(40,167,69) !important; }
             </style>
             <div id="fullcalendar" style="border-radius:.5rem;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.12)"></div>
         </div>
@@ -60,7 +61,7 @@
                     {% set isAllDay = event.start.date is defined %}
                     {% set startRaw = isAllDay ? event.start.date : event.start.dateTime %}
                     {% set endRaw   = isAllDay ? event.end.date   : event.end.dateTime %}
-                    <div class="list-group-item list-group-item-action py-3" style="cursor:pointer" data-fc-date="{{ startRaw|slice(0,10) }}">
+                    <div class="list-group-item list-group-item-action py-3" style="cursor:pointer" data-fc-date="{{ startRaw|slice(0,10) }}" data-fc-title="{{ (event.summary ?? '')|e('html_attr') }}">
                         <div class="d-flex align-items-start gap-3">
                             <div class="text-center bg-light rounded px-2 py-1" style="min-width:54px; line-height:1.2;">
                                 <div class="fw-bold fs-5 lh-1">{{ startRaw|date('d') }}</div>
@@ -102,6 +103,13 @@ var _fcEvents   = {{ fcEvents|json_encode|raw }};
 pageLoad(function () {
     var el = document.getElementById('fullcalendar');
     if (!el) return;
+
+    function selectSidebarItem(item) {
+        var sidebar = document.getElementById('events-sidebar');
+        document.querySelectorAll('[data-fc-date]').forEach(function (i) { i.classList.remove('fc-sidebar-selected'); });
+        item.classList.add('fc-sidebar-selected');
+        if (sidebar) sidebar.scrollTo({ top: item.offsetTop - sidebar.offsetTop, behavior: 'smooth' });
+    }
 
     function syncSidebarToMonth(monthStart) {
         var year  = monthStart.getFullYear();
@@ -146,11 +154,22 @@ pageLoad(function () {
             }),
             datesSet: function (info) {
                 syncSidebarToMonth(info.view.currentStart);
+            },
+            eventClick: function (info) {
+                if (info.event.display === 'background') return;
+                var date  = info.event.startStr.substring(0, 10);
+                var title = info.event.title;
+                var match = null;
+                document.querySelectorAll('[data-fc-date]').forEach(function (item) {
+                    if (!match && item.dataset.fcDate === date && item.dataset.fcTitle === title) match = item;
+                });
+                if (match) selectSidebarItem(match);
             }
         });
         _fcInstance.render();
         document.querySelectorAll('[data-fc-date]').forEach(function (item) {
             item.addEventListener('click', function () {
+                document.querySelectorAll('[data-fc-date]').forEach(function (i) { i.classList.remove('fc-sidebar-selected'); });
                 _fcInstance.gotoDate(this.dataset.fcDate);
                 document.getElementById('fullcalendar').scrollIntoView({ behavior: 'smooth', block: 'start' });
             });
