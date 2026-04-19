@@ -123,7 +123,11 @@ pageLoad(function () {
         });
         _fcInstance.render();
         var sidebar = document.getElementById('events-sidebar');
-        if (sidebar) sidebar.style.height = el.offsetHeight + 'px';
+        if (sidebar) {
+            var heading = sidebar.previousElementSibling;
+            var headingHeight = heading ? heading.offsetHeight + parseInt(getComputedStyle(heading).marginBottom || 0) : 0;
+            sidebar.style.height = (el.offsetHeight - headingHeight) + 'px';
+        }
     }
 
     if (window.FullCalendar) {
