@@ -26,7 +26,7 @@ class GoogleCalendarService
             return [];
         }
 
-        return $this->cache->get(self::CACHE_KEY, function (ItemInterface $item) use ($maxResults): array {
+        return $this->cache->get(self::CACHE_KEY . '_' . $maxResults, function (ItemInterface $item) use ($maxResults): array {
             $item->expiresAfter(self::CACHE_TTL);
             return $this->fetchFromApi($maxResults);
         });
