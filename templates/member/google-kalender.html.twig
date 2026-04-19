@@ -38,7 +38,7 @@
             <h5 class="mb-3"><i class="bi bi-calendar-event me-2"></i>Nächste Termine</h5>
             {% set monthNames = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'] %}
             {% if events is not empty %}
-            <div class="list-group" style="flex:1;min-height:0;overflow-y:auto">
+            <div class="list-group" id="events-sidebar" style="overflow-y:auto">
                 {% for event in events %}
                     {% set isAllDay = event.start.date is defined %}
                     {% set startRaw = isAllDay ? event.start.date : event.start.dateTime %}
@@ -104,6 +104,8 @@ pageLoad(function () {
             })
         });
         _fcInstance.render();
+        var sidebar = document.getElementById('events-sidebar');
+        if (sidebar) sidebar.style.height = el.offsetHeight + 'px';
     }
 
     if (window.FullCalendar) {
