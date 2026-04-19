@@ -31,7 +31,11 @@
 
     <div class="row g-4">
         <div class="col-lg-8">
-            <style>.fc { --fc-today-bg-color: transparent; }</style>
+            <style>
+                .fc { --fc-today-bg-color: transparent; }
+                .fc .fc-col-header-cell-cushion { text-decoration: none; color: inherit; }
+                .fc .fc-daygrid-day-number { text-decoration: none; }
+            </style>
             <div id="fullcalendar" style="border-radius:.5rem;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.12)"></div>
         </div>
 
@@ -94,6 +98,7 @@ pageLoad(function () {
             locale:           'de',
             firstDay:         1,
             headerToolbar:    { left: 'prev,next today', center: 'title', right: '' },
+            buttonText:       { today: 'Heute' },
             height:           'auto',
             eventBackgroundColor: '#fff',
             eventBorderColor:     'rgba(0,0,0,0.125)',
