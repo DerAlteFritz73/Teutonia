@@ -58,7 +58,7 @@
                     {% set isAllDay = event.start.date is defined %}
                     {% set startRaw = isAllDay ? event.start.date : event.start.dateTime %}
                     {% set endRaw   = isAllDay ? event.end.date   : event.end.dateTime %}
-                    <div class="list-group-item list-group-item-action py-3">
+                    <div class="list-group-item list-group-item-action py-3" style="cursor:pointer" data-fc-date="{{ startRaw|slice(0,10) }}">
                         <div class="d-flex align-items-start gap-3">
                             <div class="text-center bg-light rounded px-2 py-1" style="min-width:54px; line-height:1.2;">
                                 <div class="fw-bold fs-5 lh-1">{{ startRaw|date('d') }}</div>
@@ -122,6 +122,12 @@ pageLoad(function () {
             })
         });
         _fcInstance.render();
+        document.querySelectorAll('[data-fc-date]').forEach(function (item) {
+            item.addEventListener('click', function () {
+                _fcInstance.gotoDate(this.dataset.fcDate);
+                document.getElementById('fullcalendar').scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
+        });
         var sidebar = document.getElementById('events-sidebar');
         if (sidebar) {
             var heading = sidebar.previousElementSibling;
