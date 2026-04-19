@@ -18,17 +18,20 @@
     </div>
     <p class="lead text-muted">Kalender von chor.teutonia@gmail.com</p>
 
+    {% set fcEvents = [] %}
+    {% for event in events %}
+        {% set isAllDay = event.start.date is defined %}
+        {% set fcEvents = fcEvents|merge([{
+            title: event.summary ?? '(kein Titel)',
+            start: isAllDay ? event.start.date : event.start.dateTime,
+            end:   isAllDay ? event.end.date   : event.end.dateTime,
+            allDay: isAllDay
+        }]) %}
+    {% endfor %}
+
     <div class="row g-4">
         <div class="col-lg-8">
-            <div style="position: relative; padding-bottom: 75%; height: 0; overflow: hidden; border-radius: .5rem; box-shadow: 0 2px 8px rgba(0,0,0,.12);">
-                <iframe
-                    src="https://calendar.google.com/calendar/embed?src=chor.teutonia%40gmail.com&ctz=Europe%2FBerlin&hl=de&wkst=2&showTitle=0&showNav=1&showDate=1&showPrint=0&showTabs=1&showCalendars=1&showTz=1"
-                    style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0;"
-                    frameborder="0"
-                    scrolling="no"
-                    title="Google-Kalender Teutonia">
-                </iframe>
-            </div>
+            <div id="fullcalendar" style="border-radius:.5rem;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.12)"></div>
         </div>
 
         <div class="col-lg-4">
@@ -107,4 +110,37 @@
         </div>
     </div>
 </div>
+
+<script>
+var _fcInstance = null;
+var _fcEvents   = {{ fcEvents|json_encode|raw }};
+
+pageLoad(function () {
+    var el = document.getElementById('fullcalendar');
+    if (!el) return;
+    if (_fcInstance) { _fcInstance.destroy(); _fcInstance = null; }
+
+    _fcInstance = new FullCalendar.Calendar(el, {
+        initialView:  'dayGridMonth',
+        locale:       'de',
+        firstDay:     1,
+        headerToolbar: { left: 'prev,next today', center: 'title', right: '' },
+        height:       'auto',
+        eventColor:   '#0d6efd',
+        displayEventTime: false,
+        events: _fcEvents.flatMap(function (e) {
+            return [
+                e,
+                Object.assign({}, e, { display: 'background', color: 'rgba(13,110,253,0.12)', title: '' })
+            ];
+        })
+    });
+    _fcInstance.render();
+});
+</script>
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
 {% endblock %}
