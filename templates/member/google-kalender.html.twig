@@ -94,7 +94,9 @@ pageLoad(function () {
             firstDay:         1,
             headerToolbar:    { left: 'prev,next today', center: 'title', right: '' },
             height:           'auto',
-            eventColor:       '#0d6efd',
+            eventBackgroundColor: '#fff',
+            eventBorderColor:     'rgba(0,0,0,0.125)',
+            eventTextColor:       '#212529',
             displayEventTime: false,
             events: _fcEvents.flatMap(function (e) {
                 return [
