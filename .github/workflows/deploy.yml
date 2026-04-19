@@ -20,3 +20,4 @@ jobs:
             git -C /var/www/teutonia pull
             docker compose -f /var/www/teutonia/compose.yaml --env-file /var/www/teutonia/.env.local --project-directory /var/www/teutonia build php
             docker compose -f /var/www/teutonia/compose.yaml --env-file /var/www/teutonia/.env.local --project-directory /var/www/teutonia up -d
+            docker exec teutonia-php-1 chown -R www-data:www-data /var/www/html/var/
