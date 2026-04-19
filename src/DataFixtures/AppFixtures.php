@@ -101,7 +101,7 @@ class AppFixtures extends Fixture
 
         $konzert = new Konzert();
         $konzert->setName('Sommerkonzert 2024');
-        $konzert->setDate(new \DateTime('2024-07-15'));
+        $konzert->setDate(new \DateTime('2024-07-15', new \DateTimeZone('Europe/Berlin')));
         $konzert->setLocation('Teutonia Saal');
         $manager->persist($konzert);
 
