@@ -41,6 +41,15 @@
             {{ form_label(form.location) }}
             {{ form_widget(form.location) }}
         </div>
+        <div class="col-md-8">
+            {{ form_label(form.plakatFile) }}
+            <div class="d-flex gap-2 align-items-center">
+                {{ form_widget(form.plakatFile) }}
+                {% if konzert.plakatPath %}
+                    <img src="{{ asset(konzert.plakatPath) }}" alt="Plakat" style="height:48px;width:auto;border-radius:4px;object-fit:cover;">
+                {% endif %}
+            </div>
+        </div>
     </div>
 
     {# Hidden Symfony widget — data source & submission vehicle for linked songs #}

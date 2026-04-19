@@ -34,6 +34,9 @@ class Konzert
     #[ORM\Column(type: Types::JSON, options: ['default' => '{}'])]
     private array $videoLinks = [];
 
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $plakatPath = null;
+
     #[ORM\ManyToMany(targetEntity: SongKeyword::class, inversedBy: 'konzerte')]
     #[ORM\JoinTable(name: 'konzert_song',
         joinColumns: [new ORM\JoinColumn(name: 'konzert_id', referencedColumnName: 'id', onDelete: 'CASCADE')],
@@ -65,6 +68,9 @@ class Konzert
 
     public function getVideoLinks(): array { return $this->videoLinks; }
     public function setVideoLinks(array $videoLinks): static { $this->videoLinks = $videoLinks; return $this; }
+
+    public function getPlakatPath(): ?string { return $this->plakatPath; }
+    public function setPlakatPath(?string $plakatPath): static { $this->plakatPath = $plakatPath; return $this; }
 
     public function getSongs(): Collection { return $this->songs; }
 

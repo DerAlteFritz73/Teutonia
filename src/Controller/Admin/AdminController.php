@@ -802,6 +802,13 @@ class AdminController extends AbstractController
             $konzert->setSongOrder(json_decode($orderJson, true) ?: []);
             $videoJson = $request->request->get('video_links_json', '{}');
             $konzert->setVideoLinks(json_decode($videoJson, true) ?: []);
+            $plakatFile = $form->get('plakatFile')->getData();
+            if ($plakatFile) {
+                $plakatPath = $this->handleImageUpload($plakatFile);
+                if ($plakatPath) {
+                    $konzert->setPlakatPath($plakatPath);
+                }
+            }
             $em->persist($konzert);
             $em->flush();
             $this->addFlash('success', 'Konzert wurde erstellt.');
@@ -829,6 +836,13 @@ class AdminController extends AbstractController
             $konzert->setSongOrder(json_decode($orderJson, true) ?: []);
             $videoJson = $request->request->get('video_links_json', '{}');
             $konzert->setVideoLinks(json_decode($videoJson, true) ?: []);
+            $plakatFile = $form->get('plakatFile')->getData();
+            if ($plakatFile) {
+                $plakatPath = $this->handleImageUpload($plakatFile, $konzert->getPlakatPath());
+                if ($plakatPath) {
+                    $konzert->setPlakatPath($plakatPath);
+                }
+            }
             $em->flush();
             $this->addFlash('success', 'Konzert wurde aktualisiert.');
             return $this->redirectToRoute('admin_konzerte_edit', ['id' => $konzert->getId()]);
