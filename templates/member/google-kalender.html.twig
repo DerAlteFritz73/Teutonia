@@ -32,8 +32,16 @@
     <div class="row g-4">
         <div class="col-lg-8">
             <style>
-                .fc { --fc-today-bg-color: transparent; }
-                .fc .fc-day-today { background-color: transparent !important; }
+                .fc {
+                    --fc-today-bg-color:     transparent;
+                    --fc-highlight-color:    transparent;
+                    --fc-neutral-bg-color:   transparent;
+                    --fc-page-bg-color:      #fff;
+                }
+                .fc .fc-day-today,
+                .fc .fc-day-today .fc-daygrid-day-frame,
+                .fc .fc-day-today .fc-daygrid-day-bg { background-color: transparent !important; }
+                .fc .fc-col-header-cell { background-color: #f8f9fa !important; }
                 .fc .fc-col-header-cell-cushion { text-decoration: none; color: inherit; }
                 .fc .fc-daygrid-day-number { text-decoration: none; }
             </style>
