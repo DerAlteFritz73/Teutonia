@@ -18,54 +18,60 @@
     </div>
     <p class="lead text-muted">Kalender von chor.teutonia@gmail.com</p>
 
-    {% if events is not empty %}
-    <div class="mb-4">
-        <h5 class="mb-3"><i class="bi bi-calendar-event me-2"></i>Nächste Termine</h5>
-        <div class="list-group">
-            {% for event in events %}
-                {% set isAllDay = event.start.date is defined %}
-                {% set startRaw = isAllDay ? event.start.date : event.start.dateTime %}
-                {% set endRaw   = isAllDay ? event.end.date   : event.end.dateTime %}
-                {% set start    = startRaw|date('U')|date_modify('0 second') %}
-                <div class="list-group-item list-group-item-action py-3">
-                    <div class="d-flex align-items-start gap-3">
-                        <div class="text-center bg-light rounded px-2 py-1" style="min-width:54px; line-height:1.2;">
-                            <div class="fw-bold fs-5 lh-1">{{ startRaw|date('d') }}</div>
-                            <div class="text-muted small text-uppercase">{{ startRaw|date('M') }}</div>
-                            <div class="text-muted" style="font-size:.7rem">{{ startRaw|date('Y') }}</div>
-                        </div>
-                        <div class="flex-grow-1">
-                            <div class="fw-semibold">{{ event.summary ?? '(kein Titel)' }}</div>
-                            <div class="text-muted small">
-                                {% if isAllDay %}
-                                    Ganztägig
-                                {% else %}
-                                    {{ startRaw|date('H:i') }} Uhr
-                                    {%- if endRaw is defined and endRaw != startRaw %} – {{ endRaw|date('H:i') }} Uhr{% endif %}
-                                {% endif %}
-                                {% if event.location is defined and event.location %}
-                                    &nbsp;<i class="bi bi-geo-alt"></i> {{ event.location }}
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <div style="position: relative; padding-bottom: 75%; height: 0; overflow: hidden; border-radius: .5rem; box-shadow: 0 2px 8px rgba(0,0,0,.12);">
+                <iframe
+                    src="https://calendar.google.com/calendar/embed?src=chor.teutonia%40gmail.com&ctz=Europe%2FBerlin&hl=de&showTitle=0&showNav=1&showDate=1&showPrint=0&showTabs=1&showCalendars=1&showTz=1"
+                    style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0;"
+                    frameborder="0"
+                    scrolling="no"
+                    title="Google-Kalender Teutonia">
+                </iframe>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <h5 class="mb-3"><i class="bi bi-calendar-event me-2"></i>Nächste Termine</h5>
+            {% set monthNames = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'] %}
+            {% if events is not empty %}
+            <div class="list-group" style="max-height: 430px; overflow-y: auto;">
+                {% for event in events|slice(0, 5) %}
+                    {% set isAllDay = event.start.date is defined %}
+                    {% set startRaw = isAllDay ? event.start.date : event.start.dateTime %}
+                    {% set endRaw   = isAllDay ? event.end.date   : event.end.dateTime %}
+                    <div class="list-group-item list-group-item-action py-3">
+                        <div class="d-flex align-items-start gap-3">
+                            <div class="text-center bg-light rounded px-2 py-1" style="min-width:54px; line-height:1.2;">
+                                <div class="fw-bold fs-5 lh-1">{{ startRaw|date('d') }}</div>
+                                <div class="text-muted small text-uppercase">{{ monthNames[startRaw|date('n') - 1] }}</div>
+                                <div class="text-muted" style="font-size:.7rem">{{ startRaw|date('Y') }}</div>
+                            </div>
+                            <div class="flex-grow-1">
+                                <div class="fw-semibold">{{ event.summary ?? '(kein Titel)' }}</div>
+                                <div class="text-muted small">
+                                    {% if isAllDay %}
+                                        Ganztägig
+                                    {% else %}
+                                        {{ startRaw|date('H:i') }} Uhr
+                                        {%- if endRaw is defined and endRaw != startRaw %} – {{ endRaw|date('H:i') }} Uhr{% endif %}
+                                    {% endif %}
+                                    {% if event.location is defined and event.location %}
+                                        &nbsp;<i class="bi bi-geo-alt"></i> {{ event.location }}
+                                    {% endif %}
+                                </div>
+                                {% if event.description is defined and event.description %}
+                                    <div class="text-muted small mt-1">{{ event.description|striptags|slice(0, 120) }}{% if event.description|striptags|length > 120 %}…{% endif %}</div>
                                 {% endif %}
                             </div>
-                            {% if event.description is defined and event.description %}
-                                <div class="text-muted small mt-1">{{ event.description|striptags|slice(0, 120) }}{% if event.description|striptags|length > 120 %}…{% endif %}</div>
-                            {% endif %}
                         </div>
                     </div>
-                </div>
-            {% endfor %}
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="text-muted">Keine bevorstehenden Termine.</p>
+            {% endif %}
         </div>
-    </div>
-    {% endif %}
-
-    <div class="mt-3" style="position: relative; padding-bottom: 75%; height: 0; overflow: hidden; border-radius: .5rem; box-shadow: 0 2px 8px rgba(0,0,0,.12);">
-        <iframe
-            src="https://calendar.google.com/calendar/embed?src=chor.teutonia%40gmail.com&ctz=Europe%2FBerlin&hl=de&showTitle=0&showNav=1&showDate=1&showPrint=0&showTabs=1&showCalendars=1&showTz=1"
-            style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0;"
-            frameborder="0"
-            scrolling="no"
-            title="Google-Kalender Teutonia">
-        </iframe>
     </div>
 </div>
 {% endblock %}
