@@ -45,14 +45,16 @@
         <div class="row">
             {% for suggestion in suggestions %}
             <div class="col-md-6 col-lg-4 mb-4">
-                <div class="card h-100 suggestion-card">
+                <div class="card suggestion-card">
                     <div class="card-body d-flex flex-column">
                         <h5 class="card-title">{{ suggestion.title }}</h5>
                         {% if suggestion.artist %}
                             <h6 class="card-subtitle mb-2 text-muted">{{ suggestion.artist }}</h6>
                         {% endif %}
                         {% if suggestion.description %}
-                            <p class="card-text">{{ suggestion.description|nl2br }}</p>
+                            <div class="suggestion-description collapsed" onclick="toggleDescription(this)">
+                                <p class="card-text mb-0">{{ suggestion.description|nl2br }}</p>
+                            </div>
                         {% endif %}
 
                         <div class="mt-auto">
@@ -123,5 +125,30 @@
     </div>
 </main>
 
+<style>
+.suggestion-description {
+    position: relative;
+    cursor: pointer;
+    margin-bottom: .5rem;
+}
+.suggestion-description.collapsed {
+    max-height: 4.5em;
+    overflow: hidden;
+}
+.suggestion-description.collapsed::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 2em;
+    background: linear-gradient(transparent, #fff);
+    pointer-events: none;
+}
+</style>
+
 <script src="{{ asset('js/member-ideenkiste.js') }}"></script>
+<script>
+function toggleDescription(el) {
+    el.classList.toggle('collapsed');
+}
+</script>
 {% endblock %}
