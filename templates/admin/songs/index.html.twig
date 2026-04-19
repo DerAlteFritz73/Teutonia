@@ -452,9 +452,9 @@ window.SONGS_CONFIG = {
     input.addEventListener('input', function () {
         clearTimeout(debounceTimer);
         debounceTimer = setTimeout(function () {
-            var q   = input.value.trim();
+            var q   = input.value;
             var url = new URL(window.location.href);
-            if (q) { url.searchParams.set('q', q); } else { url.searchParams.delete('q'); }
+            if (q.trim()) { url.searchParams.set('q', q); } else { url.searchParams.delete('q'); }
             url.searchParams.set('page', '1');
             if (window.Turbo) { Turbo.visit(url.toString()); } else { window.location.href = url.toString(); }
         }, 350);

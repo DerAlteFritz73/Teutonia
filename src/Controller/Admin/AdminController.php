@@ -236,7 +236,7 @@ class AdminController extends AbstractController
     #[Route('/songs', name: 'admin_songs')]
     public function songs(SongKeywordRepository $songRepository, Request $request): Response
     {
-        $search       = trim($request->query->get('q', ''));
+        $search       = $request->query->get('q', '');
         $page         = max(1, $request->query->getInt('page', 1));
         $limit        = 25;
         $allowedSorts = ['songName', 'etikett', 'composer', 'latestKonzert', 'dropboxlink'];
@@ -245,7 +245,7 @@ class AdminController extends AbstractController
                             : 'songName';
         $dir          = strtoupper($request->query->get('dir', 'ASC')) === 'DESC' ? 'DESC' : 'ASC';
 
-        if ($search) {
+        if (trim($search) !== '') {
             $songs = $songRepository->searchPaginated($search, $page, $limit, $sort, $dir);
             $total = $songRepository->countSearch($search);
         } else {
