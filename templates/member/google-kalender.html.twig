@@ -45,6 +45,8 @@
                 #fullcalendar, #fullcalendar .fc { background-color: #fff !important; }
                 .fc .fc-col-header-cell-cushion { text-decoration: none; color: inherit; }
                 .fc .fc-daygrid-day-number { text-decoration: none; }
+                #events-sidebar .fc-sidebar-active { background-color: rgba(40,167,69,0.12); border-left: 3px solid rgba(40,167,69,0.6); }
+                #events-sidebar [data-fc-date] { border-left: 3px solid transparent; }
             </style>
             <div id="fullcalendar" style="border-radius:.5rem;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.12)"></div>
         </div>
@@ -101,6 +103,22 @@ pageLoad(function () {
     var el = document.getElementById('fullcalendar');
     if (!el) return;
 
+    function syncSidebarToMonth(monthStart) {
+        var year  = monthStart.getFullYear();
+        var month = monthStart.getMonth();
+        var sidebar = document.getElementById('events-sidebar');
+        var firstMatch = null;
+        document.querySelectorAll('[data-fc-date]').forEach(function (item) {
+            var d = new Date(item.dataset.fcDate);
+            var active = d.getFullYear() === year && d.getMonth() === month;
+            item.classList.toggle('fc-sidebar-active', active);
+            if (active && !firstMatch) firstMatch = item;
+        });
+        if (firstMatch && sidebar) {
+            sidebar.scrollTo({ top: firstMatch.offsetTop - sidebar.offsetTop, behavior: 'smooth' });
+        }
+    }
+
     function initCalendar() {
         if (_fcInstance) { _fcInstance.destroy(); _fcInstance = null; }
         _fcInstance = new FullCalendar.Calendar(el, {
@@ -125,7 +143,10 @@ pageLoad(function () {
                     e,
                     { display: 'background', color: 'rgba(40,167,69,0.25)', title: '', allDay: true, start: startDate, end: endDate }
                 ];
-            })
+            }),
+            datesSet: function (info) {
+                syncSidebarToMonth(info.view.currentStart);
+            }
         });
         _fcInstance.render();
         document.querySelectorAll('[data-fc-date]').forEach(function (item) {
