@@ -46,7 +46,6 @@
                 .fc .fc-col-header-cell-cushion { text-decoration: none; color: inherit; }
                 .fc .fc-daygrid-day-number { text-decoration: none; }
                 #events-sidebar [data-fc-date] { border-left: 3px solid transparent; }
-                #events-sidebar .fc-sidebar-active { background-color: rgba(40,167,69,0.12); border-left: 3px solid rgba(40,167,69,0.6); }
                 #events-sidebar .fc-sidebar-selected { background-color: rgba(40,167,69,0.25) !important; border-left: 3px solid rgb(40,167,69) !important; }
             </style>
             <div id="fullcalendar" style="border-radius:.5rem;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.12)"></div>
@@ -118,9 +117,7 @@ pageLoad(function () {
         var firstMatch = null;
         document.querySelectorAll('[data-fc-date]').forEach(function (item) {
             var d = new Date(item.dataset.fcDate);
-            var active = d.getFullYear() === year && d.getMonth() === month;
-            item.classList.toggle('fc-sidebar-active', active);
-            if (active && !firstMatch) firstMatch = item;
+            if (d.getFullYear() === year && d.getMonth() === month && !firstMatch) firstMatch = item;
         });
         if (firstMatch && sidebar) {
             sidebar.scrollTo({ top: firstMatch.offsetTop - sidebar.offsetTop, behavior: 'smooth' });
@@ -184,7 +181,7 @@ pageLoad(function () {
         _fcInstance.render();
         document.querySelectorAll('[data-fc-date]').forEach(function (item) {
             item.addEventListener('click', function () {
-                document.querySelectorAll('[data-fc-date]').forEach(function (i) { i.classList.remove('fc-sidebar-selected'); });
+                selectSidebarItem(this);
                 _fcInstance.gotoDate(this.dataset.fcDate);
                 document.getElementById('fullcalendar').scrollIntoView({ behavior: 'smooth', block: 'start' });
             });
