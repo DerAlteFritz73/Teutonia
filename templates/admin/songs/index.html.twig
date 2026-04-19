@@ -443,21 +443,31 @@ window.SONGS_CONFIG = {
     var input = document.getElementById('songsSearch');
     if (!input) return;
 
-    // Focus and place cursor at end (autofocus resets to position 0 after Turbo navigation)
-    input.focus();
-    var end = input.value.length;
-    input.setSelectionRange(end, end);
-
     var debounceTimer;
+
+    function doVisit() {
+        var q   = window._songsQ !== undefined ? window._songsQ : input.value;
+        var url = new URL(window.location.href);
+        if (q.trim()) { url.searchParams.set('q', q); } else { url.searchParams.delete('q'); }
+        url.searchParams.set('page', '1');
+        if (window.Turbo) { Turbo.visit(url.toString()); } else { window.location.href = url.toString(); }
+    }
+
+    // After a Turbo navigation, restore any value typed during the in-flight request
+    if (typeof window._songsQ === 'string' && window._songsQ !== input.value) {
+        input.value = window._songsQ;
+        debounceTimer = setTimeout(doVisit, 100);
+    } else {
+        window._songsQ = input.value;
+    }
+
+    input.focus();
+    input.setSelectionRange(input.value.length, input.value.length);
+
     input.addEventListener('input', function () {
+        window._songsQ = input.value;
         clearTimeout(debounceTimer);
-        debounceTimer = setTimeout(function () {
-            var q   = input.value;
-            var url = new URL(window.location.href);
-            if (q.trim()) { url.searchParams.set('q', q); } else { url.searchParams.delete('q'); }
-            url.searchParams.set('page', '1');
-            if (window.Turbo) { Turbo.visit(url.toString()); } else { window.location.href = url.toString(); }
-        }, 350);
+        debounceTimer = setTimeout(doVisit, 350);
     });
 }());
 </script>
