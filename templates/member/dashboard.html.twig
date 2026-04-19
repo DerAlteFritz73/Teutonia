@@ -62,6 +62,32 @@
                 </div>
             </div>
         </div>
+        <div class="col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <i class="bi bi-calendar-event me-2"></i>
+                        Kalender
+                    </h5>
+                    <p class="card-text">Alle bevorstehenden Termine des Chors auf einen Blick.</p>
+                    <a href="{{ path('member_google_kalender') }}" class="btn btn-primary">Zum Kalender</a>
+                </div>
+            </div>
+        </div>
+        {% if is_granted('ROLE_ADMIN') %}
+        <div class="col-md-6 mb-4">
+            <div class="card h-100 border-warning">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <i class="bi bi-shield-lock me-2 text-warning"></i>
+                        Administration
+                    </h5>
+                    <p class="card-text">Inhalte verwalten, Benutzer, Konzerte, Beiträge und mehr.</p>
+                    <a href="{{ path('admin_dashboard') }}" class="btn btn-warning">Zum Admin-Bereich</a>
+                </div>
+            </div>
+        </div>
+        {% endif %}
     </div>
 </div>
 {% endblock %}
