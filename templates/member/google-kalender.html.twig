@@ -155,6 +155,21 @@ pageLoad(function () {
             datesSet: function (info) {
                 syncSidebarToMonth(info.view.currentStart);
             },
+            dateClick: function (info) {
+                var date = info.dateStr.substring(0, 10);
+                var hits = _fcEvents.filter(function (e) { return e.start.substring(0, 10) === date; });
+                if (hits.length !== 1) return;
+                var match = null;
+                document.querySelectorAll('[data-fc-date]').forEach(function (item) {
+                    if (!match && item.dataset.fcDate === date && item.dataset.fcTitle === hits[0].title) match = item;
+                });
+                if (match) selectSidebarItem(match);
+            },
+            dayCellDidMount: function (info) {
+                var date = info.date.toISOString().substring(0, 10);
+                var count = _fcEvents.filter(function (e) { return e.start.substring(0, 10) === date; }).length;
+                if (count === 1) info.el.style.cursor = 'pointer';
+            },
             eventClick: function (info) {
                 if (info.event.display === 'background') return;
                 var date  = info.event.startStr.substring(0, 10);
