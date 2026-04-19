@@ -406,8 +406,10 @@
 
     // ── Render ─────────────────────────────────────────────────────────
     function render() {
-        const lq = leftSearchEl.value.toLowerCase().trim();
-        const rq = rightSearchEl.value.toLowerCase().trim();
+        const lTerms = leftSearchEl.value.toLowerCase().split(/\s+/).filter(Boolean);
+        const rTerms = rightSearchEl.value.toLowerCase().split(/\s+/).filter(Boolean);
+        const matchesL = s => lTerms.every(t => s.title.toLowerCase().includes(t) || s.composer.toLowerCase().includes(t));
+        const matchesR = s => rTerms.every(t => s.title.toLowerCase().includes(t) || s.composer.toLowerCase().includes(t));
 
         const lSel = new Set(Array.from(leftListEl.querySelectorAll('.song-row.selected')).map(r => r.dataset.value));
         const rSel = new Set(Array.from(rightListEl.querySelectorAll('.song-row.selected')).map(r => r.dataset.uid));
@@ -434,8 +436,8 @@
             if (SONG_PARENTS[s.value]) return; // movement — skip for now
 
             const kids     = childrenOf[s.value] || [];
-            const ownMatch = !lq || s.title.toLowerCase().includes(lq) || s.composer.toLowerCase().includes(lq);
-            const kidMatch = kids.some(c => !lq || c.title.toLowerCase().includes(lq) || c.composer.toLowerCase().includes(lq));
+            const ownMatch = lTerms.length === 0 || matchesL(s);
+            const kidMatch = kids.some(c => lTerms.length === 0 || matchesL(c));
             if (!ownMatch && !kidMatch) return;
 
             const row = makeLeftRow(s, false, kids.length > 0);
@@ -444,7 +446,7 @@
             renderedLeft.add(s.value);
 
             kids.forEach(child => {
-                if (lq && !child.title.toLowerCase().includes(lq) && !child.composer.toLowerCase().includes(lq)) return;
+                if (lTerms.length > 0 && !matchesL(child)) return;
                 const childRow = makeLeftRow(child, true, false);
                 if (lSel.has(child.value)) childRow.classList.add('selected');
                 leftListEl.appendChild(childRow);
@@ -455,7 +457,7 @@
         // Second pass: orphaned movements whose parent is in the right list
         unlinked.forEach(s => {
             if (renderedLeft.has(s.value)) return;
-            if (lq && !s.title.toLowerCase().includes(lq) && !s.composer.toLowerCase().includes(lq)) return;
+            if (lTerms.length > 0 && !matchesL(s)) return;
             const row = makeLeftRow(s, true, false);
             if (lSel.has(s.value)) row.classList.add('selected');
             leftListEl.appendChild(row);
@@ -463,7 +465,7 @@
 
         rightItems.forEach(item => {
             const uid = item.type === 'custom' ? item.uid : item.value;
-            if (rq && !item.title.toLowerCase().includes(rq) && !item.composer.toLowerCase().includes(rq)) return;
+            if (rTerms.length > 0 && !matchesR(item)) return;
             const row = makeRightRow(item);
             if (rSel.has(uid)) row.classList.add('selected');
             rightListEl.appendChild(row);

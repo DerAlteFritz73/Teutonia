@@ -95,18 +95,13 @@ class SongKeywordRepository extends ServiceEntityRepository
 
     public function searchPaginated(string $term, int $page, int $limit, string $sort = 'songName', string $dir = 'ASC'): array
     {
-        $like = '%' . $term . '%';
         $qb = $this->createQueryBuilder('s')
             ->leftJoin('s.styles', 'st')
             ->leftJoin('s.children', 'c')
             ->leftJoin('c.styles', 'cst')
             ->where('s.parent IS NULL')
-            ->andWhere('
-                s.songName LIKE :q OR s.composer LIKE :q OR s.etikett LIKE :q OR st.name LIKE :q
-                OR c.songName LIKE :q OR c.composer LIKE :q OR c.etikett LIKE :q OR cst.name LIKE :q
-            ')
-            ->setParameter('q', $like)
             ->groupBy('s.id');
+        $this->applyWordSearch($qb, $term);
         $this->applySongSort($qb, $sort, $dir);
         return $qb->setFirstResult(($page - 1) * $limit)
                   ->setMaxResults($limit)
@@ -116,20 +111,27 @@ class SongKeywordRepository extends ServiceEntityRepository
 
     public function countSearch(string $term): int
     {
-        $like = '%' . $term . '%';
-        return (int) $this->createQueryBuilder('s')
+        $qb = $this->createQueryBuilder('s')
             ->select('COUNT(DISTINCT s.id)')
             ->leftJoin('s.styles', 'st')
             ->leftJoin('s.children', 'c')
             ->leftJoin('c.styles', 'cst')
-            ->where('s.parent IS NULL')
-            ->andWhere('
-                s.songName LIKE :q OR s.composer LIKE :q OR s.etikett LIKE :q OR st.name LIKE :q
-                OR c.songName LIKE :q OR c.composer LIKE :q OR c.etikett LIKE :q OR cst.name LIKE :q
-            ')
-            ->setParameter('q', $like)
-            ->getQuery()
-            ->getSingleScalarResult();
+            ->where('s.parent IS NULL');
+        $this->applyWordSearch($qb, $term);
+        return (int) $qb->getQuery()->getSingleScalarResult();
+    }
+
+    private function applyWordSearch(\Doctrine\ORM\QueryBuilder $qb, string $term): void
+    {
+        $words = array_values(array_filter(array_map('trim', explode(' ', $term))));
+        if (empty($words)) { return; }
+        foreach ($words as $i => $word) {
+            $p = 'q' . $i;
+            $qb->andWhere("
+                s.songName LIKE :$p OR s.composer LIKE :$p OR s.etikett LIKE :$p OR st.name LIKE :$p
+                OR c.songName LIKE :$p OR c.composer LIKE :$p OR c.etikett LIKE :$p OR cst.name LIKE :$p
+            ")->setParameter($p, '%' . $word . '%');
+        }
     }
 
     /**

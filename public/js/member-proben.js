@@ -293,18 +293,18 @@
     if (!input) return;
 
     input.addEventListener('input', function () {
-        const q     = input.value.trim().toLowerCase();
+        const terms = input.value.toLowerCase().split(/\s+/).filter(Boolean);
         const items = document.querySelectorAll('#allFilesAccordion .accordion-item');
         let visible = 0;
 
         items.forEach(function (item) {
             const btn  = item.querySelector('.accordion-button');
             const name = btn ? btn.textContent.trim().toLowerCase() : '';
-            const show = !q || name.includes(q);
+            const show = terms.length === 0 || terms.every(function (t) { return name.includes(t); });
             item.style.display = show ? '' : 'none';
             if (show) visible++;
         });
 
-        noResult.classList.toggle('d-none', visible > 0 || !q);
+        noResult.classList.toggle('d-none', visible > 0 || terms.length === 0);
     });
 }());
