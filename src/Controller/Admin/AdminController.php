@@ -553,11 +553,17 @@ class AdminController extends AbstractController
 
         $em->flush();
 
-        // Second pass: for each parent song with a Dropbox folder, scan its subfolders
-        // and link matching movements to them.
+        // Second pass: for each parent song with a Dropbox folder, scan its subfolders,
+        // link already-registered children, and adopt matching standalone songs.
+        $adoptable = [];
+        foreach ($songs as $s) {
+            if ($s->isMovement()) continue;
+            $adoptable[$this->normalizeForSync($s->getSongName())][] = $s;
+        }
+
         $movementsMatched = 0;
         foreach ($songs as $song) {
-            if (!$song->hasChildren()) continue;
+            if ($song->isMovement()) continue;
 
             $parentPath = $song->getDropboxlink();
             if (!$parentPath) continue;
@@ -572,19 +578,45 @@ class AdminController extends AbstractController
 
             [$subByFull, $subByTitle] = $buildLookup($subfolderNames);
 
+            // Link already-registered children to their subfolder
             foreach ($song->getChildren() as $movement) {
-                // Skip if already correctly linked under this parent's path
                 if ($movement->getDropboxlink() && str_starts_with($movement->getDropboxlink(), $parentPath . '/')) {
                     continue;
                 }
-
                 $normTitle    = $this->normalizeForSync($movement->getSongName());
                 $normComposer = $movement->getComposer() ? $this->normalizeForSync($movement->getComposer()) : '';
-
                 $match = $findInFolders($normTitle, $normComposer, $subByFull, $subByTitle);
                 if ($match !== null) {
                     $movement->setDropboxlink($parentPath . '/' . $match);
                     $movementsMatched++;
+                }
+            }
+
+            // Adopt standalone songs whose name matches a subfolder of this parent
+            foreach ($subfolderNames as $subfolder) {
+                $subPath   = $parentPath . '/' . $subfolder;
+                $normFull  = $this->normalizeForSync($subfolder);
+                $normTitle = $normFull;
+                if (str_contains($subfolder, ' - ')) {
+                    [, $titlePart] = explode(' - ', $subfolder, 2);
+                    $normTitle = $this->normalizeForSync(trim($titlePart));
+                }
+
+                foreach (array_unique([$normTitle, $normFull]) as $norm) {
+                    if (!isset($adoptable[$norm])) continue;
+                    foreach ($adoptable[$norm] as $key => $candidate) {
+                        if ($candidate === $song) continue;
+                        $sortOrder = 0;
+                        if (preg_match('/^(\d+)/', $subfolder, $m)) {
+                            $sortOrder = (int) $m[1];
+                        }
+                        $candidate->setParent($song);
+                        $candidate->setDropboxlink($subPath);
+                        $candidate->setSortOrder($sortOrder);
+                        unset($adoptable[$norm][$key]);
+                        $movementsMatched++;
+                        break 2;
+                    }
                 }
             }
         }
