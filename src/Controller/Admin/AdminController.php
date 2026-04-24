@@ -509,6 +509,10 @@ class AdminController extends AbstractController
         $notenBase    = '/Chorgemeinschaft Teutonia/Noten';
 
         foreach ($songs as $song) {
+            // Movements are handled in the second pass below; skip here to avoid
+            // false matches against top-level Noten/Aktuelle Proben folders.
+            if ($song->isMovement()) continue;
+
             $normTitle    = $this->normalizeForSync($song->getSongName());
             $normComposer = $song->getComposer() ? $this->normalizeForSync($song->getComposer()) : '';
             $changed      = false;
@@ -548,6 +552,46 @@ class AdminController extends AbstractController
         }
 
         $em->flush();
+
+        // Second pass: for each parent song with a Dropbox folder, scan its subfolders
+        // and link matching movements to them.
+        $movementsMatched = 0;
+        foreach ($songs as $song) {
+            if (!$song->hasChildren()) continue;
+
+            $parentPath = $song->getDropboxlink();
+            if (!$parentPath) continue;
+
+            try {
+                $subfolderNames = $dropboxService->listSubfolders($parentPath);
+            } catch (\Exception $e) {
+                continue;
+            }
+
+            if (empty($subfolderNames)) continue;
+
+            [$subByFull, $subByTitle] = $buildLookup($subfolderNames);
+
+            foreach ($song->getChildren() as $movement) {
+                // Skip if already correctly linked under this parent's path
+                if ($movement->getDropboxlink() && str_starts_with($movement->getDropboxlink(), $parentPath . '/')) {
+                    continue;
+                }
+
+                $normTitle    = $this->normalizeForSync($movement->getSongName());
+                $normComposer = $movement->getComposer() ? $this->normalizeForSync($movement->getComposer()) : '';
+
+                $match = $findInFolders($normTitle, $normComposer, $subByFull, $subByTitle);
+                if ($match !== null) {
+                    $movement->setDropboxlink($parentPath . '/' . $match);
+                    $movementsMatched++;
+                }
+            }
+        }
+
+        if ($movementsMatched > 0) {
+            $em->flush();
+        }
 
         // Build a set of all dropboxlinks already in the DB (after matching above).
         // Keys are lowercased so the lookup is case-insensitive (Dropbox may return
@@ -609,11 +653,12 @@ class AdminController extends AbstractController
         }
 
         return $this->json([
-            'matched'        => $matched,
-            'already_linked' => $alreadyLinked,
-            'unmatched'      => count($unmatched),
-            'unmatched_names' => $unmatched,
-            'created'        => $created,
+            'matched'           => $matched,
+            'movements_matched' => $movementsMatched,
+            'already_linked'    => $alreadyLinked,
+            'unmatched'         => count($unmatched),
+            'unmatched_names'   => $unmatched,
+            'created'           => $created,
         ]);
     }
 
