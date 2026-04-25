@@ -236,7 +236,7 @@
                                 {% endif %}
                                 {# Parent-level files (if any) #}
                                 {% if hasDropbox %}
-                                    <div class="list-group song-files-container {% if hasMovements %}mb-3{% endif %}" data-dropbox-path="{{ song.dropboxlink }}"{% if hasMovements %} data-has-movements="true"{% endif %}>
+                                    <div class="list-group song-files-container {% if hasMovements %}mb-3{% endif %}" data-dropbox-path="{{ notenPath }}"{% if hasMovements %} data-has-movements="true"{% endif %}>
                                         <div class="text-center text-muted py-3 file-loading-spinner">
                                             <span class="spinner-border spinner-border-sm me-2" role="status"></span>
                                             Lade Dateien…
