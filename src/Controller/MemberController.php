@@ -60,7 +60,7 @@ class MemberController extends AbstractController
     public function googleKalender(GoogleCalendarService $calendarService): Response
     {
         return $this->render('member/google-kalender.html.twig', [
-            'events' => $calendarService->getUpcomingEvents(50),
+            'events' => $calendarService->getUpcomingEvents(250),
         ]);
     }
 
