@@ -431,7 +431,10 @@ class DropboxService
             }
         }
 
-        return $node['_files'] ?? [];
+        return [
+            'files'          => $node['_files'] ?? [],
+            'hasSubfolders'  => !empty($node['_subfolders']),
+        ];
     }
 
     /**

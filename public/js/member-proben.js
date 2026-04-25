@@ -138,7 +138,7 @@
                 if (container && !container.dataset.loaded) {
                     container.dataset.loaded = '1';
                     if (files.length === 0) {
-                        container.innerHTML = container.dataset.hasMovements
+                        container.innerHTML = (container.dataset.hasMovements || data.hasSubfolders)
                             ? ''
                             : '<p class="text-muted p-3">Keine Dateien gefunden.</p>';
                     } else {
@@ -214,7 +214,7 @@
                     const files = data.files || [];
 
                     if (files.length === 0) {
-                        container.innerHTML = container.dataset.hasMovements
+                        container.innerHTML = (container.dataset.hasMovements || data.hasSubfolders)
                             ? ''
                             : '<p class="text-muted p-3">Keine Dateien gefunden.</p>';
                         return;

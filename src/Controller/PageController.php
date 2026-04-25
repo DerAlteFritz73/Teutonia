@@ -112,9 +112,12 @@ class PageController extends AbstractController
             return new JsonResponse(['error' => 'Path is required'], 400);
         }
 
-        $files = $dropboxService->getFilesForFolder($path);
+        $result = $dropboxService->getFilesForFolder($path);
 
-        return new JsonResponse(['files' => $files]);
+        return new JsonResponse([
+            'files'         => $result['files'],
+            'hasSubfolders' => $result['hasSubfolders'],
+        ]);
     }
 
     #[Route('/api/dropbox/link', name: 'api_dropbox_link', methods: ['POST'])]
