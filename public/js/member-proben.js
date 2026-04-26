@@ -138,9 +138,11 @@
                 if (container && !container.dataset.loaded) {
                     container.dataset.loaded = '1';
                     if (files.length === 0) {
-                        container.innerHTML = (container.dataset.hasMovements || data.hasSubfolders)
-                            ? ''
-                            : '<p class="text-muted p-3">Keine Dateien gefunden.</p>';
+                        if (container.dataset.hasMovements || data.hasSubfolders) {
+                            container.classList.add('d-none');
+                        } else {
+                            container.innerHTML = '<p class="text-muted p-3">Keine Dateien gefunden.</p>';
+                        }
                     } else {
                         container.innerHTML = files.map(fileItemHtml).join('');
                         attachFileHandlers(container);
@@ -214,9 +216,11 @@
                     const files = data.files || [];
 
                     if (files.length === 0) {
-                        container.innerHTML = (container.dataset.hasMovements || data.hasSubfolders)
-                            ? ''
-                            : '<p class="text-muted p-3">Keine Dateien gefunden.</p>';
+                        if (container.dataset.hasMovements || data.hasSubfolders) {
+                            container.classList.add('d-none');
+                        } else {
+                            container.innerHTML = '<p class="text-muted p-3">Keine Dateien gefunden.</p>';
+                        }
                         return;
                     }
 

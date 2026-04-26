@@ -171,7 +171,9 @@
                                     data-bs-target="#{{ allFolderId }}"
                                     aria-expanded="false"
                                     {% if hasDropbox %}data-dropbox-path="{{ notenPath }}"{% endif %}>
-                                {% if hasDropbox or hasMovements %}
+                                {% if hasMovements %}
+                                    <i class="bi bi-folder2-open me-2"></i>
+                                {% elseif hasDropbox %}
                                     <i class="bi bi-folder2-open me-2 text-warning"></i>
                                 {% else %}
                                     <i class="bi bi-music-note me-2 text-secondary"></i>
@@ -189,7 +191,7 @@
                                         {% endif %}
                                         <span class="badge rounded-pill fw-normal text-white {% if style.image %}d-none d-sm-inline{% endif %}" style="background:{{ style.color ?? 'rgba(0,0,0,.25)' }};font-size:.75rem">{{ style.name }}</span>
                                     {% endfor %}
-                                    {{ _self.etikett_badge(song.etikett) }}
+                                    {% if not hasMovements %}{{ _self.etikett_badge(song.etikett) }}{% endif %}
                                     {% if hasMovements %}
                                         <span class="badge bg-secondary fw-normal">{{ song.children|length }} Sätze</span>
                                     {% endif %}
@@ -200,7 +202,8 @@
                         <div id="{{ allFolderId }}" class="accordion-collapse collapse"
                              data-bs-parent="#allFilesAccordion">
                             <div class="accordion-body">
-                                {# Song metadata row #}
+                                {# Song metadata row – only for songs without movements (mirrors Aktuelle Proben layout) #}
+                                {% if not hasMovements %}
                                 <div class="d-flex flex-wrap gap-3 mb-3 text-muted small">
                                     {% if song.composer %}
                                         <span><i class="bi bi-person me-1"></i>{{ song.composer }}</span>
@@ -212,6 +215,7 @@
                                         <span><i class="bi bi-calendar-event me-1"></i>Letzte Aufführung: {{ song.latestKonzertDate|date('M Y') }}</span>
                                     {% endif %}
                                 </div>
+                                {% endif %}
                                 {% if song.links|length > 0 %}
                                     <div class="d-flex flex-wrap gap-2 mb-3">
                                         {% for link in song.links %}
