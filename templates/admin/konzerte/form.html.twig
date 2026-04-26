@@ -133,7 +133,9 @@
                 </div>
                 <div class="d-flex gap-1">
                     <input type="text" id="custom-composer" class="form-control form-control-sm"
-                           placeholder="Komponist (optional)" style="flex:0 0 38%">
+                           placeholder="Komponist (optional)" style="flex:0 0 28%">
+                    <input type="text" id="custom-ausfuehrende" class="form-control form-control-sm"
+                           placeholder="Ausführende (optional)" style="flex:0 0 28%">
                     <input type="text" id="custom-title" class="form-control form-control-sm"
                            placeholder="Titel *">
                     <button type="button" id="btn-add-custom" class="btn btn-sm btn-warning text-nowrap">
@@ -290,7 +292,7 @@
                 const idx = parseInt(entry.substring(1));
                 if (!isNaN(idx) && CUSTOM_LIST[idx]) {
                     const c = CUSTOM_LIST[idx];
-                    rightItems.push({ type: 'custom', uid: 'c_' + (customUid++), composer: c.composer || '', title: c.title || '', custIdx: idx });
+                    rightItems.push({ type: 'custom', uid: 'c_' + (customUid++), composer: c.composer || '', ausfuehrende: c.ausfuehrende || '', title: c.title || '', custIdx: idx });
                     usedCustIdx.add(idx);
                 }
             }
@@ -300,12 +302,12 @@
         // Append any custom songs not yet in order
         CUSTOM_LIST.forEach((c, i) => {
             if (!usedCustIdx.has(i))
-                rightItems.push({ type: 'custom', uid: 'c_' + (customUid++), composer: c.composer || '', title: c.title || '', custIdx: i });
+                rightItems.push({ type: 'custom', uid: 'c_' + (customUid++), composer: c.composer || '', ausfuehrende: c.ausfuehrende || '', title: c.title || '', custIdx: i });
         });
     } else {
         allSongs.filter(s => s.linked).sort((a, b) => a.title.localeCompare(b.title, 'de')).forEach(s => rightItems.push(s));
         CUSTOM_LIST.forEach((c, i) => {
-            rightItems.push({ type: 'custom', uid: 'c_' + (customUid++), composer: c.composer || '', title: c.title || '', custIdx: i });
+            rightItems.push({ type: 'custom', uid: 'c_' + (customUid++), composer: c.composer || '', ausfuehrende: c.ausfuehrende || '', title: c.title || '', custIdx: i });
         });
     }
 
@@ -371,7 +373,9 @@
         const t = document.createElement('span');
         t.className = 'col-title';
         if (item.type === 'custom') {
-            t.innerHTML = '<em>' + escHtml(item.title) + '</em>';
+            let html = '<em>' + escHtml(item.title) + '</em>';
+            if (item.ausfuehrende) html += ' <small class="text-muted">(' + escHtml(item.ausfuehrende) + ')</small>';
+            t.innerHTML = html;
         } else {
             t.textContent = item.title;
         }
@@ -564,8 +568,9 @@
     });
 
     // ── Add custom item ────────────────────────────────────────────────
-    const customComposerEl = document.getElementById('custom-composer');
-    const customTitleEl    = document.getElementById('custom-title');
+    const customComposerEl     = document.getElementById('custom-composer');
+    const customAusfuehrendeEl = document.getElementById('custom-ausfuehrende');
+    const customTitleEl        = document.getElementById('custom-title');
 
     function addCustomItem() {
         const title = customTitleEl.value.trim();
@@ -573,14 +578,16 @@
         customTitleEl.classList.remove('is-invalid');
 
         rightItems.push({
-            type:     'custom',
-            uid:      'c_' + (customUid++),
-            composer: customComposerEl.value.trim(),
+            type:         'custom',
+            uid:          'c_' + (customUid++),
+            composer:     customComposerEl.value.trim(),
+            ausfuehrende: customAusfuehrendeEl.value.trim(),
             title,
         });
 
-        customComposerEl.value = '';
-        customTitleEl.value    = '';
+        customComposerEl.value     = '';
+        customAusfuehrendeEl.value = '';
+        customTitleEl.value        = '';
         customComposerEl.focus();
         renderAndDirty();
         // Scroll right list to bottom so new item is visible
@@ -653,7 +660,7 @@
         // Custom songs → hidden JSON input (ordered list)
         const customs = rightItems.filter(x => x.type === 'custom');
         document.getElementById('custom-songs-input').value = JSON.stringify(
-            customs.map(x => ({ composer: x.composer, title: x.title }))
+            customs.map(x => ({ composer: x.composer, ausfuehrende: x.ausfuehrende || '', title: x.title }))
         );
 
         // Unified order: int for songs, "c{idx}" for custom pieces

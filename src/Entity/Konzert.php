@@ -119,7 +119,7 @@ class Konzert
                 $idx = (int) substr($entry, 1);
                 if (isset($this->customSongs[$idx])) {
                     $cs             = $this->customSongs[$idx];
-                    $result[]       = ['type' => 'custom', 'composer' => (string) ($cs['composer'] ?? ''), 'title' => (string) ($cs['title'] ?? ''), 'videoLink' => $this->videoLinks[$entry] ?? ''];
+                    $result[]       = ['type' => 'custom', 'composer' => (string) ($cs['composer'] ?? ''), 'ausfuehrende' => (string) ($cs['ausfuehrende'] ?? ''), 'title' => (string) ($cs['title'] ?? ''), 'videoLink' => $this->videoLinks[$entry] ?? ''];
                     $usedCustIdxs[] = $idx;
                 }
             }
@@ -133,7 +133,7 @@ class Konzert
 
         foreach ($this->customSongs as $idx => $cs) {
             if (!in_array($idx, $usedCustIdxs, true)) {
-                $result[] = ['type' => 'custom', 'composer' => (string) ($cs['composer'] ?? ''), 'title' => (string) ($cs['title'] ?? ''), 'videoLink' => $this->videoLinks['c' . $idx] ?? ''];
+                $result[] = ['type' => 'custom', 'composer' => (string) ($cs['composer'] ?? ''), 'ausfuehrende' => (string) ($cs['ausfuehrende'] ?? ''), 'title' => (string) ($cs['title'] ?? ''), 'videoLink' => $this->videoLinks['c' . $idx] ?? ''];
             }
         }
 
