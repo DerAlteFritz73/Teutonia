@@ -208,14 +208,33 @@ class SongKeywordRepository extends ServiceEntityRepository
     /**
      * Return all top-level songs for the Noten section, sorted by song name.
      * Includes songs that are also in Aktuelle Proben.
+     * When multiple DB rows share the same name (duplicates before dedup-sync runs),
+     * keep the one with the highest score: children > isAktuelleProben > dropbox link.
      */
     public function findAllExcept(string $excludeFolder): array
     {
-        return $this->createQueryBuilder('s')
+        $all = $this->createQueryBuilder('s')
             ->andWhere('s.parent IS NULL')
             ->orderBy('s.songName', 'ASC')
             ->getQuery()
             ->getResult();
+
+        $byName = [];
+        foreach ($all as $song) {
+            $name = $song->getSongName();
+            if (!isset($byName[$name])) {
+                $byName[$name] = $song;
+                continue;
+            }
+            $score = fn($s) => ($s->getChildren()->count() > 0 ? 4 : 0)
+                             + ($s->isAktuelleProben()          ? 2 : 0)
+                             + ($s->getDropboxlink()            ? 1 : 0);
+            if ($score($song) > $score($byName[$name])) {
+                $byName[$name] = $song;
+            }
+        }
+
+        return array_values($byName);
     }
 
     /**

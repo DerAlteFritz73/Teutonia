@@ -95,21 +95,33 @@ document.addEventListener('click', async (e) => {
             return;
         }
 
-        body.innerHTML = `
-            <div class="list-group list-group-flush">
-                <div class="list-group-item d-flex justify-content-between">
-                    <span><i class="bi bi-link-45deg text-success me-1"></i>Neu verknüpft</span>
-                    <strong class="text-success">${data.matched}</strong>
-                </div>
-                <div class="list-group-item d-flex justify-content-between">
-                    <span><i class="bi bi-folder-check text-muted me-1"></i>Bereits verknüpft</span>
-                    <strong>${data.already_linked}</strong>
-                </div>
-                <div class="list-group-item d-flex justify-content-between">
-                    <span><i class="bi bi-folder-x text-warning me-1"></i>Nicht gefunden</span>
-                    <strong class="text-warning">${data.unmatched}</strong>
-                </div>
-            </div>`;
+        const rows = [
+            `<div class="list-group-item d-flex justify-content-between">
+                <span><i class="bi bi-link-45deg text-success me-1"></i>Neu verknüpft</span>
+                <strong class="text-success">${data.matched}</strong>
+            </div>`,
+            data.movements_matched > 0 ? `<div class="list-group-item d-flex justify-content-between">
+                <span><i class="bi bi-music-note text-primary me-1"></i>Sätze verknüpft</span>
+                <strong class="text-primary">${data.movements_matched}</strong>
+            </div>` : '',
+            data.merged > 0 ? `<div class="list-group-item d-flex justify-content-between">
+                <span><i class="bi bi-intersect text-info me-1"></i>Duplikate zusammengeführt</span>
+                <strong class="text-info">${data.merged}</strong>
+            </div>` : '',
+            data.created > 0 ? `<div class="list-group-item d-flex justify-content-between">
+                <span><i class="bi bi-plus-circle text-secondary me-1"></i>Neu angelegt</span>
+                <strong class="text-secondary">${data.created}</strong>
+            </div>` : '',
+            `<div class="list-group-item d-flex justify-content-between">
+                <span><i class="bi bi-folder-check text-muted me-1"></i>Bereits verknüpft</span>
+                <strong>${data.already_linked}</strong>
+            </div>`,
+            data.unmatched > 0 ? `<div class="list-group-item d-flex justify-content-between">
+                <span><i class="bi bi-folder-x text-warning me-1"></i>Nicht gefunden</span>
+                <strong class="text-warning">${data.unmatched}</strong>
+            </div>` : '',
+        ].filter(Boolean).join('');
+        body.innerHTML = `<div class="list-group list-group-flush">${rows}</div>`;
     } catch (err) {
         body.innerHTML = `<div class="alert alert-danger mb-0">Netzwerkfehler: ${err.message}</div>`;
     }

@@ -553,19 +553,84 @@ class AdminController extends AbstractController
 
         $em->flush();
 
-        // Second pass: for each parent song with a Dropbox folder, scan its subfolders,
-        // link already-registered children, and adopt matching standalone songs.
-        $adoptable = [];
+        // Dedup: merge top-level songs that share the same normalised name.
+        // The sync can create one entry per Dropbox location (Noten + Aktuelle Proben)
+        // for the same song; children (movements) end up on only one of them.  This
+        // pass collapses duplicates into the canonical entry — the one with children,
+        // or with isAktuelleProben=true, or with both Dropbox links — so the lower
+        // "Noten und Aufnahmen" section shows the same sub-songs as the upper section.
+        $mergedIds   = [];
+        $mergedCount = 0;
+        $byNorm      = [];
         foreach ($songs as $s) {
             if ($s->isMovement()) continue;
+            $byNorm[$this->normalizeForSync($s->getSongName())][] = $s;
+        }
+        foreach ($byNorm as $dupGroup) {
+            if (count($dupGroup) <= 1) continue;
+
+            usort($dupGroup, function ($a, $b) {
+                $scoreA = ($a->getChildren()->count() > 0 ? 4 : 0)
+                        + ($a->isAktuelleProben()         ? 2 : 0)
+                        + ($a->getDropboxlink() && $a->getAktuelleDropboxlink() ? 1 : 0);
+                $scoreB = ($b->getChildren()->count() > 0 ? 4 : 0)
+                        + ($b->isAktuelleProben()         ? 2 : 0)
+                        + ($b->getDropboxlink() && $b->getAktuelleDropboxlink() ? 1 : 0);
+                return $scoreB <=> $scoreA;
+            });
+
+            $canonical = $dupGroup[0];
+            for ($i = 1; $i < count($dupGroup); $i++) {
+                $dup = $dupGroup[$i];
+
+                // Transfer Dropbox paths that canonical is missing
+                if ($dup->getDropboxlink() && !$canonical->getDropboxlink()) {
+                    $canonical->setDropboxlink($dup->getDropboxlink());
+                }
+                if ($dup->getAktuelleDropboxlink() && !$canonical->getAktuelleDropboxlink()) {
+                    $canonical->setAktuelleDropboxlink($dup->getAktuelleDropboxlink());
+                }
+                if ($dup->isAktuelleProben() && !$canonical->isAktuelleProben()) {
+                    $canonical->setIsAktuelleProben(true);
+                }
+
+                // Move any children the duplicate might own
+                foreach ($dup->getChildren() as $child) {
+                    $child->setParent($canonical);
+                }
+
+                // Transfer style associations not already on canonical
+                foreach ($dup->getStyles() as $style) {
+                    $canonical->addStyle($style);
+                }
+
+                // Remove the duplicate only when it has no concert history
+                // (song_style and konzert_song rows cascade-delete automatically).
+                if ($dup->getKonzerte()->isEmpty()) {
+                    $em->remove($dup);
+                    $mergedIds[] = $dup->getId();
+                    $mergedCount++;
+                }
+            }
+        }
+        if ($mergedCount > 0) {
+            $em->flush();
+        }
+
+        // Second pass: for each parent song, scan its Dropbox subfolders,
+        // link already-registered children, and adopt matching standalone songs.
+        // Uses dropboxlink (Noten) when available, falls back to aktuelleDropboxlink.
+        $adoptable = [];
+        foreach ($songs as $s) {
+            if ($s->isMovement() || in_array($s->getId(), $mergedIds)) continue;
             $adoptable[$this->normalizeForSync($s->getSongName())][] = $s;
         }
 
         $movementsMatched = 0;
         foreach ($songs as $song) {
-            if ($song->isMovement()) continue;
+            if ($song->isMovement() || in_array($song->getId(), $mergedIds)) continue;
 
-            $parentPath = $song->getDropboxlink();
+            $parentPath = $song->getDropboxlink() ?? $song->getAktuelleDropboxlink();
             if (!$parentPath) continue;
 
             try {
@@ -578,10 +643,17 @@ class AdminController extends AbstractController
 
             [$subByFull, $subByTitle] = $buildLookup($subfolderNames);
 
-            // Link already-registered children to their subfolder
+            // Link already-registered children to their subfolder.
+            // Accept any path that starts with one of this song's Dropbox roots.
+            $parentRoots = array_filter([$song->getDropboxlink(), $song->getAktuelleDropboxlink()]);
             foreach ($song->getChildren() as $movement) {
-                if ($movement->getDropboxlink() && str_starts_with($movement->getDropboxlink(), $parentPath . '/')) {
-                    continue;
+                if ($movement->getDropboxlink()) {
+                    $movPath = $movement->getDropboxlink();
+                    foreach ($parentRoots as $root) {
+                        if (str_starts_with($movPath, $root . '/')) {
+                            continue 2; // already correctly linked
+                        }
+                    }
                 }
                 $normTitle    = $this->normalizeForSync($movement->getSongName());
                 $normComposer = $movement->getComposer() ? $this->normalizeForSync($movement->getComposer()) : '';
@@ -687,6 +759,7 @@ class AdminController extends AbstractController
         return $this->json([
             'matched'           => $matched,
             'movements_matched' => $movementsMatched,
+            'merged'            => $mergedCount,
             'already_linked'    => $alreadyLinked,
             'unmatched'         => count($unmatched),
             'unmatched_names'   => $unmatched,
