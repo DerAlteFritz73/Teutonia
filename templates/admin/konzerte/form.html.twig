@@ -179,9 +179,9 @@
             </div>
 
             {# Add free/custom entry #}
-            <div class="mt-2 p-2 border rounded" style="background:#fffbf0">
-                <div class="small fw-semibold text-warning-emphasis mb-1">
-                    <i class="bi bi-plus-circle me-1"></i>Freies Stück hinzufügen
+            <div id="custom-add-panel" class="custom-add-panel mt-2 p-2 border rounded" style="background:#fffbf0">
+                <div class="small fw-semibold text-warning-emphasis mb-1 custom-add-label">
+                    <i class="bi bi-plus-circle me-1" id="custom-add-icon"></i><span id="custom-add-title">Freies Stück hinzufügen</span>
                 </div>
                 <div class="d-flex gap-1">
                     <input type="text" id="custom-composer" class="form-control form-control-sm"
@@ -284,6 +284,10 @@
 .song-row.custom-item.selected    { background: #e0a800; color: #000; }
 .song-row.custom-item.selected .col-composer { color: rgba(0,0,0,.6); }
 .song-row.custom-item.selected .col-del { color: rgba(0,0,0,.5); }
+.song-row.custom-item.selected .btn-del-custom,
+.song-row.custom-item.selected .btn-edit-custom { color: rgba(0,0,0,.55); }
+.song-row.custom-item.selected .btn-del-custom:hover  { color: #c00; }
+.song-row.custom-item.selected .btn-edit-custom:hover { color: #000; }
 
 /* Column widths — must align between header and rows */
 .col-handle {
@@ -310,14 +314,19 @@
     font-size: .75rem; padding: 1px 5px; height: 24px;
 }
 .col-del {
-    width: 24px; min-width: 24px;
-    text-align: center;
+    width: 50px; min-width: 50px;
+    text-align: center; display: flex; align-items: center; justify-content: center; gap: 4px;
 }
-.btn-del-custom {
+.btn-del-custom, .btn-edit-custom {
     background: none; border: none; padding: 0;
     color: #adb5bd; line-height: 1; cursor: pointer; font-size: .85rem;
 }
-.btn-del-custom:hover { color: #dc3545; }
+.btn-del-custom:hover  { color: #dc3545; }
+.btn-edit-custom:hover { color: #0d6efd; }
+
+/* Edit-mode highlight on the add panel */
+.custom-add-panel.editing { background: #e8f4ff; border-color: #86b7fe; }
+.custom-add-panel.editing .custom-add-label { color: #0d6efd; }
 
 /* Drag states */
 .song-row.dragging    { opacity: .35; }
@@ -474,17 +483,35 @@
         vWrap.appendChild(vInput);
         row.appendChild(vWrap);
 
-        // Delete button (custom items only)
+        // Edit + Delete buttons (custom items only)
         const del = document.createElement('span');
         del.className = 'col-del';
         if (item.type === 'custom') {
-            del.innerHTML = '<button type="button" class="btn-del-custom" title="Entfernen"><i class="bi bi-x-lg"></i></button>';
-            del.querySelector('button').addEventListener('click', e => {
+            const editBtn = document.createElement('button');
+            editBtn.type = 'button';
+            editBtn.className = 'btn-edit-custom';
+            editBtn.title = 'Bearbeiten';
+            editBtn.innerHTML = '<i class="bi bi-pencil"></i>';
+            editBtn.addEventListener('click', e => {
+                e.stopPropagation();
+                enterEditMode(item);
+            });
+
+            const delBtn = document.createElement('button');
+            delBtn.type = 'button';
+            delBtn.className = 'btn-del-custom';
+            delBtn.title = 'Entfernen';
+            delBtn.innerHTML = '<i class="bi bi-x-lg"></i>';
+            delBtn.addEventListener('click', e => {
                 e.stopPropagation();
                 const idx = rightItems.findIndex(x => x.type === 'custom' && x.uid === item.uid);
                 if (idx !== -1) rightItems.splice(idx, 1);
+                if (editingUid === item.uid) exitEditMode();
                 renderAndDirty();
             });
+
+            del.appendChild(editBtn);
+            del.appendChild(delBtn);
         }
         row.appendChild(del);
 
@@ -649,31 +676,70 @@
     const customComposerEl     = document.getElementById('custom-composer');
     const customAusfuehrendeEl = document.getElementById('custom-ausfuehrende');
     const customTitleEl        = document.getElementById('custom-title');
+    const customAddPanel       = document.getElementById('custom-add-panel');
+    const customAddTitle       = document.getElementById('custom-add-title');
+    const customAddIcon        = document.getElementById('custom-add-icon');
+    const btnAddCustom         = document.getElementById('btn-add-custom');
+    let editingUid = null;
+
+    function enterEditMode(item) {
+        customComposerEl.value     = item.composer;
+        customTitleEl.value        = item.title;
+        customAusfuehrendeEl.value = item.ausfuehrende || '';
+        editingUid = item.uid;
+        customAddPanel.classList.add('editing');
+        customAddTitle.textContent = 'Freies Stück bearbeiten';
+        customAddIcon.className = 'bi bi-pencil me-1';
+        btnAddCustom.innerHTML = '<i class="bi bi-check-lg"></i>';
+        btnAddCustom.classList.replace('btn-warning', 'btn-success');
+        customAddPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        customComposerEl.focus();
+    }
+
+    function exitEditMode() {
+        editingUid = null;
+        customAddPanel.classList.remove('editing');
+        customAddTitle.textContent = 'Freies Stück hinzufügen';
+        customAddIcon.className = 'bi bi-plus-circle me-1';
+        btnAddCustom.innerHTML = '<i class="bi bi-plus-lg"></i>';
+        btnAddCustom.classList.replace('btn-success', 'btn-warning');
+    }
 
     function addCustomItem() {
         const title = customTitleEl.value.trim();
         if (!title) { customTitleEl.focus(); customTitleEl.classList.add('is-invalid'); return; }
         customTitleEl.classList.remove('is-invalid');
 
-        rightItems.push({
-            type:         'custom',
-            uid:          'c_' + (customUid++),
-            composer:     customComposerEl.value.trim(),
-            ausfuehrende: customAusfuehrendeEl.value.trim(),
-            title,
-        });
+        if (editingUid !== null) {
+            const item = rightItems.find(x => x.type === 'custom' && x.uid === editingUid);
+            if (item) {
+                item.composer     = customComposerEl.value.trim();
+                item.title        = title;
+                item.ausfuehrende = customAusfuehrendeEl.value.trim();
+            }
+            exitEditMode();
+        } else {
+            rightItems.push({
+                type:         'custom',
+                uid:          'c_' + (customUid++),
+                composer:     customComposerEl.value.trim(),
+                ausfuehrende: customAusfuehrendeEl.value.trim(),
+                title,
+            });
+            rightListEl.scrollTop = rightListEl.scrollHeight;
+        }
 
         customComposerEl.value     = '';
         customAusfuehrendeEl.value = '';
         customTitleEl.value        = '';
         customComposerEl.focus();
         renderAndDirty();
-        // Scroll right list to bottom so new item is visible
-        rightListEl.scrollTop = rightListEl.scrollHeight;
     }
 
     document.getElementById('btn-add-custom').addEventListener('click', addCustomItem);
     customTitleEl.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); addCustomItem(); } });
+    // Escape cancels edit mode
+    customAddPanel.addEventListener('keydown', e => { if (e.key === 'Escape' && editingUid !== null) { exitEditMode(); customComposerEl.value = ''; customTitleEl.value = ''; customAusfuehrendeEl.value = ''; } });
 
     // ── Filter inputs ──────────────────────────────────────────────────
     leftSearchEl.addEventListener('input',  render);
