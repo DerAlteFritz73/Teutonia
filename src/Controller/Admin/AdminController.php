@@ -1351,11 +1351,15 @@ class AdminController extends AbstractController
                 $imagick->setResolution(150, 150);
                 $imagick->setBackgroundColor(new \ImagickPixel('white'));
                 $imagick->readImage($tempPdfPath . '[0]');
-                $imagick->setImageAlphaChannel(\Imagick::ALPHACHANNEL_REMOVE);
                 $imagick->setImageBackgroundColor(new \ImagickPixel('white'));
-                $imagick->mergeImageLayers(\Imagick::LAYERMETHOD_FLATTEN);
-                $imagick->setImageFormat('jpeg');
-                $imagick->writeImage($outputPath);
+
+                // Composite PDF content onto an explicit white canvas to eliminate any transparency/black artifacts
+                $white = new \Imagick();
+                $white->newImage($imagick->getImageWidth(), $imagick->getImageHeight(), new \ImagickPixel('white'));
+                $white->compositeImage($imagick, \Imagick::COMPOSITE_OVER, 0, 0);
+                $white->setImageFormat('jpeg');
+                $white->writeImage($outputPath);
+                $white->clear();
                 $imagick->clear();
 
                 // Delete temporary PDF
