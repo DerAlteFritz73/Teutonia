@@ -46,11 +46,14 @@
                     data-bs-target="#songs-{{ konzert.id }}"
                     aria-expanded="false"
                     aria-controls="songs-{{ konzert.id }}">
-                    <td class="p-1" style="width:60px">
+                    <td class="p-1" style="width:60px" onclick="event.stopPropagation()">
                         {% if konzert.plakatPath %}
                             <img src="{{ asset(konzert.plakatPath) }}"
                                  alt="Plakat"
-                                 style="width:52px;height:52px;object-fit:cover;border-radius:4px;display:block;">
+                                 data-plakat-src="{{ asset(konzert.plakatPath) }}"
+                                 data-plakat-title="{{ konzert.name }}"
+                                 class="plakat-thumb-sm"
+                                 style="width:52px;height:52px;object-fit:cover;border-radius:4px;display:block;cursor:zoom-in;">
                         {% else %}
                             <div style="width:52px;height:52px;background:#e9ecef;border-radius:4px;display:flex;align-items:center;justify-content:center;">
                                 <i class="bi bi-image text-muted" style="font-size:1.2rem"></i>
@@ -126,7 +129,20 @@
     </div>
 </div>
 
+<div class="modal fade" id="plakatModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content bg-transparent border-0 shadow-none">
+            <div class="modal-body p-0 text-center position-relative">
+                <button type="button" class="btn-close btn-close-white position-absolute top-0 end-0 m-2" data-bs-dismiss="modal"></button>
+                <img id="plakatModalImg" src="" alt="" class="img-fluid rounded" style="max-height:90vh">
+                <div id="plakatModalTitle" class="text-white mt-2 fw-semibold"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <style>
+#plakatModal .modal-dialog { max-width: min(90vw, 900px); }
 .konzert-row td            { background-color: #fff; }
 .konzert-row.krow-even td { background-color: #f8f9fa; }
 .konzert-row { cursor: pointer; }
@@ -156,4 +172,21 @@
 .ksl-title   { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ksl-video   { width: 32px; min-width: 32px; text-align: center; }
 </style>
+
+<script>
+(function () {
+    const modal    = new bootstrap.Modal(document.getElementById('plakatModal'));
+    const modalImg = document.getElementById('plakatModalImg');
+    const modalTtl = document.getElementById('plakatModalTitle');
+
+    document.querySelectorAll('.plakat-thumb-sm').forEach(img => {
+        img.addEventListener('click', () => {
+            modalImg.src         = img.dataset.plakatSrc;
+            modalImg.alt         = img.dataset.plakatTitle;
+            modalTtl.textContent = img.dataset.plakatTitle;
+            modal.show();
+        });
+    });
+}());
+</script>
 {% endblock %}
