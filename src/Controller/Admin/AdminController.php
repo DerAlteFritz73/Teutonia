@@ -939,7 +939,7 @@ class AdminController extends AbstractController
     }
 
     #[Route('/konzerte/new', name: 'admin_konzerte_new')]
-    public function konzerteNew(Request $request, EntityManagerInterface $em, SongKeywordRepository $songRepo): Response
+    public function konzerteNew(Request $request, EntityManagerInterface $em, SongKeywordRepository $songRepo, PostRepository $postRepository): Response
     {
         $konzert = new Konzert();
         $form    = $this->createForm(KonzertType::class, $konzert);
@@ -952,12 +952,9 @@ class AdminController extends AbstractController
             $konzert->setSongOrder(json_decode($orderJson, true) ?: []);
             $videoJson = $request->request->get('video_links_json', '{}');
             $konzert->setVideoLinks(json_decode($videoJson, true) ?: []);
-            $plakatFile = $form->get('plakatFile')->getData();
-            if ($plakatFile) {
-                $plakatPath = $this->handleImageUpload($plakatFile);
-                if ($plakatPath) {
-                    $konzert->setPlakatPath($plakatPath);
-                }
+            $plakatSelect = trim($request->request->get('plakat_select', ''));
+            if ($plakatSelect !== '') {
+                $konzert->setPlakatPath($plakatSelect);
             }
             $em->persist($konzert);
             $em->flush();
@@ -965,16 +962,22 @@ class AdminController extends AbstractController
             return $this->redirectToRoute('admin_konzerte');
         }
 
+        $konzertImages = array_filter(
+            $postRepository->findByPageOrderedByDate('konzerte-und-aktivitaeten'),
+            fn($p) => $p->getImagePath()
+        );
+
         return $this->render('admin/konzerte/form.html.twig', [
-            'form'        => $form,
-            'konzert'     => $konzert,
+            'form'          => $form,
+            'konzert'       => $konzert,
+            'konzertImages' => array_values($konzertImages),
             'isNew'       => true,
             'songParents' => $songRepo->findParentIdMap(),
         ]);
     }
 
     #[Route('/konzerte/{id}/edit', name: 'admin_konzerte_edit')]
-    public function konzerteEdit(Konzert $konzert, Request $request, EntityManagerInterface $em, SongKeywordRepository $songRepo): Response
+    public function konzerteEdit(Konzert $konzert, Request $request, EntityManagerInterface $em, SongKeywordRepository $songRepo, PostRepository $postRepository): Response
     {
         $form = $this->createForm(KonzertType::class, $konzert);
         $form->handleRequest($request);
@@ -986,23 +989,24 @@ class AdminController extends AbstractController
             $konzert->setSongOrder(json_decode($orderJson, true) ?: []);
             $videoJson = $request->request->get('video_links_json', '{}');
             $konzert->setVideoLinks(json_decode($videoJson, true) ?: []);
-            $plakatFile = $form->get('plakatFile')->getData();
-            if ($plakatFile) {
-                $plakatPath = $this->handleImageUpload($plakatFile, $konzert->getPlakatPath());
-                if ($plakatPath) {
-                    $konzert->setPlakatPath($plakatPath);
-                }
-            }
+            $plakatSelect = trim($request->request->get('plakat_select', ''));
+            $konzert->setPlakatPath($plakatSelect !== '' ? $plakatSelect : null);
             $em->flush();
             $this->addFlash('success', 'Konzert wurde aktualisiert.');
             return $this->redirectToRoute('admin_konzerte_edit', ['id' => $konzert->getId()]);
         }
 
+        $konzertImages = array_filter(
+            $postRepository->findByPageOrderedByDate('konzerte-und-aktivitaeten'),
+            fn($p) => $p->getImagePath()
+        );
+
         return $this->render('admin/konzerte/form.html.twig', [
-            'form'        => $form,
-            'konzert'     => $konzert,
-            'isNew'       => false,
-            'songParents' => $songRepo->findParentIdMap(),
+            'form'          => $form,
+            'konzert'       => $konzert,
+            'isNew'         => false,
+            'songParents'   => $songRepo->findParentIdMap(),
+            'konzertImages' => array_values($konzertImages),
         ]);
     }
 
