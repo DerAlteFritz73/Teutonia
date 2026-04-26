@@ -1347,10 +1347,16 @@ class AdminController extends AbstractController
                 $outputFilename = $safeFilename . '-' . uniqid() . '.jpg';
                 $outputPath = $uploadDir . '/' . $outputFilename;
 
-                $pdf = new Pdf($tempPdfPath);
-                $pdf->setOutputFormat('jpg')
-                    ->setResolution(150)
-                    ->saveImage($outputPath);
+                $imagick = new \Imagick();
+                $imagick->setResolution(150, 150);
+                $imagick->setBackgroundColor(new \ImagickPixel('white'));
+                $imagick->readImage($tempPdfPath . '[0]');
+                $imagick->setImageAlphaChannel(\Imagick::ALPHACHANNEL_REMOVE);
+                $imagick->setImageBackgroundColor(new \ImagickPixel('white'));
+                $imagick->mergeImageLayers(\Imagick::LAYERMETHOD_FLATTEN);
+                $imagick->setImageFormat('jpeg');
+                $imagick->writeImage($outputPath);
+                $imagick->clear();
 
                 // Delete temporary PDF
                 unlink($tempPdfPath);

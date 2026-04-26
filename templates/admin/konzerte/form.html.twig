@@ -60,25 +60,31 @@
         </div>
         <div class="col-md-6">
             {{ form_label(form.programmVorderseiteFile) }}
-            <div class="d-flex gap-2 align-items-center">
+            <div class="drop-zone">
+                <i class="bi bi-cloud-upload fs-4 text-muted d-block mb-1"></i>
+                <span class="drop-zone-hint">Drag &amp; Drop oder klicken</span>
+                <div class="drop-zone-filename"></div>
                 {{ form_widget(form.programmVorderseiteFile) }}
-                {% if konzert.programmVorderseite %}
-                    <img src="{{ asset(konzert.programmVorderseite) }}" alt="Programm aussen"
-                         style="height:48px;width:auto;border-radius:4px;object-fit:cover;cursor:zoom-in;"
-                         onclick="document.getElementById('programmVModal').querySelector('img').src=this.src; new bootstrap.Modal(document.getElementById('programmVModal')).show()">
-                {% endif %}
             </div>
+            {% if konzert.programmVorderseite %}
+                <img src="{{ asset(konzert.programmVorderseite) }}" alt="Programm aussen"
+                     style="height:48px;width:auto;border-radius:4px;object-fit:cover;cursor:zoom-in;margin-top:6px"
+                     onclick="document.getElementById('programmVModal').querySelector('img').src=this.src; new bootstrap.Modal(document.getElementById('programmVModal')).show()">
+            {% endif %}
         </div>
         <div class="col-md-6">
             {{ form_label(form.programmRueckseiteFile) }}
-            <div class="d-flex gap-2 align-items-center">
+            <div class="drop-zone">
+                <i class="bi bi-cloud-upload fs-4 text-muted d-block mb-1"></i>
+                <span class="drop-zone-hint">Drag &amp; Drop oder klicken</span>
+                <div class="drop-zone-filename"></div>
                 {{ form_widget(form.programmRueckseiteFile) }}
-                {% if konzert.programmRueckseite %}
-                    <img src="{{ asset(konzert.programmRueckseite) }}" alt="Programm innen"
-                         style="height:48px;width:auto;border-radius:4px;object-fit:cover;cursor:zoom-in;"
-                         onclick="document.getElementById('programmRModal').querySelector('img').src=this.src; new bootstrap.Modal(document.getElementById('programmRModal')).show()">
-                {% endif %}
             </div>
+            {% if konzert.programmRueckseite %}
+                <img src="{{ asset(konzert.programmRueckseite) }}" alt="Programm innen"
+                     style="height:48px;width:auto;border-radius:4px;object-fit:cover;cursor:zoom-in;margin-top:6px"
+                     onclick="document.getElementById('programmRModal').querySelector('img').src=this.src; new bootstrap.Modal(document.getElementById('programmRModal')).show()">
+            {% endif %}
         </div>
     </div>
 
@@ -209,6 +215,28 @@
 </div>
 
 <style>
+/* Drop zones for file inputs */
+.drop-zone {
+    position: relative; overflow: hidden;
+    border: 2px dashed #dee2e6; border-radius: .375rem;
+    padding: 18px 12px; text-align: center; cursor: pointer;
+    transition: border-color .15s, background .15s;
+}
+.drop-zone:hover, .drop-zone.drag-over {
+    border-color: #0d6efd; background: #f0f4ff;
+}
+.drop-zone input[type="file"] {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    opacity: 0; cursor: pointer;
+    padding: 0; margin: 0; border: none;
+}
+.drop-zone-hint { font-size: .8125rem; color: #6c757d; }
+.drop-zone-filename {
+    font-size: .8rem; color: #0d6efd;
+    margin-top: 4px; word-break: break-all;
+}
+
 /* Plakat picker */
 .plakat-picker {
     display: flex; flex-wrap: wrap; gap: 8px;
@@ -830,6 +858,35 @@
 
     // ── Initial render ─────────────────────────────────────────────────
     render();
+}());
+
+// ── Drop zones ─────────────────────────────────────────────────────────────
+(function () {
+    document.querySelectorAll('.drop-zone').forEach(zone => {
+        const input      = zone.querySelector('input[type="file"]');
+        const filenameEl = zone.querySelector('.drop-zone-filename');
+
+        function setFile(file) {
+            try {
+                const dt = new DataTransfer();
+                dt.items.add(file);
+                input.files = dt.files;
+            } catch (_) {}
+            filenameEl.textContent = file.name;
+            input.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+
+        zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
+        zone.addEventListener('dragleave', e => { if (!zone.contains(e.relatedTarget)) zone.classList.remove('drag-over'); });
+        zone.addEventListener('drop', e => {
+            e.preventDefault();
+            zone.classList.remove('drag-over');
+            if (e.dataTransfer.files.length) setFile(e.dataTransfer.files[0]);
+        });
+        input.addEventListener('change', () => {
+            if (input.files.length) filenameEl.textContent = input.files[0].name;
+        });
+    });
 }());
 
 // ── File inputs → mark form dirty so save button enables ──────────────────
