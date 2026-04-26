@@ -766,6 +766,13 @@
     render();
 }());
 
+// ── File inputs → mark form dirty so save button enables ──────────────────
+document.querySelectorAll('input[type="file"]').forEach(inp => {
+    inp.addEventListener('change', () => {
+        if (inp.files && inp.files.length > 0 && window.markFormDirty) window.markFormDirty();
+    });
+});
+
 // ── Plakat picker ──────────────────────────────────────────────────────────
 (function () {
     const input   = document.getElementById('plakat-select-input');
