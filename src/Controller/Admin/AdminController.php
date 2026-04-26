@@ -956,6 +956,16 @@ class AdminController extends AbstractController
             if ($plakatSelect !== '') {
                 $konzert->setPlakatPath($plakatSelect);
             }
+            $programmV = $form->get('programmVorderseiteFile')->getData();
+            if ($programmV) {
+                $path = $this->handleImageUpload($programmV);
+                if ($path) $konzert->setProgrammVorderseite($path);
+            }
+            $programmR = $form->get('programmRueckseiteFile')->getData();
+            if ($programmR) {
+                $path = $this->handleImageUpload($programmR);
+                if ($path) $konzert->setProgrammRueckseite($path);
+            }
             $em->persist($konzert);
             $em->flush();
             $this->addFlash('success', 'Konzert wurde erstellt.');
@@ -991,6 +1001,16 @@ class AdminController extends AbstractController
             $konzert->setVideoLinks(json_decode($videoJson, true) ?: []);
             $plakatSelect = trim($request->request->get('plakat_select', ''));
             $konzert->setPlakatPath($plakatSelect !== '' ? $plakatSelect : null);
+            $programmV = $form->get('programmVorderseiteFile')->getData();
+            if ($programmV) {
+                $path = $this->handleImageUpload($programmV, $konzert->getProgrammVorderseite());
+                if ($path) $konzert->setProgrammVorderseite($path);
+            }
+            $programmR = $form->get('programmRueckseiteFile')->getData();
+            if ($programmR) {
+                $path = $this->handleImageUpload($programmR, $konzert->getProgrammRueckseite());
+                if ($path) $konzert->setProgrammRueckseite($path);
+            }
             $em->flush();
             $this->addFlash('success', 'Konzert wurde aktualisiert.');
             return $this->redirectToRoute('admin_konzerte_edit', ['id' => $konzert->getId()]);

@@ -58,6 +58,50 @@
                 {% endfor %}
             </div>
         </div>
+        <div class="col-md-6">
+            {{ form_label(form.programmVorderseiteFile) }}
+            <div class="d-flex gap-2 align-items-center">
+                {{ form_widget(form.programmVorderseiteFile) }}
+                {% if konzert.programmVorderseite %}
+                    <img src="{{ asset(konzert.programmVorderseite) }}" alt="Vorderseite"
+                         style="height:48px;width:auto;border-radius:4px;object-fit:cover;cursor:zoom-in;"
+                         onclick="document.getElementById('programmVModal').querySelector('img').src=this.src; new bootstrap.Modal(document.getElementById('programmVModal')).show()">
+                {% endif %}
+            </div>
+        </div>
+        <div class="col-md-6">
+            {{ form_label(form.programmRueckseiteFile) }}
+            <div class="d-flex gap-2 align-items-center">
+                {{ form_widget(form.programmRueckseiteFile) }}
+                {% if konzert.programmRueckseite %}
+                    <img src="{{ asset(konzert.programmRueckseite) }}" alt="Rückseite"
+                         style="height:48px;width:auto;border-radius:4px;object-fit:cover;cursor:zoom-in;"
+                         onclick="document.getElementById('programmRModal').querySelector('img').src=this.src; new bootstrap.Modal(document.getElementById('programmRModal')).show()">
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    {# Programm preview modals #}
+    <div class="modal fade" id="programmVModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content bg-transparent border-0">
+                <div class="modal-body p-0 text-center position-relative">
+                    <button type="button" class="btn-close btn-close-white position-absolute top-0 end-0 m-2" data-bs-dismiss="modal"></button>
+                    <img src="" alt="Programm-Vorderseite" class="img-fluid rounded" style="max-height:90vh">
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade" id="programmRModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content bg-transparent border-0">
+                <div class="modal-body p-0 text-center position-relative">
+                    <button type="button" class="btn-close btn-close-white position-absolute top-0 end-0 m-2" data-bs-dismiss="modal"></button>
+                    <img src="" alt="Programm-Rückseite" class="img-fluid rounded" style="max-height:90vh">
+                </div>
+            </div>
+        </div>
     </div>
 
     {# Hidden Symfony widget — data source & submission vehicle for linked songs #}

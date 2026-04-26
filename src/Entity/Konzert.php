@@ -37,6 +37,12 @@ class Konzert
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $plakatPath = null;
 
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $programmVorderseite = null;
+
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $programmRueckseite = null;
+
     #[ORM\ManyToMany(targetEntity: SongKeyword::class, inversedBy: 'konzerte')]
     #[ORM\JoinTable(name: 'konzert_song',
         joinColumns: [new ORM\JoinColumn(name: 'konzert_id', referencedColumnName: 'id', onDelete: 'CASCADE')],
@@ -71,6 +77,12 @@ class Konzert
 
     public function getPlakatPath(): ?string { return $this->plakatPath; }
     public function setPlakatPath(?string $plakatPath): static { $this->plakatPath = $plakatPath; return $this; }
+
+    public function getProgrammVorderseite(): ?string { return $this->programmVorderseite; }
+    public function setProgrammVorderseite(?string $path): static { $this->programmVorderseite = $path; return $this; }
+
+    public function getProgrammRueckseite(): ?string { return $this->programmRueckseite; }
+    public function setProgrammRueckseite(?string $path): static { $this->programmRueckseite = $path; return $this; }
 
     public function getSongs(): Collection { return $this->songs; }
 

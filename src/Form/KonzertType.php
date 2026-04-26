@@ -7,6 +7,7 @@ use App\Entity\SongKeyword;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\DateType;
+use Symfony\Component\Form\Extension\Core\Type\FileType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
@@ -29,6 +30,18 @@ class KonzertType extends AbstractType
                 'label'    => 'Ort',
                 'required' => false,
                 'attr'     => ['class' => 'form-control', 'placeholder' => 'z.B. Bürgersaal Willstätt'],
+            ])
+            ->add('programmVorderseiteFile', FileType::class, [
+                'label'    => 'Programm-Vorderseite',
+                'required' => false,
+                'mapped'   => false,
+                'attr'     => ['class' => 'form-control', 'accept' => 'image/*,application/pdf'],
+            ])
+            ->add('programmRueckseiteFile', FileType::class, [
+                'label'    => 'Programm-Rückseite',
+                'required' => false,
+                'mapped'   => false,
+                'attr'     => ['class' => 'form-control', 'accept' => 'image/*,application/pdf'],
             ])
             ->add('songs', EntityType::class, [
                 'label'        => false,
