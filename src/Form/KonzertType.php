@@ -32,13 +32,13 @@ class KonzertType extends AbstractType
                 'attr'     => ['class' => 'form-control', 'placeholder' => 'z.B. Bürgersaal Willstätt'],
             ])
             ->add('programmVorderseiteFile', FileType::class, [
-                'label'    => 'Programm-Vorderseite',
+                'label'    => 'Programm aussen',
                 'required' => false,
                 'mapped'   => false,
                 'attr'     => ['class' => 'form-control', 'accept' => 'image/*,application/pdf'],
             ])
             ->add('programmRueckseiteFile', FileType::class, [
-                'label'    => 'Programm-Rückseite',
+                'label'    => 'Programm innen',
                 'required' => false,
                 'mapped'   => false,
                 'attr'     => ['class' => 'form-control', 'accept' => 'image/*,application/pdf'],
