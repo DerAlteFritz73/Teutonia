@@ -35,6 +35,8 @@
                     <th>Name</th>
                     <th>Ort</th>
                     <th style="width:80px">Lieder</th>
+                    <th style="width:60px" title="Programm-Vorderseite">Progr. V</th>
+                    <th style="width:60px" title="Programm-Rückseite">Progr. R</th>
                     {% if showAdminActions is defined and showAdminActions %}<th class="text-end" style="width:120px">Aktionen</th>{% endif %}
                 </tr>
             </thead>
@@ -68,6 +70,34 @@
                     <td>
                         <span class="badge bg-secondary">{{ konzert.songs|length + konzert.customSongs|length }}</span>
                     </td>
+                    <td class="p-1" style="width:60px" onclick="event.stopPropagation()">
+                        {% if konzert.programmVorderseite %}
+                            <img src="{{ asset(konzert.programmVorderseite) }}"
+                                 alt="Programm-Vorderseite"
+                                 data-plakat-src="{{ asset(konzert.programmVorderseite) }}"
+                                 data-plakat-title="{{ konzert.name }} – Programm-Vorderseite"
+                                 class="plakat-thumb-sm"
+                                 style="width:52px;height:52px;object-fit:cover;border-radius:4px;display:block;cursor:zoom-in;">
+                        {% else %}
+                            <div style="width:52px;height:52px;background:#e9ecef;border-radius:4px;display:flex;align-items:center;justify-content:center;">
+                                <i class="bi bi-file-earmark text-muted" style="font-size:1.2rem"></i>
+                            </div>
+                        {% endif %}
+                    </td>
+                    <td class="p-1" style="width:60px" onclick="event.stopPropagation()">
+                        {% if konzert.programmRueckseite %}
+                            <img src="{{ asset(konzert.programmRueckseite) }}"
+                                 alt="Programm-Rückseite"
+                                 data-plakat-src="{{ asset(konzert.programmRueckseite) }}"
+                                 data-plakat-title="{{ konzert.name }} – Programm-Rückseite"
+                                 class="plakat-thumb-sm"
+                                 style="width:52px;height:52px;object-fit:cover;border-radius:4px;display:block;cursor:zoom-in;">
+                        {% else %}
+                            <div style="width:52px;height:52px;background:#e9ecef;border-radius:4px;display:flex;align-items:center;justify-content:center;">
+                                <i class="bi bi-file-earmark text-muted" style="font-size:1.2rem"></i>
+                            </div>
+                        {% endif %}
+                    </td>
                     {% if showAdminActions is defined and showAdminActions %}
                     <td class="text-end" onclick="event.stopPropagation()">
                         <a href="{{ path('admin_konzerte_edit', {id: konzert.id}) }}"
@@ -82,7 +112,7 @@
                 </tr>
 
                 <tr class="konzert-detail">
-                    <td colspan="{{ showAdminActions is defined and showAdminActions ? 6 : 5 }}" class="p-0 border-0">
+                    <td colspan="{{ showAdminActions is defined and showAdminActions ? 8 : 7 }}" class="p-0 border-0">
                         <div id="songs-{{ konzert.id }}" class="collapse">
                             <div class="px-4 py-2 border-bottom bg-light">
                                 {% set items = konzert.orderedSongList %}
@@ -121,7 +151,7 @@
 
                 {% else %}
                 <tr>
-                    <td colspan="{{ showAdminActions is defined and showAdminActions ? 6 : 5 }}" class="text-center text-muted py-4">Noch keine Konzerte erfasst.</td>
+                    <td colspan="{{ showAdminActions is defined and showAdminActions ? 8 : 7 }}" class="text-center text-muted py-4">Noch keine Konzerte erfasst.</td>
                 </tr>
                 {% endfor %}
             </tbody>
