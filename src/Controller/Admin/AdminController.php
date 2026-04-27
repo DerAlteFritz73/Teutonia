@@ -215,10 +215,8 @@ class AdminController extends AbstractController
         // If context contains an exception, extract the short message from it
         if ($context && str_contains($context, '"exception"')) {
             $decoded = json_decode($context, true);
-            if (isset($decoded['exception'])) {
-                // Keep only first line of exception
-                $firstLine = explode("\n", $decoded['exception'])[0];
-                $context = $firstLine;
+            if (isset($decoded['exception']) && is_string($decoded['exception'])) {
+                $context = explode("\n", $decoded['exception'])[0];
             }
         }
 
