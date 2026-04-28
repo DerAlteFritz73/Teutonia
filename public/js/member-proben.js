@@ -142,6 +142,7 @@
                             || !!(panel && panel.querySelector('[id$="-movements"]'));
                         if (hasMovements) {
                             container.classList.add('d-none');
+                            container.innerHTML = '';
                         } else {
                             container.innerHTML = '<p class="text-muted p-3">Keine Dateien gefunden.</p>';
                         }
@@ -222,6 +223,7 @@
                             || !!panel.querySelector('[id$="-movements"]');
                         if (hasMovements) {
                             container.classList.add('d-none');
+                            container.innerHTML = '';
                         } else {
                             container.innerHTML = '<p class="text-muted p-3">Keine Dateien gefunden.</p>';
                         }
