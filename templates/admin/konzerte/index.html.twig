@@ -130,7 +130,7 @@
                                         <div class="ksl-row{% if item.type == 'custom' %} ksl-custom{% endif %}">
                                             <span class="ksl-num text-muted">{{ loop.index }}</span>
                                             <span class="ksl-composer">{{ item.composer ?: '—' }}</span>
-                                            <span class="ksl-title{% if item.type == 'custom' %} fst-italic{% endif %}">{{ item.title }}{% if item.type == 'custom' and item.ausfuehrende %} <small class="text-muted fw-normal">({{ item.ausfuehrende }})</small>{% endif %}</span>
+                                            <span class="ksl-title{% if item.type == 'custom' %} fst-italic{% endif %}">{{ item.title }}</span>
                                             <span class="ksl-video">
                                                 {% if item.videoLink %}
                                                     <a href="{{ item.videoLink }}" target="_blank" rel="noopener"

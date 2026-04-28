@@ -138,7 +138,9 @@
                 if (container && !container.dataset.loaded) {
                     container.dataset.loaded = '1';
                     if (files.length === 0) {
-                        if (container.dataset.hasMovements || data.hasSubfolders) {
+                        const hasMovements = container.dataset.hasMovements || data.hasSubfolders
+                            || !!(panel && panel.querySelector('[id$="-movements"]'));
+                        if (hasMovements) {
                             container.classList.add('d-none');
                         } else {
                             container.innerHTML = '<p class="text-muted p-3">Keine Dateien gefunden.</p>';
@@ -216,7 +218,9 @@
                     const files = data.files || [];
 
                     if (files.length === 0) {
-                        if (container.dataset.hasMovements || data.hasSubfolders) {
+                        const hasMovements = container.dataset.hasMovements || data.hasSubfolders
+                            || !!panel.querySelector('[id$="-movements"]');
+                        if (hasMovements) {
                             container.classList.add('d-none');
                         } else {
                             container.innerHTML = '<p class="text-muted p-3">Keine Dateien gefunden.</p>';
@@ -302,7 +306,7 @@
 
     input.addEventListener('input', function () {
         const terms = input.value.toLowerCase().split(/\s+/).filter(Boolean);
-        const items = document.querySelectorAll('#allFilesAccordion .accordion-item');
+        const items = document.querySelectorAll('#allFilesAccordion > .accordion-item');
         let visible = 0;
 
         items.forEach(function (item) {
