@@ -60,7 +60,7 @@
         </div>
         <div class="col-md-6">
             {{ form_label(form.programmVorderseiteFile) }}
-            <div class="drop-zone" data-new-preview="new-preview-programm-v" data-existing-preview="preview-programm-v">
+            <div class="drop-zone" data-new-preview="new-preview-programm-v" data-existing-preview="preview-programm-v"{% if konzert.programmVorderseite %} style="display:none"{% endif %}>
                 <i class="bi bi-cloud-upload fs-4 text-muted d-block mb-1"></i>
                 <span class="drop-zone-hint">Drag &amp; Drop oder klicken</span>
                 <div class="drop-zone-filename"></div>
@@ -83,7 +83,7 @@
         </div>
         <div class="col-md-6">
             {{ form_label(form.programmRueckseiteFile) }}
-            <div class="drop-zone" data-new-preview="new-preview-programm-r" data-existing-preview="preview-programm-r">
+            <div class="drop-zone" data-new-preview="new-preview-programm-r" data-existing-preview="preview-programm-r"{% if konzert.programmRueckseite %} style="display:none"{% endif %}>
                 <i class="bi bi-cloud-upload fs-4 text-muted d-block mb-1"></i>
                 <span class="drop-zone-hint">Drag &amp; Drop oder klicken</span>
                 <div class="drop-zone-filename"></div>
@@ -106,7 +106,7 @@
         </div>
         <div class="col-md-6">
             {{ form_label(form.kritikFile) }}
-            <div class="drop-zone" data-new-preview="new-preview-kritik" data-existing-preview="preview-kritik">
+            <div class="drop-zone" data-new-preview="new-preview-kritik" data-existing-preview="preview-kritik"{% if konzert.kritikPath %} style="display:none"{% endif %}>
                 <i class="bi bi-cloud-upload fs-4 text-muted d-block mb-1"></i>
                 <span class="drop-zone-hint">Drag &amp; Drop oder klicken</span>
                 <div class="drop-zone-filename"></div>
@@ -951,6 +951,7 @@
             if (input.files.length) {
                 filenameEl.textContent = input.files[0].name;
                 showFilePreview(input.files[0], newPreviewId, existingPreviewId);
+                zone.style.display = 'none';
             }
         });
     });
@@ -967,6 +968,8 @@ document.querySelectorAll('input[type="file"]').forEach(inp => {
 function deleteKonzertFile(inputId, previewId) {
     document.getElementById(inputId).value = '1';
     document.getElementById(previewId).style.display = 'none';
+    const zone = document.querySelector(`.drop-zone[data-existing-preview="${previewId}"]`);
+    if (zone) zone.style.display = '';
     if (window.markFormDirty) window.markFormDirty();
 }
 
