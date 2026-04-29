@@ -29,9 +29,11 @@ class ExportSongsXlsxCommand extends Command
         $songs = $this->repo->createQueryBuilder('s')
             ->leftJoin('s.styles', 'st')
             ->addSelect('st')
+            ->leftJoin('s.parent', 'p')
             ->where('s.etikett IS NULL OR s.etikett = :empty')
             ->setParameter('empty', '')
-            ->orderBy('s.songName', 'ASC')
+            ->orderBy('COALESCE(p.songName, s.songName)', 'ASC')
+            ->addOrderBy('s.songName', 'ASC')
             ->getQuery()
             ->getResult();
 
