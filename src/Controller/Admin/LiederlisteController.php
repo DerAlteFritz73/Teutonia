@@ -74,7 +74,7 @@ class LiederlisteController extends AbstractController
 
         $phpWord->addTitleStyle(1, ['name' => 'Calibri', 'size' => 16, 'bold' => true], ['spaceAfter' => 240]);
 
-        $section->addTitle($liste->getName(), 1);
+        $section->addTitle($liste->getTitle() ?: $liste->getName(), 1);
 
         $tableStyle = [
             'borderSize'   => 6,
@@ -190,6 +190,7 @@ class LiederlisteController extends AbstractController
                 $this->addFlash('error', 'Bitte einen Namen eingeben.');
             } else {
                 $liste->setName($name);
+                $liste->setTitle(trim((string) $request->request->get('liste_title', '')) ?: null);
 
                 $itemsJson = (string) $request->request->get('items_json', '[]');
                 $items     = json_decode($itemsJson, true);

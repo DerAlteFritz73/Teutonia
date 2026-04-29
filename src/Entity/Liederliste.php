@@ -18,6 +18,9 @@ class Liederliste
     #[ORM\Column(length: 255)]
     private string $name = '';
 
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $title = null;
+
     /**
      * Each item: {type:'song'|'custom', songId?:int, composer:string, title:string, duration?:string}
      */
@@ -46,6 +49,9 @@ class Liederliste
 
     public function getName(): string { return $this->name; }
     public function setName(string $name): static { $this->name = $name; return $this; }
+
+    public function getTitle(): ?string { return $this->title; }
+    public function setTitle(?string $title): static { $this->title = $title; return $this; }
 
     public function getItems(): array { return $this->items; }
     public function setItems(array $items): static { $this->items = $items; return $this; }

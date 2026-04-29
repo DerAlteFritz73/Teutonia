@@ -17,16 +17,21 @@
         <input type="hidden" name="_token" value="{{ csrf_token('liederliste') }}">
         <input type="hidden" name="items_json" id="items-json-input" value="">
 
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <div class="d-flex align-items-center gap-3 flex-grow-1">
+        <div class="d-flex justify-content-between align-items-start mb-4">
+            <div class="d-flex flex-column gap-2 flex-grow-1">
                 <input type="text" name="liste_name" id="liste-name"
                        class="form-control form-control-lg fw-semibold"
                        style="max-width:420px"
                        placeholder="Name der Liederliste"
                        value="{{ liste.name }}"
                        required>
+                <input type="text" name="liste_title" id="liste-title"
+                       class="form-control"
+                       style="max-width:420px"
+                       placeholder="Titel (erscheint im Word-Dokument)"
+                       value="{{ liste.title ?? '' }}">
             </div>
-            <div class="d-flex gap-2 ms-3">
+            <div class="d-flex gap-2 ms-3 mt-1">
                 <a href="{{ path('admin_liederlisten') }}" class="btn btn-secondary">
                     <i class="bi bi-x-lg me-1"></i>Abbrechen
                 </a>

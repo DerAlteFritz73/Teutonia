@@ -44,7 +44,12 @@
                 <tbody>
                     {% for liste in listen %}
                     <tr>
-                        <td class="fw-semibold">{{ liste.name }}</td>
+                        <td>
+                            <span class="fw-semibold">{{ liste.name }}</span>
+                            {% if liste.title %}
+                                <div class="text-muted small">{{ liste.title }}</div>
+                            {% endif %}
+                        </td>
                         <td class="text-center"><span class="badge bg-secondary">{{ liste.items|length }}</span></td>
                         <td class="text-center text-muted small">{{ liste.totalDuration }}</td>
                         <td class="text-muted small">{{ liste.updatedAt|date('d.m.Y H:i') }}</td>
