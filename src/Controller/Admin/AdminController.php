@@ -950,6 +950,8 @@ class AdminController extends AbstractController
             $konzert->setSongOrder(json_decode($orderJson, true) ?: []);
             $videoJson = $request->request->get('video_links_json', '{}');
             $konzert->setVideoLinks(json_decode($videoJson, true) ?: []);
+            $notesJson = $request->request->get('song_notes_json', '[]');
+            $konzert->setSongNotes(json_decode($notesJson, true) ?: []);
             $plakatSelect = trim($request->request->get('plakat_select', ''));
             if ($plakatSelect !== '') {
                 $konzert->setPlakatPath($plakatSelect);
@@ -1002,6 +1004,8 @@ class AdminController extends AbstractController
             $konzert->setSongOrder(json_decode($orderJson, true) ?: []);
             $videoJson = $request->request->get('video_links_json', '{}');
             $konzert->setVideoLinks(json_decode($videoJson, true) ?: []);
+            $notesJson = $request->request->get('song_notes_json', '[]');
+            $konzert->setSongNotes(json_decode($notesJson, true) ?: []);
             $plakatSelect = trim($request->request->get('plakat_select', ''));
             $konzert->setPlakatPath($plakatSelect !== '' ? $plakatSelect : null);
             $this->handleFileDeleteRequest($request, 'delete_programm_vorderseite', $konzert->getProgrammVorderseite(), fn() => $konzert->setProgrammVorderseite(null));

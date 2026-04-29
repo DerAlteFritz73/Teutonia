@@ -46,6 +46,9 @@ class Konzert
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $kritikPath = null;
 
+    #[ORM\Column(type: Types::JSON, nullable: true)]
+    private ?array $songNotes = [];
+
     #[ORM\ManyToMany(targetEntity: SongKeyword::class, inversedBy: 'konzerte')]
     #[ORM\JoinTable(name: 'konzert_song',
         joinColumns: [new ORM\JoinColumn(name: 'konzert_id', referencedColumnName: 'id', onDelete: 'CASCADE')],
@@ -77,6 +80,9 @@ class Konzert
 
     public function getVideoLinks(): array { return $this->videoLinks; }
     public function setVideoLinks(array $videoLinks): static { $this->videoLinks = $videoLinks; return $this; }
+
+    public function getSongNotes(): array { return $this->songNotes ?? []; }
+    public function setSongNotes(array $songNotes): static { $this->songNotes = $songNotes; return $this; }
 
     public function getPlakatPath(): ?string { return $this->plakatPath; }
     public function setPlakatPath(?string $plakatPath): static { $this->plakatPath = $plakatPath; return $this; }
@@ -124,20 +130,22 @@ class Konzert
         $result       = [];
         $usedSongIds  = [];
         $usedCustIdxs = [];
+        $notes        = $this->getSongNotes();
 
-        foreach ($this->songOrder as $entry) {
+        foreach ($this->songOrder as $pos => $entry) {
+            $note = $notes[$pos] ?? '';
             if (is_int($entry) || (is_string($entry) && ctype_digit($entry))) {
                 $id = (int) $entry;
                 if (isset($songMap[$id])) {
                     $song          = $songMap[$id];
-                    $result[]      = ['type' => 'song', 'composer' => (string) $song->getComposer(), 'title' => (string) $song->getSongName(), 'videoLink' => $this->videoLinks[(string) $id] ?? ''];
+                    $result[]      = ['type' => 'song', 'composer' => (string) $song->getComposer(), 'title' => (string) $song->getSongName(), 'note' => $note, 'videoLink' => $this->videoLinks[(string) $id] ?? ''];
                     $usedSongIds[] = $id;
                 }
             } elseif (is_string($entry) && isset($entry[0]) && $entry[0] === 'c') {
                 $idx = (int) substr($entry, 1);
                 if (isset($this->customSongs[$idx])) {
                     $cs             = $this->customSongs[$idx];
-                    $result[]       = ['type' => 'custom', 'composer' => (string) ($cs['composer'] ?? ''), 'title' => (string) ($cs['title'] ?? ''), 'videoLink' => $this->videoLinks[$entry] ?? ''];
+                    $result[]       = ['type' => 'custom', 'composer' => (string) ($cs['composer'] ?? ''), 'title' => (string) ($cs['title'] ?? ''), 'note' => $note, 'videoLink' => $this->videoLinks[$entry] ?? ''];
                     $usedCustIdxs[] = $idx;
                 }
             }
@@ -145,13 +153,13 @@ class Konzert
 
         foreach ($this->songs as $song) {
             if (!in_array($song->getId(), $usedSongIds, true)) {
-                $result[] = ['type' => 'song', 'composer' => (string) $song->getComposer(), 'title' => (string) $song->getSongName(), 'videoLink' => $this->videoLinks[(string) $song->getId()] ?? ''];
+                $result[] = ['type' => 'song', 'composer' => (string) $song->getComposer(), 'title' => (string) $song->getSongName(), 'note' => '', 'videoLink' => $this->videoLinks[(string) $song->getId()] ?? ''];
             }
         }
 
         foreach ($this->customSongs as $idx => $cs) {
             if (!in_array($idx, $usedCustIdxs, true)) {
-                $result[] = ['type' => 'custom', 'composer' => (string) ($cs['composer'] ?? ''), 'title' => (string) ($cs['title'] ?? ''), 'videoLink' => $this->videoLinks['c' . $idx] ?? ''];
+                $result[] = ['type' => 'custom', 'composer' => (string) ($cs['composer'] ?? ''), 'title' => (string) ($cs['title'] ?? ''), 'note' => '', 'videoLink' => $this->videoLinks['c' . $idx] ?? ''];
             }
         }
 

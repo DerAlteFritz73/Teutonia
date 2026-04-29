@@ -101,10 +101,20 @@ class LiederlisteController extends AbstractController
         $durStyle    = ['size' => 10];
 
         foreach ($liste->getItems() as $i => $item) {
+            $isCustom = ($item['type'] ?? '') === 'custom';
+            $note     = trim((string) ($item['note'] ?? ''));
+
             $table->addRow();
             $table->addCell(500)->addText((string)($i + 1), $numStyle, ['alignment' => Jc::CENTER]);
             $table->addCell(3000)->addText($item['composer'] ?? '', $textStyle);
-            $table->addCell(null)->addText($item['title'] ?? '', $item['type'] === 'custom' ? $italicStyle : $textStyle);
+
+            $titleCell    = $table->addCell(null);
+            $titlePara    = $titleCell->addTextRun();
+            $titlePara->addText($item['title'] ?? '', $isCustom ? $italicStyle : $textStyle);
+            if ($note !== '') {
+                $titlePara->addText(' (' . $note . ')', ['size' => 9, 'italic' => true, 'color' => '888888']);
+            }
+
             $table->addCell(800)->addText($item['duration'] ?? '', $durStyle, ['alignment' => Jc::CENTER]);
         }
 
