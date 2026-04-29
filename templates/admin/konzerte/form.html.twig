@@ -69,13 +69,13 @@
             {% if konzert.programmVorderseite %}
                 <input type="hidden" name="delete_programm_vorderseite" id="delete-programm-v-input" value="">
                 <div id="preview-programm-v" class="d-inline-flex align-items-center gap-2 mt-2">
-                    <img src="{{ asset(konzert.programmVorderseite) }}" alt="Programm aussen"
-                         style="height:48px;width:auto;border-radius:4px;object-fit:cover;cursor:zoom-in"
-                         onclick="document.getElementById('programmVModal').querySelector('img').src=this.src; new bootstrap.Modal(document.getElementById('programmVModal')).show()">
                     <button type="button" class="btn btn-sm btn-outline-danger py-0 px-1" title="Datei löschen"
                             onclick="deleteKonzertFile('delete-programm-v-input','preview-programm-v')">
                         <i class="bi bi-trash"></i>
                     </button>
+                    <img src="{{ asset(konzert.programmVorderseite) }}" alt="Programm aussen"
+                         style="height:48px;width:auto;border-radius:4px;object-fit:cover;cursor:zoom-in"
+                         onclick="document.getElementById('programmVModal').querySelector('img').src=this.src; new bootstrap.Modal(document.getElementById('programmVModal')).show()">
                 </div>
             {% endif %}
         </div>
@@ -90,13 +90,13 @@
             {% if konzert.programmRueckseite %}
                 <input type="hidden" name="delete_programm_rueckseite" id="delete-programm-r-input" value="">
                 <div id="preview-programm-r" class="d-inline-flex align-items-center gap-2 mt-2">
-                    <img src="{{ asset(konzert.programmRueckseite) }}" alt="Programm innen"
-                         style="height:48px;width:auto;border-radius:4px;object-fit:cover;cursor:zoom-in"
-                         onclick="document.getElementById('programmRModal').querySelector('img').src=this.src; new bootstrap.Modal(document.getElementById('programmRModal')).show()">
                     <button type="button" class="btn btn-sm btn-outline-danger py-0 px-1" title="Datei löschen"
                             onclick="deleteKonzertFile('delete-programm-r-input','preview-programm-r')">
                         <i class="bi bi-trash"></i>
                     </button>
+                    <img src="{{ asset(konzert.programmRueckseite) }}" alt="Programm innen"
+                         style="height:48px;width:auto;border-radius:4px;object-fit:cover;cursor:zoom-in"
+                         onclick="document.getElementById('programmRModal').querySelector('img').src=this.src; new bootstrap.Modal(document.getElementById('programmRModal')).show()">
                 </div>
             {% endif %}
         </div>
@@ -111,13 +111,13 @@
             {% if konzert.kritikPath %}
                 <input type="hidden" name="delete_kritik" id="delete-kritik-input" value="">
                 <div id="preview-kritik" class="d-inline-flex align-items-center gap-2 mt-2">
-                    <img src="{{ asset(konzert.kritikPath) }}" alt="Kritik"
-                         style="height:48px;width:auto;border-radius:4px;object-fit:cover;cursor:zoom-in"
-                         onclick="document.getElementById('kritikModal').querySelector('img').src=this.src; new bootstrap.Modal(document.getElementById('kritikModal')).show()">
                     <button type="button" class="btn btn-sm btn-outline-danger py-0 px-1" title="Datei löschen"
                             onclick="deleteKonzertFile('delete-kritik-input','preview-kritik')">
                         <i class="bi bi-trash"></i>
                     </button>
+                    <img src="{{ asset(konzert.kritikPath) }}" alt="Kritik"
+                         style="height:48px;width:auto;border-radius:4px;object-fit:cover;cursor:zoom-in"
+                         onclick="document.getElementById('kritikModal').querySelector('img').src=this.src; new bootstrap.Modal(document.getElementById('kritikModal')).show()">
                 </div>
             {% endif %}
         </div>
