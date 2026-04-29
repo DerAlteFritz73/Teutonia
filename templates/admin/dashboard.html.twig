@@ -55,6 +55,15 @@
             </div>
         </div>
         <div class="col-md-4 mb-4">
+            <div class="card text-white h-100 position-relative" style="background:linear-gradient(135deg,#0f5132,#198754);cursor:pointer">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="bi bi-music-note-list me-1"></i>Liederlisten</h5>
+                    <p class="display-4">{{ liederlistenCount }}</p>
+                    <a href="{{ path('admin_liederlisten') }}" class="btn btn-light stretched-link"><i class="bi bi-pencil-square me-1"></i>Verwalten</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-4">
             <div class="card text-white h-100" style="background:linear-gradient(135deg,#198754,#20c997)">
                 <div class="card-body">
                     <h5 class="card-title"><i class="bi bi-box-arrow-in-right me-1"></i>Logins der Mitglieder</h5>

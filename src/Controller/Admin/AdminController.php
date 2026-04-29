@@ -82,16 +82,18 @@ class AdminController extends AbstractController
         PostRepository $postRepository,
         SongKeywordRepository $songRepository,
         KonzertRepository $konzertRepository,
+        \App\Repository\LiederlisteRepository $liederlisteRepository,
         #[Autowire('%kernel.logs_dir%')] string $logsDir,
         #[Autowire('%kernel.environment%')] string $env,
     ): Response {
         $logStats = $this->getLogStats("$logsDir/$env.log");
 
         return $this->render('admin/dashboard.html.twig', [
-            'userCount'      => count($userRepository->findAll()),
-            'postCount'      => count($postRepository->findAll()),
-            'songCount'      => $songRepository->countAllIncludingMovements(),
-            'konzertCount'   => count($konzertRepository->findAll()),
+            'userCount'           => count($userRepository->findAll()),
+            'postCount'           => count($postRepository->findAll()),
+            'songCount'           => $songRepository->countAllIncludingMovements(),
+            'konzertCount'        => count($konzertRepository->findAll()),
+            'liederlistenCount'   => count($liederlisteRepository->findAll()),
             'memberLoginSum'          => $userRepository->sumLoginCountExcluding('joel'),
             'memberUniqueLoginCount'  => $userRepository->countUsersWithLoginsExcluding('joel'),
             'memberLastLoginAt'       => $userRepository->lastLoginAtExcluding('joel'),
