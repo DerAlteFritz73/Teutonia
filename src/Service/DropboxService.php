@@ -558,6 +558,160 @@ class DropboxService
     }
 
     /**
+     * Find the first audio file in a Dropbox folder and return its duration as "M:SS".
+     * Supports MP3 files (CBR and VBR via Xing/VBRI headers).
+     */
+    public function getFirstAudioDuration(string $folderPath): ?string
+    {
+        try {
+            $result = $this->client->rpcEndpointRequest('files/list_folder', [
+                'path' => $folderPath,
+                'recursive' => false,
+                'include_media_info' => false,
+            ]);
+
+            $audioPath = null;
+            $audioSize = 0;
+
+            foreach (($result['entries'] ?? []) as $entry) {
+                if ($entry['.tag'] !== 'file') {
+                    continue;
+                }
+                $ext = strtolower(pathinfo($entry['name'], PATHINFO_EXTENSION));
+                if (in_array($ext, ['mp3', 'mp4', 'm4a', 'wav', 'ogg', 'flac', 'aac', 'wma'], true)) {
+                    $audioPath = $entry['path_lower'];
+                    $audioSize = $entry['size'];
+                    break;
+                }
+            }
+
+            if ($audioPath === null) {
+                return null;
+            }
+
+            $ext = strtolower(pathinfo($audioPath, PATHINFO_EXTENSION));
+            if ($ext !== 'mp3') {
+                return null;
+            }
+
+            $tempLink = $this->getTemporaryLink($audioPath);
+            if ($tempLink === null) {
+                return null;
+            }
+
+            $ctx = stream_context_create(['http' => [
+                'header' => "Range: bytes=0-131071\r\n",
+                'timeout' => 10,
+            ]]);
+            $data = @file_get_contents($tempLink, false, $ctx);
+            if ($data === false || strlen($data) < 4) {
+                return null;
+            }
+
+            $seconds = $this->parseMp3DurationSeconds($data, $audioSize);
+            if ($seconds === null || $seconds <= 0) {
+                return null;
+            }
+
+            return sprintf('%d:%02d', intdiv($seconds, 60), $seconds % 60);
+        } catch (\Exception $e) {
+            return null;
+        }
+    }
+
+    private function parseMp3DurationSeconds(string $data, int $fileSize): ?int
+    {
+        $len    = strlen($data);
+        $offset = 0;
+
+        // Skip ID3v2 tag
+        if ($len >= 10 && substr($data, 0, 3) === 'ID3') {
+            $tagSize = ((ord($data[6]) & 0x7F) << 21)
+                     | ((ord($data[7]) & 0x7F) << 14)
+                     | ((ord($data[8]) & 0x7F) << 7)
+                     |  (ord($data[9]) & 0x7F);
+            $offset = 10 + $tagSize;
+            if ((ord($data[5]) & 0x10) !== 0) {
+                $offset += 10; // footer present
+            }
+        }
+
+        // Bitrate tables (kbps): index → [MPEG1-L3, MPEG2-L3]
+        $bitrates = [
+            3 => [0, 32, 40, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320, 0],
+            2 => [0, 8,  16, 24, 32, 40, 48, 56, 64,  80,  96,  112, 128, 144, 160, 0],
+        ];
+        $sampleRates = [
+            3 => [44100, 48000, 32000],
+            2 => [22050, 24000, 16000],
+            0 => [11025, 12000, 8000],
+        ];
+
+        for ($i = $offset; $i < $len - 3; $i++) {
+            if (ord($data[$i]) !== 0xFF || (ord($data[$i + 1]) & 0xE0) !== 0xE0) {
+                continue;
+            }
+
+            $b1 = ord($data[$i + 1]);
+            $b2 = ord($data[$i + 2]);
+            $b3 = ord($data[$i + 3]);
+
+            $version     = ($b1 >> 3) & 0x03;
+            $layer       = ($b1 >> 1) & 0x03;
+            $bitrateIdx  = ($b2 >> 4) & 0x0F;
+            $srIdx       = ($b2 >> 2) & 0x03;
+            $channelMode = ($b3 >> 6) & 0x03;
+
+            if ($layer !== 1) {
+                continue; // only Layer III
+            }
+            if ($bitrateIdx === 0 || $bitrateIdx === 0x0F) {
+                continue;
+            }
+            if ($srIdx === 3) {
+                continue;
+            }
+
+            $bitrate    = ($bitrates[$version] ?? [])[$bitrateIdx] ?? 0;
+            $sampleRate = ($sampleRates[$version] ?? [])[$srIdx]   ?? 0;
+            if ($bitrate === 0 || $sampleRate === 0) {
+                continue;
+            }
+
+            // Side-info size for Xing header detection
+            $sideInfo = ($version === 3)
+                ? ($channelMode === 3 ? 17 : 32)
+                : ($channelMode === 3 ? 9  : 17);
+
+            $xingOff = $i + 4 + $sideInfo;
+            if ($xingOff + 12 < $len) {
+                $tag = substr($data, $xingOff, 4);
+                if ($tag === 'Xing' || $tag === 'Info') {
+                    $flags = unpack('N', substr($data, $xingOff + 4, 4))[1];
+                    if ($flags & 0x01) {
+                        $numFrames       = unpack('N', substr($data, $xingOff + 8, 4))[1];
+                        $samplesPerFrame = ($version === 3) ? 1152 : 576;
+                        return (int) round($numFrames * $samplesPerFrame / $sampleRate);
+                    }
+                }
+
+                $vbriOff = $i + 4 + 32;
+                if ($vbriOff + 18 < $len && substr($data, $vbriOff, 4) === 'VBRI') {
+                    $numFrames       = unpack('N', substr($data, $vbriOff + 14, 4))[1];
+                    $samplesPerFrame = ($version === 3) ? 1152 : 576;
+                    return (int) round($numFrames * $samplesPerFrame / $sampleRate);
+                }
+            }
+
+            // CBR: estimate from total file size
+            $audioBytes = max(1, $fileSize - $offset);
+            return (int) round($audioBytes * 8 / ($bitrate * 1000));
+        }
+
+        return null;
+    }
+
+    /**
      * Format file size in human-readable format
      */
     public static function formatFileSize(int $bytes): string

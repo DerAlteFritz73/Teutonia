@@ -1,0 +1,243 @@
+<?php
+
+namespace App\Controller\Admin;
+
+use App\Entity\Liederliste;
+use App\Repository\LiederlisteRepository;
+use App\Repository\SongKeywordRepository;
+use App\Service\DropboxService;
+use Doctrine\ORM\EntityManagerInterface;
+use PhpOffice\PhpWord\PhpWord;
+use PhpOffice\PhpWord\SimpleType\Jc;
+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\ResponseHeaderBag;
+use Symfony\Component\Routing\Attribute\Route;
+
+#[Route('/admin/liederlisten', name: 'admin_liederlisten')]
+class LiederlisteController extends AbstractController
+{
+    #[Route('', name: '', methods: ['GET'])]
+    public function index(LiederlisteRepository $repo): Response
+    {
+        return $this->render('admin/liederliste/index.html.twig', [
+            'listen' => $repo->findBy([], ['updatedAt' => 'DESC']),
+        ]);
+    }
+
+    #[Route('/new', name: '_new', methods: ['GET', 'POST'])]
+    public function new(Request $request, EntityManagerInterface $em, SongKeywordRepository $songRepo): Response
+    {
+        $liste = new Liederliste();
+        return $this->handleForm($liste, $request, $em, $songRepo, true);
+    }
+
+    #[Route('/{id}/edit', name: '_edit', requirements: ['id' => '\d+'], methods: ['GET', 'POST'])]
+    public function edit(Liederliste $liste, Request $request, EntityManagerInterface $em, SongKeywordRepository $songRepo): Response
+    {
+        return $this->handleForm($liste, $request, $em, $songRepo, false);
+    }
+
+    #[Route('/{id}/delete', name: '_delete', requirements: ['id' => '\d+'], methods: ['POST'])]
+    public function delete(Liederliste $liste, Request $request, EntityManagerInterface $em): Response
+    {
+        if (!$this->isCsrfTokenValid('delete_liederliste' . $liste->getId(), $request->request->get('_token'))) {
+            $this->addFlash('error', 'Ungültiges CSRF-Token.');
+            return $this->redirectToRoute('admin_liederlisten');
+        }
+
+        $em->remove($liste);
+        $em->flush();
+
+        $this->addFlash('success', 'Liederliste gelöscht.');
+        return $this->redirectToRoute('admin_liederlisten');
+    }
+
+    #[Route('/{id}/download', name: '_download', requirements: ['id' => '\d+'], methods: ['GET'])]
+    public function download(Liederliste $liste): Response
+    {
+        $phpWord = new PhpWord();
+        $phpWord->getSettings()->setThemeFontLang(new \PhpOffice\PhpWord\Style\Language('de-DE'));
+
+        $phpWord->setDefaultFontName('Calibri');
+        $phpWord->setDefaultFontSize(11);
+
+        $section = $phpWord->addSection([
+            'marginTop'    => \PhpOffice\PhpWord\Shared\Converter::cmToTwip(2.5),
+            'marginBottom' => \PhpOffice\PhpWord\Shared\Converter::cmToTwip(2.0),
+            'marginLeft'   => \PhpOffice\PhpWord\Shared\Converter::cmToTwip(2.5),
+            'marginRight'  => \PhpOffice\PhpWord\Shared\Converter::cmToTwip(2.5),
+        ]);
+
+        $phpWord->addTitleStyle(1, ['name' => 'Calibri', 'size' => 16, 'bold' => true], ['spaceAfter' => 240]);
+
+        $section->addTitle($liste->getName(), 1);
+
+        $tableStyle = [
+            'borderSize'   => 6,
+            'borderColor'  => 'CCCCCC',
+            'cellMargin'   => 80,
+            'unit'         => \PhpOffice\PhpWord\Style\Table::WIDTH_PERCENT,
+            'width'        => 100 * 50,
+        ];
+        $headerStyle = ['bold' => true, 'size' => 10];
+        $cellBg      = ['bgColor' => 'E8E8E8'];
+
+        $table = $section->addTable($tableStyle);
+
+        // Header row
+        $table->addRow();
+        $table->addCell(500, $cellBg)->addText('#', $headerStyle, ['alignment' => Jc::CENTER]);
+        $table->addCell(3000, $cellBg)->addText('Komponist', $headerStyle);
+        $table->addCell(null, $cellBg)->addText('Titel', $headerStyle);
+        $table->addCell(800, $cellBg)->addText('Dauer', $headerStyle, ['alignment' => Jc::CENTER]);
+
+        $numStyle    = ['size' => 10, 'color' => '888888'];
+        $textStyle   = ['size' => 10];
+        $italicStyle = ['size' => 10, 'italic' => true];
+        $durStyle    = ['size' => 10];
+
+        foreach ($liste->getItems() as $i => $item) {
+            $table->addRow();
+            $table->addCell(500)->addText((string)($i + 1), $numStyle, ['alignment' => Jc::CENTER]);
+            $table->addCell(3000)->addText($item['composer'] ?? '', $textStyle);
+            $table->addCell(null)->addText($item['title'] ?? '', $item['type'] === 'custom' ? $italicStyle : $textStyle);
+            $table->addCell(800)->addText($item['duration'] ?? '', $durStyle, ['alignment' => Jc::CENTER]);
+        }
+
+        // Total duration row
+        $total = $liste->getTotalDuration();
+        $table->addRow();
+        $table->addCell(500);
+        $table->addCell(3000)->addText('Gesamt', ['bold' => true, 'size' => 10], ['alignment' => Jc::RIGHT]);
+        $table->addCell(null);
+        $table->addCell(800)->addText($total, ['bold' => true, 'size' => 10], ['alignment' => Jc::CENTER]);
+
+        $tmpFile = tempnam(sys_get_temp_dir(), 'liederliste_') . '.docx';
+        $objWriter = \PhpOffice\PhpWord\IOFactory::createWriter($phpWord, 'Word2007');
+        $objWriter->save($tmpFile);
+
+        $safeName = preg_replace('/[^a-zA-Z0-9äöüÄÖÜß _-]/', '', $liste->getName());
+        $filename  = 'Liederliste_' . str_replace(' ', '_', $safeName) . '.docx';
+
+        $response = new BinaryFileResponse($tmpFile);
+        $response->setContentDisposition(ResponseHeaderBag::DISPOSITION_ATTACHMENT, $filename);
+        $response->headers->set('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+        $response->deleteFileAfterSend(true);
+
+        return $response;
+    }
+
+    #[Route('/fetch-duration', name: '_fetch_duration', methods: ['GET'])]
+    public function fetchDuration(
+        Request $request,
+        SongKeywordRepository $songRepo,
+        DropboxService $dropboxService,
+    ): JsonResponse {
+        $songId = (int) $request->query->get('songId', 0);
+        if ($songId <= 0) {
+            return $this->json(['error' => 'Ungültige Song-ID'], 400);
+        }
+
+        $song = $songRepo->find($songId);
+        if ($song === null) {
+            return $this->json(['error' => 'Song nicht gefunden'], 404);
+        }
+
+        // Try Dropbox first
+        $folderPath = $song->getAktuelleDropboxlink() ?? $song->getDropboxlink();
+        if ($folderPath !== null) {
+            $duration = $dropboxService->getFirstAudioDuration($folderPath);
+            if ($duration !== null) {
+                return $this->json(['duration' => $duration]);
+            }
+        }
+
+        // Try YouTube links
+        foreach ($song->getLinks() as $link) {
+            $duration = $this->getYoutubeDuration($link->getUrl());
+            if ($duration !== null) {
+                return $this->json(['duration' => $duration]);
+            }
+        }
+
+        return $this->json(['error' => 'Dauer nicht ermittelbar']);
+    }
+
+    private function handleForm(
+        Liederliste $liste,
+        Request $request,
+        EntityManagerInterface $em,
+        SongKeywordRepository $songRepo,
+        bool $isNew,
+    ): Response {
+        if ($request->isMethod('POST')) {
+            $name = trim((string) $request->request->get('liste_name', ''));
+            if ($name === '') {
+                $this->addFlash('error', 'Bitte einen Namen eingeben.');
+            } else {
+                $liste->setName($name);
+
+                $itemsJson = (string) $request->request->get('items_json', '[]');
+                $items     = json_decode($itemsJson, true);
+                if (!is_array($items)) {
+                    $items = [];
+                }
+                $liste->setItems($items);
+
+                $em->persist($liste);
+                $em->flush();
+
+                $this->addFlash('success', $isNew ? 'Liederliste erstellt.' : 'Liederliste gespeichert.');
+                return $this->redirectToRoute('admin_liederlisten_edit', ['id' => $liste->getId()]);
+            }
+        }
+
+        $allSongs = $songRepo->findBy([], ['songName' => 'ASC']);
+
+        $songData = [];
+        foreach ($allSongs as $song) {
+            $songData[] = [
+                'id'       => $song->getId(),
+                'composer' => $song->getComposer() ?? '',
+                'title'    => $song->getSongName() ?? '',
+                'hasDropbox' => $song->getDropboxlink() !== null || $song->getAktuelleDropboxlink() !== null,
+                'hasLinks'   => !$song->getLinks()->isEmpty(),
+            ];
+        }
+
+        return $this->render('admin/liederliste/edit.html.twig', [
+            'liste'    => $liste,
+            'isNew'    => $isNew,
+            'songData' => $songData,
+        ]);
+    }
+
+    private function getYoutubeDuration(string $url): ?string
+    {
+        if (!preg_match('/(?:youtube\.com\/watch\?.*v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/', $url, $m)) {
+            return null;
+        }
+
+        $ctx = stream_context_create(['http' => [
+            'timeout'     => 8,
+            'user_agent'  => 'Mozilla/5.0 (compatible)',
+            'header'      => "Accept-Language: de\r\n",
+        ]]);
+
+        $html = @file_get_contents('https://www.youtube.com/watch?v=' . $m[1], false, $ctx);
+        if ($html === false) {
+            return null;
+        }
+
+        if (preg_match('/"lengthSeconds"\s*:\s*"(\d+)"/', $html, $m)) {
+            $s = (int) $m[1];
+            return $s > 0 ? sprintf('%d:%02d', intdiv($s, 60), $s % 60) : null;
+        }
+
+        return null;
+    }
+}

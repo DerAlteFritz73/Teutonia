@@ -1,0 +1,643 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ isNew ? 'Neue Liederliste' : liste.name }} - {{ parent() }}{% endblock %}
+
+{% block body %}
+<!-- template: templates/admin/liederliste/edit.html.twig -->
+<div class="container-fluid py-4" style="max-width:1200px">
+
+    {% for message in app.flashes('success') %}
+        <div class="alert alert-success alert-dismissible fade show">{{ message }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+    {% endfor %}
+    {% for message in app.flashes('error') %}
+        <div class="alert alert-danger alert-dismissible fade show">{{ message }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+    {% endfor %}
+
+    <form id="liste-form" method="post" action="{{ isNew ? path('admin_liederlisten_new') : path('admin_liederlisten_edit', {id: liste.id}) }}">
+        <input type="hidden" name="_token" value="{{ csrf_token('liederliste') }}">
+        <input type="hidden" name="items_json" id="items-json-input" value="">
+
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div class="d-flex align-items-center gap-3 flex-grow-1">
+                <input type="text" name="liste_name" id="liste-name"
+                       class="form-control form-control-lg fw-semibold"
+                       style="max-width:420px"
+                       placeholder="Name der Liederliste"
+                       value="{{ liste.name }}"
+                       required>
+            </div>
+            <div class="d-flex gap-2 ms-3">
+                <a href="{{ path('admin_liederlisten') }}" class="btn btn-secondary">
+                    <i class="bi bi-x-lg me-1"></i>Abbrechen
+                </a>
+                {% if not isNew %}
+                <a href="{{ path('admin_liederlisten_download', {id: liste.id}) }}"
+                   class="btn btn-outline-success">
+                    <i class="bi bi-file-earmark-word me-1"></i>Word
+                </a>
+                {% endif %}
+                <button type="submit" class="btn btn-primary" id="save-btn">
+                    <i class="bi bi-check-lg me-1"></i>{{ isNew ? 'Erstellen' : 'Speichern' }}
+                </button>
+            </div>
+        </div>
+
+        {# ── Dual-list song picker ──────────────────────────────────────────── #}
+        <div class="d-flex flex-column flex-md-row gap-2 align-items-md-stretch">
+
+            {# Left — available songs #}
+            <div class="flex-grow-1" style="min-width:0">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="fw-semibold text-muted">Alle Lieder</span>
+                    <span class="badge bg-secondary" id="left-count">0</span>
+                </div>
+                <input type="search" id="left-search" class="form-control form-control-sm mb-1"
+                       placeholder="Filtern…" autocomplete="off">
+                <div class="ll-list-wrap">
+                    <div class="ll-list-header">
+                        <span class="llh-composer">Komponist</span>
+                        <span class="llh-title">Titel</span>
+                    </div>
+                    <div class="ll-list" id="left-list"></div>
+                </div>
+            </div>
+
+            {# Middle — action buttons #}
+            <div class="d-flex flex-row flex-md-column justify-content-center gap-2 px-2 flex-shrink-0">
+                <button type="button" id="btn-add" class="btn btn-primary btn-sm" title="Zur Liste hinzufügen">
+                    <i class="bi bi-chevron-right d-none d-md-inline"></i>
+                    <i class="bi bi-chevron-down d-inline d-md-none"></i>
+                </button>
+                <button type="button" id="btn-remove" class="btn btn-outline-secondary btn-sm" title="Aus Liste entfernen">
+                    <i class="bi bi-chevron-left d-none d-md-inline"></i>
+                    <i class="bi bi-chevron-up d-inline d-md-none"></i>
+                </button>
+            </div>
+
+            {# Right — songs in the list (drag-to-reorder) #}
+            <div class="flex-grow-1" style="min-width:0">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="fw-semibold text-primary">In der Liste</span>
+                    <span class="badge bg-primary" id="right-count">0</span>
+                </div>
+                <input type="search" id="right-search" class="form-control form-control-sm mb-1"
+                       placeholder="Filtern…" autocomplete="off">
+                <div class="ll-list-wrap">
+                    <div class="ll-list-header">
+                        <span class="llh-handle"></span>
+                        <span class="llh-composer">Komponist</span>
+                        <span class="llh-title">Titel</span>
+                        <span class="llh-dur">Dauer</span>
+                        <span class="llh-del"></span>
+                    </div>
+                    <div class="ll-list" id="right-list"></div>
+                </div>
+
+                {# Add free entry #}
+                <div id="custom-add-panel" class="custom-add-panel mt-2 p-2 border rounded" style="background:#fffbf0">
+                    <div class="small fw-semibold text-warning-emphasis mb-1 custom-add-label">
+                        <i class="bi bi-plus-circle me-1" id="custom-add-icon"></i>
+                        <span id="custom-add-title">Freies Stück hinzufügen</span>
+                    </div>
+                    <div class="d-flex gap-1">
+                        <input type="text" id="custom-composer" class="form-control form-control-sm"
+                               placeholder="Komponist (optional)" style="flex:0 0 28%">
+                        <input type="text" id="custom-title-input" class="form-control form-control-sm"
+                               placeholder="Titel *">
+                        <input type="text" id="custom-dur-input" class="form-control form-control-sm"
+                               placeholder="Dauer" style="flex:0 0 70px">
+                        <button type="button" id="btn-add-custom" class="btn btn-sm btn-warning text-nowrap">
+                            <i class="bi bi-plus-lg"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <p class="text-muted small mt-2">
+            Klick / <kbd>Strg</kbd>+Klick / <kbd>Shift</kbd>+Klick zum Auswählen &middot;
+            Doppelklick zum schnellen Verschieben &middot;
+            Rechte Liste: Drag &amp; Drop zum Umsortieren
+        </p>
+    </form>
+</div>
+
+<style>
+.ll-list-wrap {
+    border: 1px solid #dee2e6;
+    border-radius: .375rem;
+    overflow: hidden;
+}
+.ll-list-header {
+    display: flex; align-items: center;
+    background: #f8f9fa; border-bottom: 1px solid #dee2e6;
+    padding: 4px 8px;
+    font-size: .7rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .06em;
+    color: #6c757d; user-select: none;
+}
+.ll-list { height: 420px; overflow-y: auto; }
+
+.ll-row {
+    display: flex; align-items: center;
+    padding: 5px 8px; cursor: pointer;
+    user-select: none; border-bottom: 1px solid #f2f2f2;
+    transition: background .08s;
+}
+.ll-row:last-child       { border-bottom: none; }
+.ll-row:hover            { background: #eef2ff; }
+.ll-row.selected         { background: #0d6efd; color: #fff; }
+.ll-row.selected .llc-composer { color: rgba(255,255,255,.75); }
+.ll-row.selected .llc-handle   { color: rgba(255,255,255,.6); }
+.ll-row.selected .llc-dur input { color: #fff; background: rgba(255,255,255,.15); border-color: rgba(255,255,255,.3); }
+
+.ll-row.custom-item           { background: #fffbf0; }
+.ll-row.custom-item:hover     { background: #fff3cd; }
+.ll-row.custom-item.selected  { background: #e0a800; color: #000; }
+
+.ll-row.dragging    { opacity: .35; }
+.ll-row.drop-before { box-shadow: 0 -2px 0 0 #0d6efd; }
+.ll-row.drop-after  { box-shadow: 0  2px 0 0 #0d6efd; }
+
+.llh-handle  { width: 20px; min-width: 20px; }
+.llh-composer { width: 22%; min-width: 22%; max-width: 22%; }
+.llh-title   { flex: 1; }
+.llh-dur     { flex: 0 0 110px; min-width: 0; text-align: center; }
+.llh-del     { width: 56px; min-width: 56px; }
+
+.llc-handle {
+    width: 20px; min-width: 20px;
+    text-align: center; color: #adb5bd; font-size: .8rem;
+    cursor: grab;
+}
+.llc-handle:active { cursor: grabbing; }
+.llc-composer {
+    width: 22%; min-width: 22%; max-width: 22%;
+    font-size: .8125rem; color: #6c757d;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    padding-right: 8px;
+}
+.llc-title {
+    flex: 1; font-size: .8125rem;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.llc-dur {
+    flex: 0 0 110px; min-width: 0;
+    display: flex; align-items: center; gap: 2px;
+    margin: 0 4px;
+}
+.llc-dur input {
+    font-size: .75rem; padding: 1px 4px; height: 24px;
+    width: 52px; flex-shrink: 0;
+}
+.btn-fetch-dur {
+    background: none; border: none; padding: 0 2px;
+    color: #6c757d; cursor: pointer; font-size: .8rem; line-height: 1;
+    flex-shrink: 0;
+}
+.btn-fetch-dur:hover { color: #0d6efd; }
+.btn-fetch-dur.spinning { animation: spin .8s linear infinite; pointer-events: none; }
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+.llc-del {
+    width: 56px; min-width: 56px;
+    text-align: center; display: flex; align-items: center;
+    justify-content: center; gap: 4px;
+}
+.btn-del-item, .btn-edit-item {
+    background: none; border: none; padding: 0;
+    color: #adb5bd; line-height: 1; cursor: pointer; font-size: .85rem;
+}
+.btn-del-item:hover  { color: #dc3545; }
+.btn-edit-item:hover { color: #0d6efd; }
+
+.custom-add-panel.editing { background: #e8f4ff; border-color: #86b7fe; }
+.custom-add-panel.editing .custom-add-label { color: #0d6efd; }
+</style>
+
+<script>
+window.ALL_SONGS    = {{ songData|json_encode|raw }};
+window.SAVED_ITEMS  = {{ liste.items|json_encode|raw }};
+window.FETCH_URL    = '{{ path('admin_liederlisten_fetch_duration') }}';
+</script>
+<script>
+(function () {
+    // ── Data ──────────────────────────────────────────────────────────────
+    const allSongs = window.ALL_SONGS || [];  // [{id, composer, title, hasDropbox, hasLinks}]
+    const songById = new Map(allSongs.map(s => [s.id, s]));
+
+    // left list: all songs not yet in right list
+    let leftSongs  = allSongs.slice();  // shallow copy
+
+    // right list items: [{type:'song'|'custom', songId?, composer, title, duration, uid}]
+    let rightItems = [];
+    let uidCounter = 0;
+
+    function freshUid() { return 'u' + (uidCounter++); }
+
+    // Restore saved items
+    (window.SAVED_ITEMS || []).forEach(item => {
+        if (item.type === 'song' && item.songId) {
+            const idx = leftSongs.findIndex(s => s.id === item.songId);
+            if (idx !== -1) {
+                leftSongs.splice(idx, 1);
+                rightItems.push({ type: 'song', songId: item.songId, composer: item.composer, title: item.title, duration: item.duration || '', uid: freshUid() });
+            }
+        } else if (item.type === 'custom') {
+            rightItems.push({ type: 'custom', composer: item.composer || '', title: item.title || '', duration: item.duration || '', uid: freshUid() });
+        }
+    });
+
+    // ── DOM refs ───────────────────────────────────────────────────────────
+    const leftListEl    = document.getElementById('left-list');
+    const rightListEl   = document.getElementById('right-list');
+    const leftSearchEl  = document.getElementById('left-search');
+    const rightSearchEl = document.getElementById('right-search');
+    const leftCountEl   = document.getElementById('left-count');
+    const rightCountEl  = document.getElementById('right-count');
+
+    // ── Helpers ────────────────────────────────────────────────────────────
+    function escHtml(s) {
+        return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    // ── Row factories ──────────────────────────────────────────────────────
+    function makeLeftRow(song) {
+        const row = document.createElement('div');
+        row.className = 'll-row';
+        row.dataset.id = song.id;
+
+        const c = document.createElement('span');
+        c.className = 'llc-composer';
+        c.textContent = song.composer || '—';
+
+        const t = document.createElement('span');
+        t.className = 'llc-title';
+        t.textContent = song.title;
+
+        row.appendChild(c);
+        row.appendChild(t);
+        return row;
+    }
+
+    function makeRightRow(item) {
+        const isCustom = item.type === 'custom';
+        const row = document.createElement('div');
+        row.className = 'll-row' + (isCustom ? ' custom-item' : '');
+        row.dataset.uid = item.uid;
+        row.setAttribute('draggable', 'true');
+
+        // Handle
+        const h = document.createElement('span');
+        h.className = 'llc-handle';
+        h.innerHTML = '<i class="bi bi-grip-vertical"></i>';
+        row.appendChild(h);
+
+        // Composer
+        const c = document.createElement('span');
+        c.className = 'llc-composer';
+        c.textContent = item.composer || '—';
+        row.appendChild(c);
+
+        // Title
+        const t = document.createElement('span');
+        t.className = 'llc-title';
+        if (isCustom) {
+            t.innerHTML = '<em>' + escHtml(item.title) + '</em>';
+        } else {
+            t.textContent = item.title;
+        }
+        row.appendChild(t);
+
+        // Duration
+        const durWrap = document.createElement('span');
+        durWrap.className = 'llc-dur';
+        const durInput = document.createElement('input');
+        durInput.type = 'text';
+        durInput.className = 'form-control form-control-sm';
+        durInput.placeholder = '0:00';
+        durInput.value = item.duration || '';
+        durInput.addEventListener('click', e => e.stopPropagation());
+        durInput.addEventListener('mousedown', e => e.stopPropagation());
+        durInput.addEventListener('input', () => { item.duration = durInput.value.trim(); });
+        durWrap.appendChild(durInput);
+
+        // Fetch button: show only for songs with Dropbox/YouTube
+        const song = item.songId ? songById.get(item.songId) : null;
+        if (song && (song.hasDropbox || song.hasLinks)) {
+            const fetchBtn = document.createElement('button');
+            fetchBtn.type = 'button';
+            fetchBtn.className = 'btn-fetch-dur';
+            fetchBtn.title = 'Dauer automatisch ermitteln';
+            fetchBtn.innerHTML = '<i class="bi bi-arrow-repeat"></i>';
+            fetchBtn.addEventListener('click', e => {
+                e.stopPropagation();
+                fetchBtn.querySelector('i').className = 'bi bi-arrow-repeat spinning';
+                fetch(window.FETCH_URL + '?songId=' + song.id)
+                    .then(r => r.json())
+                    .then(data => {
+                        if (data.duration) {
+                            durInput.value = data.duration;
+                            item.duration  = data.duration;
+                        } else {
+                            durInput.placeholder = '—';
+                        }
+                    })
+                    .catch(() => { durInput.placeholder = '!'; })
+                    .finally(() => { fetchBtn.querySelector('i').className = 'bi bi-arrow-repeat'; });
+            });
+            durWrap.appendChild(fetchBtn);
+        }
+        row.appendChild(durWrap);
+
+        // Delete (and edit for custom)
+        const del = document.createElement('span');
+        del.className = 'llc-del';
+
+        if (isCustom) {
+            const editBtn = document.createElement('button');
+            editBtn.type = 'button';
+            editBtn.className = 'btn-edit-item';
+            editBtn.title = 'Bearbeiten';
+            editBtn.innerHTML = '<i class="bi bi-pencil"></i>';
+            editBtn.addEventListener('click', e => { e.stopPropagation(); enterEditMode(item); });
+            del.appendChild(editBtn);
+        }
+
+        const delBtn = document.createElement('button');
+        delBtn.type = 'button';
+        delBtn.className = 'btn-del-item';
+        delBtn.title = 'Entfernen';
+        delBtn.innerHTML = '<i class="bi bi-x-lg"></i>';
+        delBtn.addEventListener('click', e => {
+            e.stopPropagation();
+            const idx = rightItems.findIndex(x => x.uid === item.uid);
+            if (idx !== -1) {
+                const removed = rightItems.splice(idx, 1)[0];
+                if (removed.type === 'song') {
+                    const song = songById.get(removed.songId);
+                    if (song) {
+                        const ins = leftSongs.findIndex(s => s.title.localeCompare(removed.title, 'de') > 0);
+                        leftSongs.splice(ins === -1 ? leftSongs.length : ins, 0, song);
+                    }
+                }
+            }
+            if (editingUid === item.uid) exitEditMode();
+            render();
+        });
+        del.appendChild(delBtn);
+
+        row.appendChild(del);
+        return row;
+    }
+
+    // ── Render ─────────────────────────────────────────────────────────────
+    function render() {
+        const lTerms = leftSearchEl.value.toLowerCase().split(/\s+/).filter(Boolean);
+        const rTerms = rightSearchEl.value.toLowerCase().split(/\s+/).filter(Boolean);
+        const matchL = s => lTerms.every(t => (s.title + ' ' + s.composer).toLowerCase().includes(t));
+        const matchR = s => rTerms.every(t => (s.title + ' ' + s.composer).toLowerCase().includes(t));
+
+        const lSel = new Set(Array.from(leftListEl.querySelectorAll('.ll-row.selected')).map(r => +r.dataset.id));
+        const rSel = new Set(Array.from(rightListEl.querySelectorAll('.ll-row.selected')).map(r => r.dataset.uid));
+
+        leftListEl.innerHTML  = '';
+        rightListEl.innerHTML = '';
+
+        leftSongs.forEach(s => {
+            if (lTerms.length && !matchL(s)) return;
+            const row = makeLeftRow(s);
+            if (lSel.has(s.id)) row.classList.add('selected');
+            leftListEl.appendChild(row);
+        });
+
+        rightItems.forEach(item => {
+            if (rTerms.length && !matchR(item)) return;
+            const row = makeRightRow(item);
+            if (rSel.has(item.uid)) row.classList.add('selected');
+            rightListEl.appendChild(row);
+        });
+
+        leftCountEl.textContent  = leftSongs.length;
+        rightCountEl.textContent = rightItems.length;
+    }
+
+    // ── Selection ──────────────────────────────────────────────────────────
+    let lastLeft = null, lastRight = null;
+
+    function handleClick(listEl, e) {
+        const row = e.target.closest('.ll-row');
+        if (!row || e.target.closest('.btn-del-item, .btn-edit-item')) return;
+
+        const rows    = Array.from(listEl.querySelectorAll('.ll-row'));
+        const lastSel = listEl === leftListEl ? lastLeft : lastRight;
+
+        if (e.ctrlKey || e.metaKey) {
+            row.classList.toggle('selected');
+        } else if (e.shiftKey && lastSel && listEl.contains(lastSel)) {
+            const a = rows.indexOf(lastSel), b = rows.indexOf(row);
+            const [lo, hi] = [Math.min(a, b), Math.max(a, b)];
+            rows.forEach((r, i) => r.classList.toggle('selected', i >= lo && i <= hi));
+        } else {
+            rows.forEach(r => r.classList.remove('selected'));
+            row.classList.add('selected');
+        }
+
+        if (listEl === leftListEl) lastLeft = row; else lastRight = row;
+    }
+
+    leftListEl.addEventListener('click',  e => handleClick(leftListEl,  e));
+    rightListEl.addEventListener('click', e => handleClick(rightListEl, e));
+
+    // ── Move left → right ──────────────────────────────────────────────────
+    document.getElementById('btn-add').addEventListener('click', () => {
+        const sel = new Set(Array.from(leftListEl.querySelectorAll('.ll-row.selected')).map(r => +r.dataset.id));
+        if (!sel.size) return;
+        for (let i = leftSongs.length - 1; i >= 0; i--) {
+            if (!sel.has(leftSongs[i].id)) continue;
+            const s = leftSongs.splice(i, 1)[0];
+            rightItems.push({ type: 'song', songId: s.id, composer: s.composer, title: s.title, duration: '', uid: freshUid() });
+        }
+        render();
+    });
+
+    // ── Move right → left ──────────────────────────────────────────────────
+    document.getElementById('btn-remove').addEventListener('click', () => {
+        const sel = new Set(Array.from(rightListEl.querySelectorAll('.ll-row.selected')).map(r => r.dataset.uid));
+        if (!sel.size) return;
+        for (let i = rightItems.length - 1; i >= 0; i--) {
+            if (!sel.has(rightItems[i].uid)) continue;
+            const removed = rightItems.splice(i, 1)[0];
+            if (removed.type === 'song') {
+                const s = songById.get(removed.songId);
+                if (s) {
+                    const ins = leftSongs.findIndex(u => u.title.localeCompare(removed.title, 'de') > 0);
+                    leftSongs.splice(ins === -1 ? leftSongs.length : ins, 0, s);
+                }
+            }
+        }
+        render();
+    });
+
+    // ── Double-click shortcut ──────────────────────────────────────────────
+    leftListEl.addEventListener('dblclick', e => {
+        const row = e.target.closest('.ll-row');
+        if (!row) return;
+        leftListEl.querySelectorAll('.ll-row').forEach(r => r.classList.remove('selected'));
+        row.classList.add('selected');
+        document.getElementById('btn-add').click();
+    });
+    rightListEl.addEventListener('dblclick', e => {
+        const row = e.target.closest('.ll-row');
+        if (!row || e.target.closest('.btn-del-item, .btn-edit-item, input')) return;
+        rightListEl.querySelectorAll('.ll-row').forEach(r => r.classList.remove('selected'));
+        row.classList.add('selected');
+        document.getElementById('btn-remove').click();
+    });
+
+    // ── Custom item ────────────────────────────────────────────────────────
+    const customComposerEl = document.getElementById('custom-composer');
+    const customTitleEl    = document.getElementById('custom-title-input');
+    const customDurEl      = document.getElementById('custom-dur-input');
+    const customAddPanel   = document.getElementById('custom-add-panel');
+    const customAddTitle   = document.getElementById('custom-add-title');
+    const customAddIcon    = document.getElementById('custom-add-icon');
+    const btnAddCustom     = document.getElementById('btn-add-custom');
+    let editingUid         = null;
+
+    function enterEditMode(item) {
+        customComposerEl.value = item.composer;
+        customTitleEl.value    = item.title;
+        customDurEl.value      = item.duration;
+        editingUid = item.uid;
+        customAddPanel.classList.add('editing');
+        customAddTitle.textContent = 'Freies Stück bearbeiten';
+        customAddIcon.className    = 'bi bi-pencil me-1';
+        btnAddCustom.innerHTML     = '<i class="bi bi-check-lg"></i>';
+        btnAddCustom.classList.replace('btn-warning', 'btn-success');
+        customAddPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        customComposerEl.focus();
+    }
+
+    function exitEditMode() {
+        editingUid = null;
+        customAddPanel.classList.remove('editing');
+        customAddTitle.textContent = 'Freies Stück hinzufügen';
+        customAddIcon.className    = 'bi bi-plus-circle me-1';
+        btnAddCustom.innerHTML     = '<i class="bi bi-plus-lg"></i>';
+        btnAddCustom.classList.replace('btn-success', 'btn-warning');
+    }
+
+    function addCustomItem() {
+        const title = customTitleEl.value.trim();
+        if (!title) { customTitleEl.focus(); customTitleEl.classList.add('is-invalid'); return; }
+        customTitleEl.classList.remove('is-invalid');
+
+        if (editingUid !== null) {
+            const item = rightItems.find(x => x.uid === editingUid);
+            if (item) {
+                item.composer = customComposerEl.value.trim();
+                item.title    = title;
+                item.duration = customDurEl.value.trim();
+            }
+            exitEditMode();
+        } else {
+            rightItems.push({
+                type:     'custom',
+                composer: customComposerEl.value.trim(),
+                title,
+                duration: customDurEl.value.trim(),
+                uid:      freshUid(),
+            });
+            rightListEl.scrollTop = rightListEl.scrollHeight;
+        }
+
+        customComposerEl.value = '';
+        customTitleEl.value    = '';
+        customDurEl.value      = '';
+        customComposerEl.focus();
+        render();
+    }
+
+    btnAddCustom.addEventListener('click', addCustomItem);
+    customTitleEl.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); addCustomItem(); } });
+    customAddPanel.addEventListener('keydown', e => {
+        if (e.key === 'Escape' && editingUid !== null) {
+            exitEditMode();
+            customComposerEl.value = '';
+            customTitleEl.value    = '';
+            customDurEl.value      = '';
+        }
+    });
+
+    // ── Filter ────────────────────────────────────────────────────────────
+    leftSearchEl.addEventListener('input',  render);
+    rightSearchEl.addEventListener('input', render);
+
+    // ── Drag & drop ────────────────────────────────────────────────────────
+    let dragUid = null;
+
+    rightListEl.addEventListener('dragstart', e => {
+        const row = e.target.closest('.ll-row');
+        if (!row) { e.preventDefault(); return; }
+        dragUid = row.dataset.uid;
+        e.dataTransfer.effectAllowed = 'move';
+        setTimeout(() => row.classList.add('dragging'), 0);
+    });
+
+    rightListEl.addEventListener('dragend', () => {
+        rightListEl.querySelectorAll('.dragging').forEach(r => r.classList.remove('dragging'));
+        clearIndicators();
+        dragUid = null;
+    });
+
+    rightListEl.addEventListener('dragover', e => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        clearIndicators();
+        const row = e.target.closest('.ll-row');
+        if (!row || row.dataset.uid === dragUid) return;
+        const mid = row.getBoundingClientRect().top + row.getBoundingClientRect().height / 2;
+        row.classList.add(e.clientY < mid ? 'drop-before' : 'drop-after');
+    });
+
+    rightListEl.addEventListener('dragleave', e => {
+        if (!rightListEl.contains(e.relatedTarget)) clearIndicators();
+    });
+
+    rightListEl.addEventListener('drop', e => {
+        e.preventDefault();
+        const targetRow = e.target.closest('.ll-row');
+        clearIndicators();
+        if (!dragUid || !targetRow || targetRow.dataset.uid === dragUid) { render(); return; }
+
+        const fromIdx = rightItems.findIndex(x => x.uid === dragUid);
+        const [moved] = rightItems.splice(fromIdx, 1);
+        const toIdx   = rightItems.findIndex(x => x.uid === targetRow.dataset.uid);
+        const mid     = targetRow.getBoundingClientRect().top + targetRow.getBoundingClientRect().height / 2;
+        rightItems.splice(e.clientY < mid ? toIdx : toIdx + 1, 0, moved);
+        render();
+    });
+
+    function clearIndicators() {
+        rightListEl.querySelectorAll('.drop-before, .drop-after')
+            .forEach(r => r.classList.remove('drop-before', 'drop-after'));
+    }
+
+    // ── Sync to hidden input before submit ─────────────────────────────────
+    document.getElementById('liste-form').addEventListener('submit', () => {
+        const payload = rightItems.map(item => ({
+            type:     item.type,
+            songId:   item.songId ?? null,
+            composer: item.composer,
+            title:    item.title,
+            duration: item.duration || '',
+        }));
+        document.getElementById('items-json-input').value = JSON.stringify(payload);
+    });
+
+    // ── Initial render ─────────────────────────────────────────────────────
+    render();
+}());
+</script>
+{% endblock %}

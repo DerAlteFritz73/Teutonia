@@ -1,0 +1,75 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Liederlisten - {{ parent() }}{% endblock %}
+
+{% block body %}
+<!-- template: templates/admin/liederliste/index.html.twig -->
+<div class="container-fluid py-4" style="max-width:900px">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Liederlisten <span class="badge bg-secondary fs-6">{{ listen|length }}</span></h1>
+        <div class="d-flex gap-2">
+            <a href="{{ path('admin_liederlisten_new') }}" class="btn btn-primary">
+                <i class="bi bi-plus-lg me-1"></i>Neue Liste
+            </a>
+            <a href="{{ path('admin_dashboard') }}" class="btn btn-secondary">
+                <i class="bi bi-arrow-left me-1"></i>Zurück
+            </a>
+        </div>
+    </div>
+
+    {% for message in app.flashes('success') %}
+        <div class="alert alert-success alert-dismissible fade show">{{ message }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+    {% endfor %}
+    {% for message in app.flashes('error') %}
+        <div class="alert alert-danger alert-dismissible fade show">{{ message }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+    {% endfor %}
+
+    {% if listen is empty %}
+        <div class="text-center text-muted py-5">
+            <i class="bi bi-music-note-list fs-1 d-block mb-2"></i>
+            Noch keine Liederlisten vorhanden.
+        </div>
+    {% else %}
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Name</th>
+                        <th style="width:80px" class="text-center">Lieder</th>
+                        <th style="width:90px" class="text-center">Dauer</th>
+                        <th style="width:130px">Zuletzt bearbeitet</th>
+                        <th style="width:130px" class="text-end">Aktionen</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for liste in listen %}
+                    <tr>
+                        <td class="fw-semibold">{{ liste.name }}</td>
+                        <td class="text-center"><span class="badge bg-secondary">{{ liste.items|length }}</span></td>
+                        <td class="text-center text-muted small">{{ liste.totalDuration }}</td>
+                        <td class="text-muted small">{{ liste.updatedAt|date('d.m.Y H:i') }}</td>
+                        <td class="text-end">
+                            <a href="{{ path('admin_liederlisten_edit', {id: liste.id}) }}"
+                               class="btn btn-sm btn-outline-primary" title="Bearbeiten">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            <a href="{{ path('admin_liederlisten_download', {id: liste.id}) }}"
+                               class="btn btn-sm btn-outline-success" title="Word herunterladen">
+                                <i class="bi bi-file-earmark-word"></i>
+                            </a>
+                            <form action="{{ path('admin_liederlisten_delete', {id: liste.id}) }}" method="post"
+                                  class="d-inline" onsubmit="return confirm('Liste wirklich löschen?')">
+                                <input type="hidden" name="_token" value="{{ csrf_token('delete_liederliste' ~ liste.id) }}">
+                                <button class="btn btn-sm btn-outline-danger" title="Löschen">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
