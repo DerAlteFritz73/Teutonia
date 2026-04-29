@@ -162,7 +162,7 @@
 .llh-handle  { width: 20px; min-width: 20px; }
 .llh-composer { width: 22%; min-width: 22%; max-width: 22%; }
 .llh-title   { flex: 1; }
-.llh-dur     { flex: 0 0 70px; min-width: 0; text-align: center; }
+.llh-dur     { flex: 0 0 80px; min-width: 0; text-align: center; }
 .llh-del     { width: 56px; min-width: 56px; }
 
 .llc-handle {
@@ -182,15 +182,19 @@
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .llc-dur {
-    flex: 0 0 70px; min-width: 0;
-    display: flex; align-items: center;
+    flex: 0 0 80px; min-width: 0;
+    display: flex; align-items: center; gap: 3px;
     margin: 0 4px;
 }
 .llc-dur input {
     font-size: .75rem; padding: 1px 4px; height: 24px;
-    width: 100%; flex-shrink: 0;
+    flex: 1; min-width: 0;
 }
-.llc-dur input.fetching { background: #f0f4ff; }
+.dur-spinner {
+    flex-shrink: 0;
+    display: flex; align-items: center;
+    color: #6c757d;
+}
 
 .llc-del {
     width: 56px; min-width: 56px;
@@ -314,6 +318,12 @@ window.FETCH_URL    = '{{ path('admin_liederlisten_fetch_duration') }}';
         durInput.addEventListener('mousedown', e => e.stopPropagation());
         durInput.addEventListener('input', () => { item.duration = durInput.value.trim(); });
         durWrap.appendChild(durInput);
+
+        const spinner = document.createElement('span');
+        spinner.className = 'dur-spinner d-none';
+        spinner.innerHTML = '<span class="spinner-border" style="width:.65rem;height:.65rem;border-width:2px"></span>';
+        durWrap.appendChild(spinner);
+
         row.appendChild(durWrap);
 
         // Delete (and edit for custom)
@@ -420,18 +430,33 @@ window.FETCH_URL    = '{{ path('admin_liederlisten_fetch_duration') }}';
         const song = item.songId ? songById.get(item.songId) : null;
         if (!song || (!song.hasDropbox && !song.hasLinks)) return;
 
+        function getRow() { return rightListEl.querySelector('[data-uid="' + item.uid + '"]'); }
+
+        const row = getRow();
+        if (row) {
+            const sp = row.querySelector('.dur-spinner');
+            if (sp) sp.classList.remove('d-none');
+        }
+
         fetch(window.FETCH_URL + '?songId=' + song.id)
             .then(r => r.json())
             .then(data => {
                 if (!data.duration) return;
                 item.duration = data.duration;
-                const row = rightListEl.querySelector('[data-uid="' + item.uid + '"]');
-                if (row) {
-                    const inp = row.querySelector('.llc-dur input');
-                    if (inp && !inp.value) { inp.value = data.duration; inp.classList.remove('fetching'); }
+                const r = getRow();
+                if (r) {
+                    const inp = r.querySelector('.llc-dur input');
+                    if (inp && !inp.value) inp.value = data.duration;
                 }
             })
-            .catch(() => {});
+            .catch(() => {})
+            .finally(() => {
+                const r = getRow();
+                if (r) {
+                    const sp = r.querySelector('.dur-spinner');
+                    if (sp) sp.classList.add('d-none');
+                }
+            });
     }
 
     // ── Move left → right ──────────────────────────────────────────────────
