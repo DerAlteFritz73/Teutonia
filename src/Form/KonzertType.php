@@ -43,6 +43,12 @@ class KonzertType extends AbstractType
                 'mapped'   => false,
                 'attr'     => ['class' => 'form-control', 'accept' => 'image/*,application/pdf'],
             ])
+            ->add('kritikFile', FileType::class, [
+                'label'    => 'Kritik (Pressespiegel)',
+                'required' => false,
+                'mapped'   => false,
+                'attr'     => ['class' => 'form-control', 'accept' => 'image/*,application/pdf'],
+            ])
             ->add('songs', EntityType::class, [
                 'label'        => false,
                 'class'        => SongKeyword::class,

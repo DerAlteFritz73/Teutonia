@@ -964,6 +964,11 @@ class AdminController extends AbstractController
                 $path = $this->handleImageUpload($programmR);
                 if ($path) $konzert->setProgrammRueckseite($path);
             }
+            $kritik = $form->get('kritikFile')->getData();
+            if ($kritik) {
+                $path = $this->handleImageUpload($kritik);
+                if ($path) $konzert->setKritikPath($path);
+            }
             $em->persist($konzert);
             $em->flush();
             $this->addFlash('success', 'Konzert wurde erstellt.');
@@ -999,6 +1004,9 @@ class AdminController extends AbstractController
             $konzert->setVideoLinks(json_decode($videoJson, true) ?: []);
             $plakatSelect = trim($request->request->get('plakat_select', ''));
             $konzert->setPlakatPath($plakatSelect !== '' ? $plakatSelect : null);
+            $this->handleFileDeleteRequest($request, 'delete_programm_vorderseite', $konzert->getProgrammVorderseite(), fn() => $konzert->setProgrammVorderseite(null));
+            $this->handleFileDeleteRequest($request, 'delete_programm_rueckseite', $konzert->getProgrammRueckseite(), fn() => $konzert->setProgrammRueckseite(null));
+            $this->handleFileDeleteRequest($request, 'delete_kritik', $konzert->getKritikPath(), fn() => $konzert->setKritikPath(null));
             $programmV = $form->get('programmVorderseiteFile')->getData();
             if ($programmV) {
                 $path = $this->handleImageUpload($programmV, $konzert->getProgrammVorderseite());
@@ -1008,6 +1016,11 @@ class AdminController extends AbstractController
             if ($programmR) {
                 $path = $this->handleImageUpload($programmR, $konzert->getProgrammRueckseite());
                 if ($path) $konzert->setProgrammRueckseite($path);
+            }
+            $kritik = $form->get('kritikFile')->getData();
+            if ($kritik) {
+                $path = $this->handleImageUpload($kritik, $konzert->getKritikPath());
+                if ($path) $konzert->setKritikPath($path);
             }
             $em->flush();
             $this->addFlash('success', 'Konzert wurde aktualisiert.');
@@ -1314,6 +1327,18 @@ class AdminController extends AbstractController
         $em->flush();
 
         return new JsonResponse(['success' => true, 'message' => 'Reihenfolge wurde aktualisiert.']);
+    }
+
+    private function handleFileDeleteRequest(Request $request, string $fieldName, ?string $currentPath, callable $clearFn): void
+    {
+        if ($request->request->get($fieldName) !== '1' || !$currentPath) {
+            return;
+        }
+        $full = $this->getParameter('kernel.project_dir') . '/public/' . $currentPath;
+        if (file_exists($full)) {
+            unlink($full);
+        }
+        $clearFn();
     }
 
     private function handleImageUpload($imageFile, ?string $oldImagePath = null): ?string

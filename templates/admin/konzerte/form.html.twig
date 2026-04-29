@@ -67,9 +67,16 @@
                 {{ form_widget(form.programmVorderseiteFile) }}
             </div>
             {% if konzert.programmVorderseite %}
-                <img src="{{ asset(konzert.programmVorderseite) }}" alt="Programm aussen"
-                     style="height:48px;width:auto;border-radius:4px;object-fit:cover;cursor:zoom-in;margin-top:6px"
-                     onclick="document.getElementById('programmVModal').querySelector('img').src=this.src; new bootstrap.Modal(document.getElementById('programmVModal')).show()">
+                <input type="hidden" name="delete_programm_vorderseite" id="delete-programm-v-input" value="">
+                <div id="preview-programm-v" class="d-inline-flex align-items-center gap-2 mt-2">
+                    <img src="{{ asset(konzert.programmVorderseite) }}" alt="Programm aussen"
+                         style="height:48px;width:auto;border-radius:4px;object-fit:cover;cursor:zoom-in"
+                         onclick="document.getElementById('programmVModal').querySelector('img').src=this.src; new bootstrap.Modal(document.getElementById('programmVModal')).show()">
+                    <button type="button" class="btn btn-sm btn-outline-danger py-0 px-1" title="Datei löschen"
+                            onclick="deleteKonzertFile('delete-programm-v-input','preview-programm-v')">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
             {% endif %}
         </div>
         <div class="col-md-6">
@@ -81,9 +88,37 @@
                 {{ form_widget(form.programmRueckseiteFile) }}
             </div>
             {% if konzert.programmRueckseite %}
-                <img src="{{ asset(konzert.programmRueckseite) }}" alt="Programm innen"
-                     style="height:48px;width:auto;border-radius:4px;object-fit:cover;cursor:zoom-in;margin-top:6px"
-                     onclick="document.getElementById('programmRModal').querySelector('img').src=this.src; new bootstrap.Modal(document.getElementById('programmRModal')).show()">
+                <input type="hidden" name="delete_programm_rueckseite" id="delete-programm-r-input" value="">
+                <div id="preview-programm-r" class="d-inline-flex align-items-center gap-2 mt-2">
+                    <img src="{{ asset(konzert.programmRueckseite) }}" alt="Programm innen"
+                         style="height:48px;width:auto;border-radius:4px;object-fit:cover;cursor:zoom-in"
+                         onclick="document.getElementById('programmRModal').querySelector('img').src=this.src; new bootstrap.Modal(document.getElementById('programmRModal')).show()">
+                    <button type="button" class="btn btn-sm btn-outline-danger py-0 px-1" title="Datei löschen"
+                            onclick="deleteKonzertFile('delete-programm-r-input','preview-programm-r')">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
+            {% endif %}
+        </div>
+        <div class="col-md-6">
+            {{ form_label(form.kritikFile) }}
+            <div class="drop-zone">
+                <i class="bi bi-cloud-upload fs-4 text-muted d-block mb-1"></i>
+                <span class="drop-zone-hint">Drag &amp; Drop oder klicken</span>
+                <div class="drop-zone-filename"></div>
+                {{ form_widget(form.kritikFile) }}
+            </div>
+            {% if konzert.kritikPath %}
+                <input type="hidden" name="delete_kritik" id="delete-kritik-input" value="">
+                <div id="preview-kritik" class="d-inline-flex align-items-center gap-2 mt-2">
+                    <img src="{{ asset(konzert.kritikPath) }}" alt="Kritik"
+                         style="height:48px;width:auto;border-radius:4px;object-fit:cover;cursor:zoom-in"
+                         onclick="document.getElementById('kritikModal').querySelector('img').src=this.src; new bootstrap.Modal(document.getElementById('kritikModal')).show()">
+                    <button type="button" class="btn btn-sm btn-outline-danger py-0 px-1" title="Datei löschen"
+                            onclick="deleteKonzertFile('delete-kritik-input','preview-kritik')">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
             {% endif %}
         </div>
     </div>
@@ -105,6 +140,16 @@
                 <div class="modal-body p-0 text-center position-relative">
                     <button type="button" class="btn-close btn-close-white position-absolute top-0 end-0 m-2" data-bs-dismiss="modal"></button>
                     <img src="" alt="Programm innen" class="img-fluid rounded" style="max-height:90vh">
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade" id="kritikModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content bg-transparent border-0">
+                <div class="modal-body p-0 text-center position-relative">
+                    <button type="button" class="btn-close btn-close-white position-absolute top-0 end-0 m-2" data-bs-dismiss="modal"></button>
+                    <img src="" alt="Kritik" class="img-fluid rounded" style="max-height:90vh">
                 </div>
             </div>
         </div>
@@ -886,6 +931,13 @@ document.querySelectorAll('input[type="file"]').forEach(inp => {
         if (inp.files && inp.files.length > 0 && window.markFormDirty) window.markFormDirty();
     });
 });
+
+// ── File delete buttons ────────────────────────────────────────────────────
+function deleteKonzertFile(inputId, previewId) {
+    document.getElementById(inputId).value = '1';
+    document.getElementById(previewId).style.display = 'none';
+    if (window.markFormDirty) window.markFormDirty();
+}
 
 // ── Plakat picker ──────────────────────────────────────────────────────────
 (function () {
