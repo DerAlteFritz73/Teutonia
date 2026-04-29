@@ -60,12 +60,13 @@
         </div>
         <div class="col-md-6">
             {{ form_label(form.programmVorderseiteFile) }}
-            <div class="drop-zone">
+            <div class="drop-zone" data-new-preview="new-preview-programm-v" data-existing-preview="preview-programm-v">
                 <i class="bi bi-cloud-upload fs-4 text-muted d-block mb-1"></i>
                 <span class="drop-zone-hint">Drag &amp; Drop oder klicken</span>
                 <div class="drop-zone-filename"></div>
                 {{ form_widget(form.programmVorderseiteFile) }}
             </div>
+            <div id="new-preview-programm-v" style="display:none;position:relative;margin-top:6px;"></div>
             {% if konzert.programmVorderseite %}
                 <input type="hidden" name="delete_programm_vorderseite" id="delete-programm-v-input" value="">
                 <div id="preview-programm-v" style="position:relative;display:inline-block;margin-top:6px">
@@ -82,12 +83,13 @@
         </div>
         <div class="col-md-6">
             {{ form_label(form.programmRueckseiteFile) }}
-            <div class="drop-zone">
+            <div class="drop-zone" data-new-preview="new-preview-programm-r" data-existing-preview="preview-programm-r">
                 <i class="bi bi-cloud-upload fs-4 text-muted d-block mb-1"></i>
                 <span class="drop-zone-hint">Drag &amp; Drop oder klicken</span>
                 <div class="drop-zone-filename"></div>
                 {{ form_widget(form.programmRueckseiteFile) }}
             </div>
+            <div id="new-preview-programm-r" style="display:none;position:relative;margin-top:6px;"></div>
             {% if konzert.programmRueckseite %}
                 <input type="hidden" name="delete_programm_rueckseite" id="delete-programm-r-input" value="">
                 <div id="preview-programm-r" style="position:relative;display:inline-block;margin-top:6px">
@@ -104,12 +106,13 @@
         </div>
         <div class="col-md-6">
             {{ form_label(form.kritikFile) }}
-            <div class="drop-zone">
+            <div class="drop-zone" data-new-preview="new-preview-kritik" data-existing-preview="preview-kritik">
                 <i class="bi bi-cloud-upload fs-4 text-muted d-block mb-1"></i>
                 <span class="drop-zone-hint">Drag &amp; Drop oder klicken</span>
                 <div class="drop-zone-filename"></div>
                 {{ form_widget(form.kritikFile) }}
             </div>
+            <div id="new-preview-kritik" style="display:none;position:relative;margin-top:6px;"></div>
             {% if konzert.kritikPath %}
                 <input type="hidden" name="delete_kritik" id="delete-kritik-input" value="">
                 <div id="preview-kritik" style="position:relative;display:inline-block;margin-top:6px">
@@ -901,9 +904,31 @@
 
 // ── Drop zones ─────────────────────────────────────────────────────────────
 (function () {
+    function showFilePreview(file, newPreviewId, existingPreviewId) {
+        const newEl = newPreviewId ? document.getElementById(newPreviewId) : null;
+        if (!newEl) return;
+        if (existingPreviewId) {
+            const existing = document.getElementById(existingPreviewId);
+            if (existing) existing.style.display = 'none';
+        }
+        if (file.type.startsWith('image/')) {
+            const reader = new FileReader();
+            reader.onload = e => {
+                newEl.innerHTML = '<img src="' + e.target.result + '" style="height:48px;width:auto;border-radius:4px;object-fit:cover;display:block">';
+                newEl.style.display = 'inline-block';
+            };
+            reader.readAsDataURL(file);
+        } else if (file.type === 'application/pdf') {
+            newEl.innerHTML = '<div style="height:48px;width:48px;background:#f8d7da;border-radius:4px;display:flex;align-items:center;justify-content:center;"><i class="bi bi-file-earmark-pdf text-danger" style="font-size:1.4rem"></i></div>';
+            newEl.style.display = 'inline-block';
+        }
+    }
+
     document.querySelectorAll('.drop-zone').forEach(zone => {
-        const input      = zone.querySelector('input[type="file"]');
-        const filenameEl = zone.querySelector('.drop-zone-filename');
+        const input             = zone.querySelector('input[type="file"]');
+        const filenameEl        = zone.querySelector('.drop-zone-filename');
+        const newPreviewId      = zone.dataset.newPreview;
+        const existingPreviewId = zone.dataset.existingPreview;
 
         function setFile(file) {
             try {
@@ -923,7 +948,10 @@
             if (e.dataTransfer.files.length) setFile(e.dataTransfer.files[0]);
         });
         input.addEventListener('change', () => {
-            if (input.files.length) filenameEl.textContent = input.files[0].name;
+            if (input.files.length) {
+                filenameEl.textContent = input.files[0].name;
+                showFilePreview(input.files[0], newPreviewId, existingPreviewId);
+            }
         });
     });
 }());
