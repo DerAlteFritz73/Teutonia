@@ -1289,7 +1289,7 @@ class AdminController extends AbstractController
     }
 
     #[Route('/beitraege/{id}/delete', name: 'admin_posts_delete', methods: ['POST'])]
-    public function postsDelete(Post $post, Request $request, EntityManagerInterface $em): Response
+    public function postsDelete(Post $post, Request $request, EntityManagerInterface $em, PostRepository $postRepository): Response
     {
         if ($this->isCsrfTokenValid('delete' . $post->getId(), $request->request->get('_token'))) {
             // Delete image if exists
@@ -1305,7 +1305,19 @@ class AdminController extends AbstractController
             $this->addFlash('success', 'Beitrag wurde gelöscht.');
         }
 
-        return $this->redirectToRoute('admin_posts');
+        $filterPage = $request->request->get('filter_page') ?: 'unser-chor';
+        $page       = max(1, (int) $request->request->get('page', 1));
+        $limit      = 20;
+
+        $totalCount = $filterPage === 'all'
+            ? $postRepository->countAll()
+            : $postRepository->countByPage($filterPage);
+        $page = min($page, max(1, (int) ceil($totalCount / $limit)));
+
+        return $this->redirectToRoute('admin_posts', [
+            'filter_page' => $filterPage,
+            'page'        => $page,
+        ]);
     }
 
     #[Route('/beitraege/reorder', name: 'admin_posts_reorder', methods: ['POST'])]

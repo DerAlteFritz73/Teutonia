@@ -117,6 +117,8 @@
                             <form action="{{ path('admin_posts_delete', {id: post.id}) }}" method="post" class="d-inline"
                                   onsubmit="return confirm('Wirklich löschen?')">
                                 <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ post.id) }}">
+                                <input type="hidden" name="filter_page" value="{{ filterPage }}">
+                                <input type="hidden" name="page" value="{{ currentPage }}">
                                 <button type="submit" class="btn btn-sm btn-outline-danger" title="Löschen"><i class="bi bi-trash"></i></button>
                             </form>
                         </td>
