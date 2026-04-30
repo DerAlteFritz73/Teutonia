@@ -272,7 +272,7 @@ window.FETCH_URL    = '{{ path('admin_liederlisten_fetch_duration') }}';
     }
 
     // ── Row factories ──────────────────────────────────────────────────────
-    function makeLeftRow(song) {
+    function makeLeftRow(song, rightCount) {
         const row = document.createElement('div');
         row.className = 'll-row';
         row.dataset.id = song.id;
@@ -284,6 +284,13 @@ window.FETCH_URL    = '{{ path('admin_liederlisten_fetch_duration') }}';
         const t = document.createElement('span');
         t.className = 'llc-title';
         t.textContent = song.title;
+        if (rightCount > 0) {
+            const badge = document.createElement('span');
+            badge.className = 'badge bg-primary rounded-pill ms-1';
+            badge.style.fontSize = '.6rem';
+            badge.textContent = rightCount + '×';
+            t.appendChild(badge);
+        }
 
         row.appendChild(c);
         row.appendChild(t);
@@ -395,12 +402,21 @@ window.FETCH_URL    = '{{ path('admin_liederlisten_fetch_duration') }}';
         const lSel = new Set(Array.from(leftListEl.querySelectorAll('.ll-row.selected')).map(r => +r.dataset.id));
         const rSel = new Set(Array.from(rightListEl.querySelectorAll('.ll-row.selected')).map(r => r.dataset.uid));
 
+        // Count how many times each song appears in the right list
+        const rightCounts = new Map();
+        rightItems.forEach(item => {
+            if (item.type === 'song' && item.songId != null) {
+                rightCounts.set(item.songId, (rightCounts.get(item.songId) || 0) + 1);
+            }
+        });
+        const hasDuplicates = [...rightCounts.values()].some(n => n > 1);
+
         leftListEl.innerHTML  = '';
         rightListEl.innerHTML = '';
 
         leftSongs.forEach(s => {
             if (lTerms.length && !matchL(s)) return;
-            const row = makeLeftRow(s);
+            const row = makeLeftRow(s, rightCounts.get(s.id) || 0);
             if (lSel.has(s.id)) row.classList.add('selected');
             leftListEl.appendChild(row);
         });
@@ -410,6 +426,21 @@ window.FETCH_URL    = '{{ path('admin_liederlisten_fetch_duration') }}';
             const row = makeRightRow(item);
             if (rSel.has(item.uid)) row.classList.add('selected');
             rightListEl.appendChild(row);
+        });
+
+        // Show note column only when at least one song is duplicated
+        const noteHeader = document.querySelector('.llh-note');
+        if (noteHeader) noteHeader.style.display = hasDuplicates ? '' : 'none';
+        rightListEl.querySelectorAll('[data-uid]').forEach(row => {
+            const uid  = row.dataset.uid;
+            const item = rightItems.find(x => x.uid === uid);
+            const cell = row.querySelector('.llc-note');
+            if (cell && item) {
+                const isDup = item.type === 'song' && (rightCounts.get(item.songId) || 0) > 1;
+                cell.style.visibility = isDup ? '' : 'hidden';
+                const inp = cell.querySelector('input');
+                if (inp) inp.tabIndex = isDup ? 0 : -1;
+            }
         });
 
         leftCountEl.textContent  = leftSongs.length;
