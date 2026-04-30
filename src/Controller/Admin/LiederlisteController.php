@@ -80,7 +80,7 @@ class LiederlisteController extends AbstractController
             'borderSize'   => 6,
             'borderColor'  => 'CCCCCC',
             'cellMargin'   => 80,
-            'unit'         => \PhpOffice\PhpWord\Style\Table::WIDTH_PERCENT,
+            'unit'         => \PhpOffice\PhpWord\SimpleType\TblWidth::PERCENT,
             'width'        => 100 * 50,
         ];
         $headerStyle = ['bold' => true, 'size' => 10];
