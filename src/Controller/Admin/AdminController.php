@@ -276,12 +276,16 @@ class AdminController extends AbstractController
     {
         $songs = $songRepository->createQueryBuilder('s')
             ->leftJoin('s.styles', 'st')->addSelect('st')
-            ->leftJoin('s.parent', 'p')
+            ->leftJoin('s.parent', 'p')->addSelect('p')
             ->where('s.etikett IS NULL OR s.etikett = :empty')
             ->setParameter('empty', '')
-            ->orderBy('COALESCE(p.songName, s.songName)', 'ASC')
-            ->addOrderBy('s.songName', 'ASC')
             ->getQuery()->getResult();
+
+        usort($songs, function ($a, $b) {
+            $aKey = ($a->getParent()?->getSongName() ?? $a->getSongName()) . "\0" . $a->getSongName();
+            $bKey = ($b->getParent()?->getSongName() ?? $b->getSongName()) . "\0" . $b->getSongName();
+            return strnatcasecmp($aKey, $bKey);
+        });
 
         $spreadsheet = new Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet()->setTitle('Songs');
