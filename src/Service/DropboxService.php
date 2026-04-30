@@ -559,36 +559,51 @@ class DropboxService
 
     /**
      * Find the first audio file in a Dropbox folder and return its duration as "M:SS".
-     * Supports MP3 files (CBR and VBR via Xing/VBRI headers).
+     * Uses Dropbox media_info metadata (works for all audio formats).
+     * Falls back to MP3 binary parsing when metadata is unavailable.
      */
     public function getFirstAudioDuration(string $folderPath): ?string
     {
         try {
             $result = $this->client->rpcEndpointRequest('files/list_folder', [
-                'path' => $folderPath,
-                'recursive' => false,
-                'include_media_info' => false,
+                'path'               => $folderPath,
+                'recursive'          => false,
+                'include_media_info' => true,
             ]);
 
             $audioPath = null;
             $audioSize = 0;
+            $metaSeconds = null;
 
             foreach (($result['entries'] ?? []) as $entry) {
                 if ($entry['.tag'] !== 'file') {
                     continue;
                 }
                 $ext = strtolower(pathinfo($entry['name'], PATHINFO_EXTENSION));
-                if (in_array($ext, ['mp3', 'mp4', 'm4a', 'wav', 'ogg', 'flac', 'aac', 'wma'], true)) {
-                    $audioPath = $entry['path_lower'];
-                    $audioSize = $entry['size'];
-                    break;
+                if (!in_array($ext, ['mp3', 'mp4', 'm4a', 'wav', 'ogg', 'flac', 'aac', 'wma'], true)) {
+                    continue;
                 }
+
+                $audioPath = $entry['path_lower'];
+                $audioSize = $entry['size'];
+
+                // Prefer Dropbox media metadata duration
+                $duration = $entry['media_info']['metadata']['duration'] ?? null;
+                if ($duration !== null) {
+                    $metaSeconds = (int) round($duration / 1000);
+                }
+                break;
             }
 
             if ($audioPath === null) {
                 return null;
             }
 
+            if ($metaSeconds !== null && $metaSeconds > 0) {
+                return sprintf('%d:%02d', intdiv($metaSeconds, 60), $metaSeconds % 60);
+            }
+
+            // Fallback: parse MP3 binary header
             $ext = strtolower(pathinfo($audioPath, PATHINFO_EXTENSION));
             if ($ext !== 'mp3') {
                 return null;
