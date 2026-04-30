@@ -22,10 +22,13 @@ use App\Repository\UserRepository;
 use App\Service\DropboxService;
 use Doctrine\ORM\EntityManagerInterface;
 use Spatie\PdfToImage\Pdf;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\Routing\Attribute\Route;
@@ -266,6 +269,47 @@ class AdminController extends AbstractController
             'sort'        => $sort,
             'dir'         => $dir,
         ]);
+    }
+
+    #[Route('/songs/export-xlsx', name: 'admin_songs_export_xlsx')]
+    public function exportSongsXlsx(SongKeywordRepository $songRepository): Response
+    {
+        $songs = $songRepository->createQueryBuilder('s')
+            ->leftJoin('s.styles', 'st')->addSelect('st')
+            ->leftJoin('s.parent', 'p')
+            ->where('s.etikett IS NULL OR s.etikett = :empty')
+            ->setParameter('empty', '')
+            ->orderBy('COALESCE(p.songName, s.songName)', 'ASC')
+            ->addOrderBy('s.songName', 'ASC')
+            ->getQuery()->getResult();
+
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet()->setTitle('Songs');
+
+        foreach (['A' => 'Titel', 'B' => 'Komponist', 'C' => 'Übergeordneter Titel', 'D' => 'Stile'] as $col => $header) {
+            $sheet->setCellValue($col . '1', $header);
+            $sheet->getColumnDimension($col)->setAutoSize(true);
+            $sheet->getStyle($col . '1')->getFont()->setBold(true);
+        }
+
+        $row = 2;
+        foreach ($songs as $song) {
+            $styles = $song->getStyles()->map(fn($s) => $s->getName())->toArray();
+            $sheet->setCellValue('A' . $row, $song->getSongName());
+            $sheet->setCellValue('B' . $row, $song->getComposer());
+            $sheet->setCellValue('C' . $row, $song->getParent()?->getSongName());
+            $sheet->setCellValue('D' . $row, implode(', ', $styles));
+            $row++;
+        }
+
+        $response = new StreamedResponse(function () use ($spreadsheet) {
+            (new Xlsx($spreadsheet))->save('php://output');
+        });
+        $response->headers->set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        $response->headers->set('Content-Disposition', 'attachment; filename="songs_export.xlsx"');
+        $response->headers->set('Cache-Control', 'max-age=0');
+
+        return $response;
     }
 
     #[Route('/songs/new', name: 'admin_songs_new')]
