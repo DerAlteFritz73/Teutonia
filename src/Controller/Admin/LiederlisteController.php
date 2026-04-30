@@ -234,9 +234,8 @@ class LiederlisteController extends AbstractController
         }
 
         $ctx = stream_context_create(['http' => [
-            'timeout'     => 8,
-            'user_agent'  => 'Mozilla/5.0 (compatible)',
-            'header'      => "Accept-Language: de\r\n",
+            'timeout'    => 8,
+            'user_agent' => 'Googlebot/2.1 (+http://www.google.com/bot.html)',
         ]]);
 
         $html = @file_get_contents('https://www.youtube.com/watch?v=' . $m[1], false, $ctx);
