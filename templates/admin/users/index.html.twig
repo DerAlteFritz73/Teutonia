@@ -41,7 +41,7 @@
                         <td>{{ user.fullName }}</td>
                         <td>{{ user.email }}</td>
                         <td>
-                            {% for role in user.roles|sort %}
+                            {% for role in user.rawRoles|sort %}
                                 {% if role == 'ROLE_ADMIN' %}
                                     <span class="badge bg-danger">Admin</span>
                                 {% elseif role == 'ROLE_GUEST' %}
