@@ -40,8 +40,9 @@ class UserType extends AbstractType
                 'attr' => ['class' => 'form-control'],
                 'help' => $options['is_new'] ? '' : 'Leer lassen, um das Passwort nicht zu ändern.',
             ])
-            ->add('roles', ChoiceType::class, [
+            ->add('rawRoles', ChoiceType::class, [
                 'label' => 'Rollen',
+                'property_path' => 'rawRoles',
                 'choices' => [
                     'Mitglied' => 'ROLE_USER',
                     'Gast'     => 'ROLE_GUEST',
