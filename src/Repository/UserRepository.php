@@ -30,11 +30,23 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
         $this->getEntityManager()->flush();
     }
 
+    public function countMembers(): int
+    {
+        $result = $this->createQueryBuilder('u')
+            ->select('COUNT(u.id)')
+            ->where("u.roles NOT LIKE '%ROLE_GUEST%'")
+            ->getQuery()
+            ->getSingleScalarResult();
+
+        return (int) $result;
+    }
+
     public function sumLoginCountExcluding(string $username): int
     {
         $result = $this->createQueryBuilder('u')
             ->select('SUM(u.loginCount)')
             ->where('u.username != :username')
+            ->andWhere("u.roles NOT LIKE '%ROLE_GUEST%'")
             ->setParameter('username', $username)
             ->getQuery()
             ->getSingleScalarResult();
@@ -48,6 +60,7 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
             ->select('COUNT(u.id)')
             ->where('u.username != :username')
             ->andWhere('u.loginCount > 0')
+            ->andWhere("u.roles NOT LIKE '%ROLE_GUEST%'")
             ->setParameter('username', $username)
             ->getQuery()
             ->getSingleScalarResult();
@@ -60,6 +73,7 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
         $user = $this->createQueryBuilder('u')
             ->where('u.username != :username')
             ->andWhere('u.lastLoginAt IS NOT NULL')
+            ->andWhere("u.roles NOT LIKE '%ROLE_GUEST%'")
             ->setParameter('username', $username)
             ->orderBy('u.lastLoginAt', 'DESC')
             ->setMaxResults(1)

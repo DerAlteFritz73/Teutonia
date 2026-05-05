@@ -25,6 +25,10 @@ security:
                 path: app_logout
                 target: app_home
 
+    role_hierarchy:
+        ROLE_GUEST: [ROLE_USER]
+        ROLE_ADMIN: [ROLE_USER]
+
     access_control:
         - { path: ^/admin, roles: ROLE_ADMIN }
         - { path: ^/mitglieder, roles: ROLE_USER }

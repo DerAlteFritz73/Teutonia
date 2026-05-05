@@ -92,7 +92,7 @@ class AdminController extends AbstractController
         $logStats = $this->getLogStats("$logsDir/$env.log");
 
         return $this->render('admin/dashboard.html.twig', [
-            'userCount'           => count($userRepository->findAll()),
+            'userCount'           => $userRepository->countMembers(),
             'postCount'           => count($postRepository->findAll()),
             'songCount'           => $songRepository->countAllIncludingMovements(),
             'konzertCount'        => count($konzertRepository->findAll()),

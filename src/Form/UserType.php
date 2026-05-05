@@ -44,6 +44,7 @@ class UserType extends AbstractType
                 'label' => 'Rollen',
                 'choices' => [
                     'Mitglied' => 'ROLE_USER',
+                    'Gast'     => 'ROLE_GUEST',
                     'Administrator' => 'ROLE_ADMIN',
                 ],
                 'multiple' => true,
