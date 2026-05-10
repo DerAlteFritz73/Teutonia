@@ -43,8 +43,12 @@
                 </a>
                 {% if not isNew %}
                 <a href="{{ path('admin_liederlisten_download', {id: liste.id}) }}"
-                   class="btn btn-outline-success">
+                   class="btn btn-outline-success" title="Word herunterladen (.docx)">
                     <i class="bi bi-file-earmark-word me-1"></i>Word
+                </a>
+                <a href="{{ path('admin_liederlisten_download_odt', {id: liste.id}) }}"
+                   class="btn btn-outline-success" title="LibreOffice herunterladen (.odt)">
+                    <i class="bi bi-file-earmark-text me-1"></i>ODT
                 </a>
                 {% endif %}
                 <button type="submit" class="btn btn-primary" id="save-btn">
