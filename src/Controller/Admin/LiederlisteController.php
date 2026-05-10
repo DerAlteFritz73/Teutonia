@@ -57,9 +57,9 @@ class LiederlisteController extends AbstractController
     }
 
     #[Route('/{id}/download', name: '_download', requirements: ['id' => '\d+'], methods: ['GET'])]
-    public function download(Liederliste $liste): Response
+    public function download(Liederliste $liste, SongKeywordRepository $songRepo): Response
     {
-        $phpWord = $this->buildPhpWord($liste);
+        $phpWord = $this->buildPhpWord($liste, $songRepo);
 
         $tmpFile = tempnam(sys_get_temp_dir(), 'liederliste_') . '.docx';
         \PhpOffice\PhpWord\IOFactory::createWriter($phpWord, 'Word2007')->save($tmpFile);
@@ -76,9 +76,9 @@ class LiederlisteController extends AbstractController
     }
 
     #[Route('/{id}/download-odt', name: '_download_odt', requirements: ['id' => '\d+'], methods: ['GET'])]
-    public function downloadOdt(Liederliste $liste): Response
+    public function downloadOdt(Liederliste $liste, SongKeywordRepository $songRepo): Response
     {
-        $phpWord = $this->buildPhpWord($liste);
+        $phpWord = $this->buildPhpWord($liste, $songRepo);
 
         $tmpFile = tempnam(sys_get_temp_dir(), 'liederliste_') . '.odt';
         \PhpOffice\PhpWord\IOFactory::createWriter($phpWord, 'ODText')->save($tmpFile);
@@ -94,8 +94,22 @@ class LiederlisteController extends AbstractController
         return $response;
     }
 
-    private function buildPhpWord(Liederliste $liste): PhpWord
+    private function buildPhpWord(Liederliste $liste, SongKeywordRepository $songRepo): PhpWord
     {
+        $showEtikett = $liste->isShowEtikett();
+
+        // Pre-load etiketts keyed by song ID to avoid N+1
+        $etikettMap = [];
+        if ($showEtikett) {
+            foreach ($liste->getItems() as $item) {
+                $songId = $item['songId'] ?? null;
+                if ($songId && !isset($etikettMap[$songId])) {
+                    $song = $songRepo->find($songId);
+                    $etikettMap[$songId] = $song?->getEtikett() ?? '';
+                }
+            }
+        }
+
         $phpWord = new PhpWord();
         $phpWord->getSettings()->setThemeFontLang(new \PhpOffice\PhpWord\Style\Language('de-DE'));
 
@@ -129,6 +143,9 @@ class LiederlisteController extends AbstractController
         $table->addCell(500, $cellBg)->addText('#', $headerStyle, ['alignment' => Jc::CENTER]);
         $table->addCell(3000, $cellBg)->addText('Komponist', $headerStyle);
         $table->addCell(null, $cellBg)->addText('Titel', $headerStyle);
+        if ($showEtikett) {
+            $table->addCell(1200, $cellBg)->addText('Etikett', $headerStyle);
+        }
         $table->addCell(800, $cellBg)->addText('Dauer', $headerStyle, ['alignment' => Jc::CENTER]);
 
         $numStyle    = ['size' => 10, 'color' => '888888'];
@@ -138,6 +155,7 @@ class LiederlisteController extends AbstractController
         foreach ($liste->getItems() as $i => $item) {
             $isCustom = ($item['type'] ?? '') === 'custom';
             $note     = trim((string) ($item['note'] ?? ''));
+            $songId   = $item['songId'] ?? null;
 
             $table->addRow();
             $table->addCell(500)->addText((string)($i + 1), $numStyle, ['alignment' => Jc::CENTER]);
@@ -150,6 +168,10 @@ class LiederlisteController extends AbstractController
                 $titlePara->addText(' (' . $note . ')', ['size' => 9, 'italic' => true, 'color' => '888888']);
             }
 
+            if ($showEtikett) {
+                $table->addCell(1200)->addText($songId ? ($etikettMap[$songId] ?? '') : '', $textStyle);
+            }
+
             $table->addCell(800)->addText($item['duration'] ?? '', ['size' => 10], ['alignment' => Jc::CENTER]);
         }
 
@@ -158,6 +180,9 @@ class LiederlisteController extends AbstractController
         $table->addCell(500);
         $table->addCell(3000)->addText('Gesamt', ['bold' => true, 'size' => 10], ['alignment' => Jc::RIGHT]);
         $table->addCell(null);
+        if ($showEtikett) {
+            $table->addCell(1200);
+        }
         $table->addCell(800)->addText($total, ['bold' => true, 'size' => 10], ['alignment' => Jc::CENTER]);
 
         return $phpWord;
@@ -213,6 +238,7 @@ class LiederlisteController extends AbstractController
             } else {
                 $liste->setName($name);
                 $liste->setTitle(trim((string) $request->request->get('liste_title', '')) ?: null);
+                $liste->setShowEtikett($request->request->has('show_etikett'));
 
                 $itemsJson = (string) $request->request->get('items_json', '[]');
                 $items     = json_decode($itemsJson, true);
