@@ -21,6 +21,12 @@ class Liederliste
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $title = null;
 
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $etikett = null;
+
+    #[ORM\Column]
+    private bool $showEtikett = true;
+
     /**
      * Each item: {type:'song'|'custom', songId?:int, composer:string, title:string, duration?:string}
      */
@@ -52,6 +58,12 @@ class Liederliste
 
     public function getTitle(): ?string { return $this->title; }
     public function setTitle(?string $title): static { $this->title = $title; return $this; }
+
+    public function getEtikett(): ?string { return $this->etikett; }
+    public function setEtikett(?string $etikett): static { $this->etikett = $etikett; return $this; }
+
+    public function isShowEtikett(): bool { return $this->showEtikett; }
+    public function setShowEtikett(bool $showEtikett): static { $this->showEtikett = $showEtikett; return $this; }
 
     public function getItems(): array { return $this->items; }
     public function setItems(array $items): static { $this->items = $items; return $this; }
