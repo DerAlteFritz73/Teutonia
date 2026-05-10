@@ -59,6 +59,43 @@ class LiederlisteController extends AbstractController
     #[Route('/{id}/download', name: '_download', requirements: ['id' => '\d+'], methods: ['GET'])]
     public function download(Liederliste $liste): Response
     {
+        $phpWord = $this->buildPhpWord($liste);
+
+        $tmpFile = tempnam(sys_get_temp_dir(), 'liederliste_') . '.docx';
+        \PhpOffice\PhpWord\IOFactory::createWriter($phpWord, 'Word2007')->save($tmpFile);
+
+        $safeName = preg_replace('/[^a-zA-Z0-9äöüÄÖÜß _-]/', '', $liste->getName());
+        $filename  = 'Liederliste_' . str_replace(' ', '_', $safeName) . '.docx';
+
+        $response = new BinaryFileResponse($tmpFile);
+        $response->setContentDisposition(ResponseHeaderBag::DISPOSITION_ATTACHMENT, $filename);
+        $response->headers->set('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+        $response->deleteFileAfterSend(true);
+
+        return $response;
+    }
+
+    #[Route('/{id}/download-odt', name: '_download_odt', requirements: ['id' => '\d+'], methods: ['GET'])]
+    public function downloadOdt(Liederliste $liste): Response
+    {
+        $phpWord = $this->buildPhpWord($liste);
+
+        $tmpFile = tempnam(sys_get_temp_dir(), 'liederliste_') . '.odt';
+        \PhpOffice\PhpWord\IOFactory::createWriter($phpWord, 'ODText')->save($tmpFile);
+
+        $safeName = preg_replace('/[^a-zA-Z0-9äöüÄÖÜß _-]/', '', $liste->getName());
+        $filename  = 'Liederliste_' . str_replace(' ', '_', $safeName) . '.odt';
+
+        $response = new BinaryFileResponse($tmpFile);
+        $response->setContentDisposition(ResponseHeaderBag::DISPOSITION_ATTACHMENT, $filename);
+        $response->headers->set('Content-Type', 'application/vnd.oasis.opendocument.text');
+        $response->deleteFileAfterSend(true);
+
+        return $response;
+    }
+
+    private function buildPhpWord(Liederliste $liste): PhpWord
+    {
         $phpWord = new PhpWord();
         $phpWord->getSettings()->setThemeFontLang(new \PhpOffice\PhpWord\Style\Language('de-DE'));
 
@@ -88,7 +125,6 @@ class LiederlisteController extends AbstractController
 
         $table = $section->addTable($tableStyle);
 
-        // Header row
         $table->addRow();
         $table->addCell(500, $cellBg)->addText('#', $headerStyle, ['alignment' => Jc::CENTER]);
         $table->addCell(3000, $cellBg)->addText('Komponist', $headerStyle);
@@ -98,7 +134,6 @@ class LiederlisteController extends AbstractController
         $numStyle    = ['size' => 10, 'color' => '888888'];
         $textStyle   = ['size' => 10];
         $italicStyle = ['size' => 10, 'italic' => true];
-        $durStyle    = ['size' => 10];
 
         foreach ($liste->getItems() as $i => $item) {
             $isCustom = ($item['type'] ?? '') === 'custom';
@@ -108,17 +143,16 @@ class LiederlisteController extends AbstractController
             $table->addCell(500)->addText((string)($i + 1), $numStyle, ['alignment' => Jc::CENTER]);
             $table->addCell(3000)->addText($item['composer'] ?? '', $textStyle);
 
-            $titleCell    = $table->addCell(null);
-            $titlePara    = $titleCell->addTextRun();
+            $titleCell = $table->addCell(null);
+            $titlePara = $titleCell->addTextRun();
             $titlePara->addText($item['title'] ?? '', $isCustom ? $italicStyle : $textStyle);
             if ($note !== '') {
                 $titlePara->addText(' (' . $note . ')', ['size' => 9, 'italic' => true, 'color' => '888888']);
             }
 
-            $table->addCell(800)->addText($item['duration'] ?? '', $durStyle, ['alignment' => Jc::CENTER]);
+            $table->addCell(800)->addText($item['duration'] ?? '', ['size' => 10], ['alignment' => Jc::CENTER]);
         }
 
-        // Total duration row
         $total = $liste->getTotalDuration();
         $table->addRow();
         $table->addCell(500);
@@ -126,19 +160,7 @@ class LiederlisteController extends AbstractController
         $table->addCell(null);
         $table->addCell(800)->addText($total, ['bold' => true, 'size' => 10], ['alignment' => Jc::CENTER]);
 
-        $tmpFile = tempnam(sys_get_temp_dir(), 'liederliste_') . '.docx';
-        $objWriter = \PhpOffice\PhpWord\IOFactory::createWriter($phpWord, 'Word2007');
-        $objWriter->save($tmpFile);
-
-        $safeName = preg_replace('/[^a-zA-Z0-9äöüÄÖÜß _-]/', '', $liste->getName());
-        $filename  = 'Liederliste_' . str_replace(' ', '_', $safeName) . '.docx';
-
-        $response = new BinaryFileResponse($tmpFile);
-        $response->setContentDisposition(ResponseHeaderBag::DISPOSITION_ATTACHMENT, $filename);
-        $response->headers->set('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
-        $response->deleteFileAfterSend(true);
-
-        return $response;
+        return $phpWord;
     }
 
     #[Route('/fetch-duration', name: '_fetch_duration', methods: ['GET'])]

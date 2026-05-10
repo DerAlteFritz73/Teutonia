@@ -59,8 +59,12 @@
                                 <i class="bi bi-pencil"></i>
                             </a>
                             <a href="{{ path('admin_liederlisten_download', {id: liste.id}) }}"
-                               class="btn btn-sm btn-outline-success" title="Word herunterladen">
+                               class="btn btn-sm btn-outline-success" title="Word herunterladen (.docx)">
                                 <i class="bi bi-file-earmark-word"></i>
+                            </a>
+                            <a href="{{ path('admin_liederlisten_download_odt', {id: liste.id}) }}"
+                               class="btn btn-sm btn-outline-success" title="LibreOffice herunterladen (.odt)">
+                                <i class="bi bi-file-earmark-text"></i>
                             </a>
                             <form action="{{ path('admin_liederlisten_delete', {id: liste.id}) }}" method="post"
                                   class="d-inline" onsubmit="return confirm('Liste wirklich löschen?')">
