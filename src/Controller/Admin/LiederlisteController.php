@@ -127,12 +127,23 @@ class LiederlisteController extends AbstractController
 
         $section->addTitle($liste->getTitle() ?: $liste->getName(), 1);
 
+        // Column widths in twips — A4 text area: 16cm = 9072 twips (2.5cm margins each side)
+        $wNum  = 500;
+        $wDur  = 800;
+        if ($showEtikett) {
+            $wComposer = 2400;
+            $wEtikett  = 1700;
+            $wTitle    = 9072 - $wNum - $wComposer - $wEtikett - $wDur; // 3672
+        } else {
+            $wComposer = 2700;
+            $wEtikett  = 0;
+            $wTitle    = 9072 - $wNum - $wComposer - $wDur; // 5072
+        }
+
         $tableStyle = [
-            'borderSize'   => 6,
-            'borderColor'  => 'CCCCCC',
-            'cellMargin'   => 80,
-            'unit'         => \PhpOffice\PhpWord\SimpleType\TblWidth::PERCENT,
-            'width'        => 100 * 50,
+            'borderSize'  => 6,
+            'borderColor' => 'CCCCCC',
+            'cellMargin'  => 80,
         ];
         $headerStyle = ['bold' => true, 'size' => 10];
         $cellBg      = ['bgColor' => 'E8E8E8'];
@@ -140,13 +151,13 @@ class LiederlisteController extends AbstractController
         $table = $section->addTable($tableStyle);
 
         $table->addRow();
-        $table->addCell(500, $cellBg)->addText('#', $headerStyle, ['alignment' => Jc::CENTER]);
-        $table->addCell(3000, $cellBg)->addText('Komponist', $headerStyle);
-        $table->addCell(null, $cellBg)->addText('Titel', $headerStyle);
+        $table->addCell($wNum, $cellBg)->addText('#', $headerStyle, ['alignment' => Jc::CENTER]);
+        $table->addCell($wComposer, $cellBg)->addText('Komponist', $headerStyle);
+        $table->addCell($wTitle, $cellBg)->addText('Titel', $headerStyle);
         if ($showEtikett) {
-            $table->addCell(1200, $cellBg)->addText('Etikett', $headerStyle);
+            $table->addCell($wEtikett, $cellBg)->addText('Etikett', $headerStyle);
         }
-        $table->addCell(800, $cellBg)->addText('Dauer', $headerStyle, ['alignment' => Jc::CENTER]);
+        $table->addCell($wDur, $cellBg)->addText('Dauer', $headerStyle, ['alignment' => Jc::CENTER]);
 
         $numStyle    = ['size' => 10, 'color' => '888888'];
         $textStyle   = ['size' => 10];
@@ -158,10 +169,10 @@ class LiederlisteController extends AbstractController
             $songId   = $item['songId'] ?? null;
 
             $table->addRow();
-            $table->addCell(500)->addText((string)($i + 1), $numStyle, ['alignment' => Jc::CENTER]);
-            $table->addCell(3000)->addText($item['composer'] ?? '', $textStyle);
+            $table->addCell($wNum)->addText((string)($i + 1), $numStyle, ['alignment' => Jc::CENTER]);
+            $table->addCell($wComposer)->addText($item['composer'] ?? '', $textStyle);
 
-            $titleCell = $table->addCell(null);
+            $titleCell = $table->addCell($wTitle);
             $titlePara = $titleCell->addTextRun();
             $titlePara->addText($item['title'] ?? '', $isCustom ? $italicStyle : $textStyle);
             if ($note !== '') {
@@ -169,21 +180,21 @@ class LiederlisteController extends AbstractController
             }
 
             if ($showEtikett) {
-                $table->addCell(1200)->addText($songId ? ($etikettMap[$songId] ?? '') : '', $textStyle);
+                $table->addCell($wEtikett)->addText($songId ? ($etikettMap[$songId] ?? '') : '', $textStyle);
             }
 
-            $table->addCell(800)->addText($item['duration'] ?? '', ['size' => 10], ['alignment' => Jc::CENTER]);
+            $table->addCell($wDur)->addText($item['duration'] ?? '', ['size' => 10], ['alignment' => Jc::CENTER]);
         }
 
         $total = $liste->getTotalDuration();
         $table->addRow();
-        $table->addCell(500);
-        $table->addCell(3000)->addText('Gesamt', ['bold' => true, 'size' => 10], ['alignment' => Jc::RIGHT]);
-        $table->addCell(null);
+        $table->addCell($wNum);
+        $table->addCell($wComposer)->addText('Gesamt', ['bold' => true, 'size' => 10], ['alignment' => Jc::RIGHT]);
+        $table->addCell($wTitle);
         if ($showEtikett) {
-            $table->addCell(1200);
+            $table->addCell($wEtikett);
         }
-        $table->addCell(800)->addText($total, ['bold' => true, 'size' => 10], ['alignment' => Jc::CENTER]);
+        $table->addCell($wDur)->addText($total, ['bold' => true, 'size' => 10], ['alignment' => Jc::CENTER]);
 
         return $phpWord;
     }
