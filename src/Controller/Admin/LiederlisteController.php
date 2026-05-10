@@ -213,8 +213,6 @@ class LiederlisteController extends AbstractController
             } else {
                 $liste->setName($name);
                 $liste->setTitle(trim((string) $request->request->get('liste_title', '')) ?: null);
-                $liste->setEtikett(trim((string) $request->request->get('liste_etikett', '')) ?: null);
-                $liste->setShowEtikett($request->request->has('show_etikett'));
 
                 $itemsJson = (string) $request->request->get('items_json', '[]');
                 $items     = json_decode($itemsJson, true);

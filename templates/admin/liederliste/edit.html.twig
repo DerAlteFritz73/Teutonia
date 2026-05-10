@@ -30,18 +30,6 @@
                        style="max-width:420px"
                        placeholder="Titel (erscheint im Word-Dokument)"
                        value="{{ liste.title ?? '' }}">
-                <div class="d-flex align-items-center gap-2" style="max-width:420px">
-                    <input type="text" name="liste_etikett" id="liste-etikett"
-                           class="form-control"
-                           placeholder="Etikett"
-                           value="{{ liste.etikett ?? '' }}">
-                    <div class="form-check mb-0 text-nowrap">
-                        <input type="checkbox" name="show_etikett" id="show-etikett"
-                               class="form-check-input"
-                               {{ liste.isShowEtikett() ? 'checked' : '' }}>
-                        <label class="form-check-label small" for="show-etikett">Anzeigen</label>
-                    </div>
-                </div>
             </div>
             <div class="d-flex gap-2 ms-3 mt-1">
                 <a href="{{ path('admin_liederlisten') }}" class="btn btn-secondary">
