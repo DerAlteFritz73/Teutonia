@@ -941,19 +941,9 @@
             };
             reader.readAsDataURL(file);
         } else if (file.type === 'application/pdf') {
-            newEl.innerHTML = '<div style="height:48px;width:48px;background:#f0f0f0;border-radius:4px;display:flex;align-items:center;justify-content:center;"><i class="bi bi-hourglass-split text-muted" style="font-size:1rem"></i></div>';
-            newEl.style.display = 'inline-block';
-            file.arrayBuffer().then(buf => pdfjsLib.getDocument({data: buf}).promise).then(pdf => pdf.getPage(1)).then(page => {
-                const vp = page.getViewport({scale: 48 / page.getViewport({scale: 1}).height});
-                const canvas = document.createElement('canvas');
-                canvas.width = vp.width; canvas.height = vp.height;
-                canvas.style.cssText = 'border-radius:4px;display:block';
-                return page.render({canvasContext: canvas.getContext('2d'), viewport: vp}).promise.then(() => {
-                    newEl.innerHTML = ''; newEl.appendChild(canvas);
-                });
-            }).catch(() => {
-                newEl.innerHTML = '<div style="height:48px;width:48px;background:#f8d7da;border-radius:4px;display:flex;align-items:center;justify-content:center;"><i class="bi bi-file-earmark-pdf text-danger" style="font-size:1.4rem"></i></div>';
-            });
+            const url = URL.createObjectURL(file);
+            newEl.innerHTML = '<embed src="' + url + '" type="application/pdf" style="width:100%;height:500px;border-radius:4px;display:block">';
+            newEl.style.display = 'block';
         }
     }
 
@@ -1023,8 +1013,3 @@ function deleteKonzertFile(inputId, previewId) {
 </script>
 {% endblock %}
 
-{% block javascripts %}
-{{ parent() }}
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-<script>pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
-{% endblock %}
