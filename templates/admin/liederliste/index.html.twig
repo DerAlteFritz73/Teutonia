@@ -55,21 +55,25 @@
                         <td class="text-muted small">{{ liste.updatedAt|date('d.m.Y H:i') }}</td>
                         <td class="text-end">
                             <a href="{{ path('admin_liederlisten_edit', {id: liste.id}) }}"
-                               class="btn btn-sm btn-outline-primary" title="Bearbeiten">
+                               class="btn btn-sm btn-outline-primary"
+                               data-bs-toggle="tooltip" title="Bearbeiten">
                                 <i class="bi bi-pencil"></i>
                             </a>
                             <a href="{{ path('admin_liederlisten_download', {id: liste.id}) }}"
-                               class="btn btn-sm btn-outline-success" title="Word herunterladen (.docx)">
+                               class="btn btn-sm btn-outline-success"
+                               data-bs-toggle="tooltip" title="Word herunterladen (.docx)">
                                 <i class="bi bi-file-earmark-word"></i>
                             </a>
                             <a href="{{ path('admin_liederlisten_download_odt', {id: liste.id}) }}"
-                               class="btn btn-sm btn-outline-success" title="LibreOffice herunterladen (.odt)">
+                               class="btn btn-sm btn-outline-success"
+                               data-bs-toggle="tooltip" title="LibreOffice herunterladen (.odt)">
                                 <i class="bi bi-file-earmark-text"></i>
                             </a>
                             <form action="{{ path('admin_liederlisten_delete', {id: liste.id}) }}" method="post"
                                   class="d-inline" onsubmit="return confirm('Liste wirklich löschen?')">
                                 <input type="hidden" name="_token" value="{{ csrf_token('delete_liederliste' ~ liste.id) }}">
-                                <button class="btn btn-sm btn-outline-danger" title="Löschen">
+                                <button class="btn btn-sm btn-outline-danger"
+                                        data-bs-toggle="tooltip" title="Löschen">
                                     <i class="bi bi-trash"></i>
                                 </button>
                             </form>
@@ -81,4 +85,11 @@
         </div>
     {% endif %}
 </div>
+{% endblock %}
+
+{% block javascripts %}
+{{ parent() }}
+<script>
+document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => new bootstrap.Tooltip(el));
+</script>
 {% endblock %}
