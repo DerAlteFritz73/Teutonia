@@ -942,7 +942,11 @@
             reader.readAsDataURL(file);
         } else if (file.type === 'application/pdf') {
             const url = URL.createObjectURL(file);
-            newEl.innerHTML = '<embed src="' + url + '" type="application/pdf" style="width:100%;height:500px;border-radius:4px;display:block">';
+            newEl.innerHTML = '<div style="position:relative">'
+                + '<embed src="' + url + '" type="application/pdf" style="width:100%;height:500px;border-radius:4px;display:block">'
+                + '<button type="button" onclick="cancelNewPreview(\'' + newPreviewId + '\')" title="Entfernen"'
+                + ' style="position:absolute;top:8px;right:8px;width:36px;height:36px;background:rgba(220,53,69,.9);border:none;border-radius:6px;color:#fff;font-size:1.1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;">'
+                + '<i class="bi bi-x-lg"></i></button></div>';
             newEl.style.display = 'block';
         }
     }
@@ -986,6 +990,22 @@ document.querySelectorAll('input[type="file"]').forEach(inp => {
         if (inp.files && inp.files.length > 0 && window.markFormDirty) window.markFormDirty();
     });
 });
+
+// ── Cancel new (unsaved) file selection ───────────────────────────────────
+function cancelNewPreview(previewId) {
+    const newEl = document.getElementById(previewId);
+    if (!newEl) return;
+    newEl.innerHTML = '';
+    newEl.style.display = 'none';
+    const zone = document.querySelector('.drop-zone[data-new-preview="' + previewId + '"]');
+    if (zone) {
+        zone.style.display = '';
+        const input = zone.querySelector('input[type="file"]');
+        if (input) try { input.value = ''; } catch(_) {}
+        const fn = zone.querySelector('.drop-zone-filename');
+        if (fn) fn.textContent = '';
+    }
+}
 
 // ── File delete buttons ────────────────────────────────────────────────────
 function deleteKonzertFile(inputId, previewId) {
