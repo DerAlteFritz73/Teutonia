@@ -263,6 +263,7 @@ class LiederlisteController extends AbstractController
                 'id'       => $song->getId(),
                 'composer' => $song->getComposer() ?? '',
                 'title'    => $song->getSongName() ?? '',
+                'etikett'  => $song->getEtikett() ?? '',
                 'hasDropbox' => $song->getDropboxlink() !== null || $song->getAktuelleDropboxlink() !== null,
                 'hasLinks'   => !$song->getLinks()->isEmpty(),
             ];

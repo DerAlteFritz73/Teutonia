@@ -103,6 +103,7 @@
                         <span class="llh-composer">Komponist</span>
                         <span class="llh-title">Titel</span>
                         <span class="llh-note">Anmerkung</span>
+                        <span class="llh-etikett">Etikett</span>
                         <span class="llh-dur">Dauer</span>
                         <span class="llh-del"></span>
                     </div>
@@ -179,6 +180,7 @@
 .llh-composer { width: 22%; min-width: 22%; max-width: 22%; }
 .llh-title   { flex: 1; }
 .llh-note    { flex: 0 0 110px; min-width: 0; }
+.llh-etikett { flex: 0 0 90px; min-width: 0; }
 .llh-dur     { flex: 0 0 80px; min-width: 0; text-align: center; }
 .llh-del     { width: 56px; min-width: 56px; }
 
@@ -220,6 +222,12 @@
     color: #6c757d;
 }
 
+.llc-etikett {
+    flex: 0 0 90px; min-width: 0;
+    font-size: .75rem; color: #6c757d;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    padding: 0 4px;
+}
 .llc-del {
     width: 56px; min-width: 56px;
     text-align: center; display: flex; align-items: center;
@@ -370,6 +378,15 @@ window.FETCH_URL    = '{{ path('admin_liederlisten_fetch_duration') }}';
 
         row.appendChild(durWrap);
 
+        // Etikett
+        const etWrap = document.createElement('span');
+        etWrap.className = 'llc-etikett';
+        if (!isCustom && item.songId != null) {
+            const song = songById.get(item.songId);
+            etWrap.textContent = song?.etikett || '';
+        }
+        row.appendChild(etWrap);
+
         // Delete (and edit for custom)
         const del = document.createElement('span');
         del.className = 'llc-del';
@@ -437,6 +454,11 @@ window.FETCH_URL    = '{{ path('admin_liederlisten_fetch_duration') }}';
             if (rSel.has(item.uid)) row.classList.add('selected');
             rightListEl.appendChild(row);
         });
+
+        // Show/hide Etikett column based on checkbox
+        const showEtikett = document.getElementById('show-etikett')?.checked;
+        document.querySelector('.llh-etikett').style.display = showEtikett ? '' : 'none';
+        rightListEl.querySelectorAll('.llc-etikett').forEach(c => c.style.display = showEtikett ? '' : 'none');
 
         // Show note column only when at least one song is duplicated
         const noteHeader = document.querySelector('.llh-note');
@@ -633,6 +655,9 @@ window.FETCH_URL    = '{{ path('admin_liederlisten_fetch_duration') }}';
             customDurEl.value      = '';
         }
     });
+
+    // ── Etikett toggle ────────────────────────────────────────────────────
+    document.getElementById('show-etikett')?.addEventListener('change', render);
 
     // ── Filter ────────────────────────────────────────────────────────────
     leftSearchEl.addEventListener('input',  render);
