@@ -1,0 +1,36 @@
+<!-- template: templates/components/concerts_display.html.twig -->
+<div id="concerts-container" class="mb-5">
+{% if konzerte is defined and konzerte is not empty %}
+    {% for konzert in konzerte %}
+    <div class="card mb-3 concert-card" data-year="{% if konzert.date %}{{ konzert.date|date('Y') }}{% endif %}">
+        <div class="card-body">
+            <div class="row">
+                {% if konzert.plakatPath %}
+                <div class="col-md-3 mb-3 mb-md-0">
+                    <img src="{{ asset(konzert.plakatPath) }}" alt="{{ konzert.name }}" class="img-fluid rounded" style="max-width: 100%; height: auto;">
+                </div>
+                <div class="col-md-9">
+                {% else %}
+                <div class="col-12">
+                {% endif %}
+                    <h4 class="card-title">{{ konzert.name }}</h4>
+                    <p class="text-muted mb-2">
+                        <i class="bi bi-calendar-event"></i> {{ konzert.date|date('d.m.Y') }}
+                        {% if konzert.location %}<br><i class="bi bi-geo-alt"></i> {{ konzert.location }}{% endif %}
+                    </p>
+                    {% if konzert.introduction %}
+                    <p class="card-text">{{ konzert.introduction }}</p>
+                    {% endif %}
+                    {% set songCount = konzert.songs|length + konzert.customSongs|length %}
+                    {% if songCount > 0 %}
+                    <p class="text-muted small">
+                        <span class="badge bg-secondary">{{ songCount }} Lied{{ songCount != 1 ? 'er' : '' }}</span>
+                    </p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+{% endif %}
+</div>

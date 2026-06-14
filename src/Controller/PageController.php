@@ -2,6 +2,7 @@
 
 namespace App\Controller;
 
+use App\Repository\KonzertRepository;
 use App\Repository\PostRepository;
 use App\Repository\SongKeywordRepository;
 use App\Repository\StyleRepository;
@@ -26,11 +27,12 @@ class PageController extends AbstractController
     }
 
     #[Route('/konzerte-und-aktivitaeten', name: 'page_concerts')]
-    public function konzerteUndAktivitaeten(PostRepository $postRepository): Response
+    public function konzerteUndAktivitaeten(PostRepository $postRepository, KonzertRepository $konzertRepository): Response
     {
         $posts = $postRepository->findByPageOrderedByDate('konzerte-und-aktivitaeten');
+        $konzerte = $konzertRepository->findAllOrdered();
 
-        // Extract unique years from posts
+        // Extract unique years from posts and concerts
         $years = [];
         foreach ($posts as $post) {
             if ($post->getDate()) {
@@ -40,10 +42,19 @@ class PageController extends AbstractController
                 }
             }
         }
+        foreach ($konzerte as $konzert) {
+            if ($konzert->getDate()) {
+                $year = $konzert->getDate()->format('Y');
+                if ($year && !in_array($year, $years)) {
+                    $years[] = $year;
+                }
+            }
+        }
         rsort($years); // Sort years in descending order
 
         return $this->render('pages/konzerte-und-aktivitaeten.html.twig', [
             'posts' => $posts,
+            'konzerte' => $konzerte,
             'years' => $years,
         ]);
     }

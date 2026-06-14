@@ -23,6 +23,9 @@
             </div>
             {% endif %}
             <div class="{% if years is defined and years|length > 0 %}col-md-10{% else %}col-12{% endif %}">
+                {% if konzerte is defined and konzerte|length > 0 %}
+                    {% include 'components/concerts_display.html.twig' %}
+                {% endif %}
                 {% include 'components/posts_display.html.twig' %}
             </div>
         </div>
