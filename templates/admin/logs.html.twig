@@ -35,6 +35,7 @@
                     <th style="width:80px">Kanal</th>
                     <th style="width:80px">Level</th>
                     <th>Meldung</th>
+                    <th style="width:120px">Aktion</th>
                 </tr>
             </thead>
             <tbody>
@@ -55,7 +56,7 @@
                 {% elseif entry.level == 'INFO' %}
                     {% set badgeClass = 'bg-primary' %}
                 {% endif %}
-                <tr class="{{ rowClass }}">
+                <tr class="{{ rowClass }}" data-log-message="{{ entry.message }} {{ entry.context|default('') }}">
                     <td class="text-nowrap font-monospace small">{{ entry.timestamp|date('d.m.Y H:i:s') }}</td>
                     <td><span class="badge bg-secondary">{{ entry.channel }}</span></td>
                     <td><span class="badge {{ badgeClass }}">{{ entry.level }}</span></td>
@@ -65,6 +66,15 @@
                         <div class="text-muted small mt-1" style="white-space:pre-wrap;word-break:break-all">{{ entry.context }}</div>
                         {% endif %}
                     </td>
+                    <td class="text-nowrap">
+                        {% if entry.level in ['WARNING', 'ERROR', 'CRITICAL'] and entry.channel == 'security' %}
+                            <button class="btn btn-sm btn-outline-danger blacklist-btn"
+                                    data-log-row-index="{{ loop.index }}"
+                                    title="IP aus Logs blacklisten">
+                                <i class="bi bi-ban me-1"></i>Blacklist
+                            </button>
+                        {% endif %}
+                    </td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -72,4 +82,60 @@
     </div>
     {% endif %}
 </div>
+
+<script>
+document.addEventListener('click', async (e) => {
+    const btn = e.target.closest('.blacklist-btn');
+    if (!btn) return;
+
+    // Extract IP address from log message using regex
+    const row = btn.closest('tr');
+    const message = row.getAttribute('data-log-message') || '';
+    const ipMatch = message.match(/\b(?:\d{1,3}\.){3}\d{1,3}\b/);
+
+    if (!ipMatch) {
+        alert('Keine IP-Adresse gefunden');
+        return;
+    }
+
+    const ip = ipMatch[0];
+    const reason = message.substring(0, 100);
+
+    if (!confirm(`IP ${ip} blacklisten? Grund: ${reason}`)) return;
+
+    btn.disabled = true;
+    btn.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>...';
+
+    try {
+        const form = new FormData();
+        form.append('_token', document.querySelector('input[name="_csrf_token"]')?.value ||
+                            document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '');
+        form.append('ip', ip);
+        form.append('reason', reason);
+
+        const res = await fetch('{{ path("admin_blacklist_ip") }}', {
+            method: 'POST',
+            body: form
+        });
+        const data = await res.json();
+
+        if (res.ok && data.success) {
+            btn.innerHTML = '<i class="bi bi-check-circle me-1"></i>Blockiert';
+            btn.classList.remove('btn-outline-danger');
+            btn.classList.add('btn-danger');
+            setTimeout(() => {
+                alert(`✅ IP ${ip} wurde blockiert`);
+            }, 300);
+        } else {
+            alert('❌ Fehler: ' + (data.error || 'Unbekannter Fehler'));
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-ban me-1"></i>Blacklist';
+        }
+    } catch (err) {
+        alert('❌ Fehler beim Blacklisten: ' + err.message);
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-ban me-1"></i>Blacklist';
+    }
+});
+</script>
 {% endblock %}

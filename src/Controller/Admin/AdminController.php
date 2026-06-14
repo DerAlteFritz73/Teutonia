@@ -2,6 +2,7 @@
 
 namespace App\Controller\Admin;
 
+use App\Entity\BlacklistedIp;
 use App\Entity\Konzert;
 use App\Entity\Post;
 use App\Entity\SongKeyword;
@@ -14,6 +15,7 @@ use App\Form\SongLinkType;
 use App\Form\StyleType;
 use App\Form\UserType;
 use Symfony\Component\Form\Extension\Core\Type\CollectionType;
+use App\Repository\BlacklistedIpRepository;
 use App\Repository\KonzertRepository;
 use App\Repository\PostRepository;
 use App\Repository\SongKeywordRepository;
@@ -145,6 +147,33 @@ class AdminController extends AbstractController
             'levels'   => $levels,
             'logFile'  => basename($logFile),
         ]);
+    }
+
+    #[Route('/logs/blacklist-ip', name: 'admin_blacklist_ip', methods: ['POST'])]
+    public function blacklistIp(
+        Request $request,
+        BlacklistedIpRepository $blacklistedIpRepository,
+        EntityManagerInterface $em,
+    ): JsonResponse {
+        if (!$this->isCsrfTokenValid('blacklist_ip', $request->request->get('_token'))) {
+            return new JsonResponse(['error' => 'Invalid CSRF token'], 403);
+        }
+
+        $ipAddress = trim($request->request->get('ip', ''));
+        $reason = trim($request->request->get('reason', ''));
+
+        if (!$ipAddress || !filter_var($ipAddress, FILTER_VALIDATE_IP)) {
+            return new JsonResponse(['error' => 'Invalid IP address'], 400);
+        }
+
+        // Check if already blacklisted
+        if ($blacklistedIpRepository->isBlacklisted($ipAddress)) {
+            return new JsonResponse(['error' => 'IP already blacklisted'], 409);
+        }
+
+        $blacklistedIpRepository->addIp($ipAddress, $reason ?: null);
+
+        return new JsonResponse(['success' => true, 'message' => "IP $ipAddress blacklisted"]);
     }
 
     private function getLogStats(string $logFile): array
