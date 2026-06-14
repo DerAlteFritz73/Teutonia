@@ -30,6 +30,7 @@ security:
         ROLE_ADMIN: [ROLE_USER]
 
     access_control:
+        - { path: ^/admin/blacklist-ip-from-email, roles: PUBLIC_ACCESS }
         - { path: ^/admin, roles: ROLE_ADMIN }
         - { path: ^/mitglieder, roles: ROLE_USER }
 
