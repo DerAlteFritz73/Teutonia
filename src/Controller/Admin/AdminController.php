@@ -176,6 +176,46 @@ class AdminController extends AbstractController
         return new JsonResponse(['success' => true, 'message' => "IP $ipAddress blacklisted"]);
     }
 
+    #[Route('/blacklist-ip-from-email/{token}', name: 'blacklist_ip_from_email', methods: ['GET'])]
+    public function blacklistIpFromEmail(
+        string $token,
+        Request $request,
+        BlacklistedIpRepository $blacklistedIpRepository,
+    ): Response {
+        // Verify token format (token should be: hash(ip + secret + timestamp)
+        $ipAddress = $request->query->get('ip');
+
+        if (!$ipAddress || !filter_var($ipAddress, FILTER_VALIDATE_IP)) {
+            return $this->render('admin/blacklist_error.html.twig', [
+                'error' => 'Invalid IP address'
+            ]);
+        }
+
+        // Verify token (token should match: hash of ip + secret + date)
+        $expectedToken = hash('sha256', $ipAddress . $_ENV['APP_SECRET'] . date('Y-m-d'));
+        if (!hash_equals($token, $expectedToken)) {
+            return $this->render('admin/blacklist_error.html.twig', [
+                'error' => 'Invalid or expired token'
+            ]);
+        }
+
+        // Check if already blacklisted
+        if ($blacklistedIpRepository->isBlacklisted($ipAddress)) {
+            return $this->render('admin/blacklist_success.html.twig', [
+                'message' => "IP $ipAddress ist bereits blockiert",
+                'ip' => $ipAddress
+            ]);
+        }
+
+        // Blacklist the IP
+        $blacklistedIpRepository->addIp($ipAddress, 'Failed login attempt (via email link)');
+
+        return $this->render('admin/blacklist_success.html.twig', [
+            'message' => "IP $ipAddress wurde erfolgreich blockiert",
+            'ip' => $ipAddress
+        ]);
+    }
+
     private function getLogStats(string $logFile): array
     {
         $errorCount  = 0;

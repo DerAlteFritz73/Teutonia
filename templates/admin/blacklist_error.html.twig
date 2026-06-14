@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fehler – Teutonia</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f8f9fa;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            max-width: 500px;
+            text-align: center;
+        }
+        .error-icon {
+            font-size: 48px;
+            color: #c0392b;
+            margin-bottom: 20px;
+        }
+        h1 {
+            color: #c0392b;
+            margin: 0 0 20px 0;
+        }
+        p {
+            color: #555;
+            line-height: 1.6;
+        }
+        .reason {
+            background: #fdeaea;
+            border-left: 4px solid #c0392b;
+            padding: 12px;
+            margin-top: 20px;
+            text-align: left;
+            font-size: 14px;
+            color: #a82a28;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="error-icon">✕</div>
+        <h1>Fehler</h1>
+        <p>Die IP-Adresse konnte nicht blockiert werden.</p>
+        <div class="reason">
+            <strong>Grund:</strong> {{ error }}
+        </div>
+        <p style="margin-top: 30px; font-size: 12px; color: #999;">
+            Der Link ist möglicherweise abgelaufen oder ungültig. Blockieren Sie die IP manuell über das Admin-Dashboard.
+        </p>
+    </div>
+</body>
+</html>

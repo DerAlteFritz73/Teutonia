@@ -69,6 +69,13 @@ class LoginCountSubscriber implements EventSubscriberInterface
         ]);
 
         try {
+            // Generate token for email-based blacklisting (valid for today)
+            $token = hash('sha256', $ip . $_ENV['APP_SECRET'] . date('Y-m-d'));
+            $blacklistUrl = $this->urlGenerator->generate('blacklist_ip_from_email',
+                ['token' => $token],
+                UrlGeneratorInterface::ABSOLUTE_URL
+            ) . '?ip=' . urlencode($ip);
+
             $email = (new Email())
                 ->from('chor.teutonia@gmail.com')
                 ->to('joel-marie@kreilos.com')
@@ -77,6 +84,7 @@ class LoginCountSubscriber implements EventSubscriberInterface
                     'username' => $username,
                     'ip'       => $ip,
                     'reason'   => $reason,
+                    'blacklist_url' => $blacklistUrl,
                 ]));
 
             $this->mailer->send($email);

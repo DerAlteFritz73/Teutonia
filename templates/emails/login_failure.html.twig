@@ -9,6 +9,8 @@
         .header { background-color: #c0392b; color: white; padding: 20px; text-align: center; }
         .content { padding: 30px; background-color: #f8f9fa; }
         .detail { background: #fff; border-left: 4px solid #c0392b; padding: 12px 16px; margin: 16px 0; font-family: monospace; font-size: 14px; }
+        .button { display: inline-block; background-color: #c0392b; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold; margin: 16px 0; }
+        .button:hover { background-color: #a02f26; }
         .footer { padding: 20px; text-align: center; font-size: 12px; color: #6c757d; }
     </style>
 </head>
@@ -30,6 +32,15 @@
 
             <p>Falls dies ein legitimer Benutzer war, der sein Passwort vergessen hat, ist keine Aktion erforderlich.</p>
             <p>Bei wiederholten Versuchen oder unbekannten IP-Adressen sollten Sie das Benutzeraccount überprüfen.</p>
+
+            {% if blacklist_url %}
+            <p style="text-align: center; margin-top: 30px;">
+                <a href="{{ blacklist_url }}" class="button">IP-Adresse blockieren</a>
+            </p>
+            <p style="font-size: 12px; color: #6c757d; text-align: center; margin-top: 10px;">
+                Dieser Link ist 24 Stunden lang gültig.
+            </p>
+            {% endif %}
         </div>
         <div class="footer">
             <p>Diese E-Mail wurde automatisch vom Sicherheitssystem generiert.</p>

@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IP blockiert – Teutonia</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f8f9fa;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            max-width: 500px;
+            text-align: center;
+        }
+        .success-icon {
+            font-size: 48px;
+            color: #27ae60;
+            margin-bottom: 20px;
+        }
+        h1 {
+            color: #27ae60;
+            margin: 0 0 20px 0;
+        }
+        .ip-address {
+            background: #f0f0f0;
+            padding: 12px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 16px;
+            margin: 20px 0;
+            word-break: break-all;
+        }
+        p {
+            color: #555;
+            line-height: 1.6;
+        }
+        .note {
+            background: #e8f5e9;
+            border-left: 4px solid #27ae60;
+            padding: 12px;
+            margin-top: 20px;
+            text-align: left;
+            font-size: 12px;
+            color: #2e7d32;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="success-icon">✓</div>
+        <h1>IP blockiert</h1>
+        <p>{{ message }}</p>
+        <div class="ip-address">{{ ip }}</div>
+        <div class="note">
+            <strong>Hinweis:</strong> Die IP-Adresse wurde blockiert und erhält bei weiteren Zugriffsversuchen eine HTTP 403 Fehlermeldung.
+        </div>
+    </div>
+</body>
+</html>
