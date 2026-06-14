@@ -49,6 +49,9 @@ class Konzert
     #[ORM\Column(type: Types::JSON, nullable: true)]
     private ?array $songNotes = [];
 
+    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    private ?string $introduction = null;
+
     #[ORM\ManyToMany(targetEntity: SongKeyword::class, inversedBy: 'konzerte')]
     #[ORM\JoinTable(name: 'konzert_song',
         joinColumns: [new ORM\JoinColumn(name: 'konzert_id', referencedColumnName: 'id', onDelete: 'CASCADE')],
@@ -83,6 +86,9 @@ class Konzert
 
     public function getSongNotes(): array { return $this->songNotes ?? []; }
     public function setSongNotes(array $songNotes): static { $this->songNotes = $songNotes; return $this; }
+
+    public function getIntroduction(): ?string { return $this->introduction; }
+    public function setIntroduction(?string $introduction): static { $this->introduction = $introduction; return $this; }
 
     public function getPlakatPath(): ?string { return $this->plakatPath; }
     public function setPlakatPath(?string $plakatPath): static { $this->plakatPath = $plakatPath; return $this; }

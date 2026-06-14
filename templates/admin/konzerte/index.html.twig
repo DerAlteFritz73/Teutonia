@@ -129,6 +129,11 @@
                 <tr class="konzert-detail">
                     <td colspan="{{ showAdminActions is defined and showAdminActions ? 9 : 8 }}" class="p-0 border-0">
                         <div id="songs-{{ konzert.id }}" class="collapse">
+                            {% if konzert.introduction %}
+                            <div class="px-4 py-3 border-bottom bg-light">
+                                <div class="text-muted" style="font-size: 0.95rem; line-height: 1.5;">{{ konzert.introduction }}</div>
+                            </div>
+                            {% endif %}
                             <div class="px-4 py-2 border-bottom bg-light">
                                 {% set items = konzert.orderedSongList %}
                                 {% if items is empty %}
