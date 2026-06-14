@@ -4,6 +4,7 @@
 
 {% block body %}
 <!-- template: templates/admin/logs.html.twig -->
+<meta name="csrf-token" content="{{ csrf_token('blacklist_ip') }}">
 <div class="container-fluid py-4">
     <div class="d-flex align-items-center gap-3 mb-3">
         <a href="{{ path('admin_dashboard') }}" class="btn btn-outline-secondary btn-sm">
@@ -107,9 +108,16 @@ document.addEventListener('click', async (e) => {
     btn.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>...';
 
     try {
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+        if (!csrfToken) {
+            alert('CSRF-Token nicht gefunden');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-ban me-1"></i>Blacklist';
+            return;
+        }
+
         const form = new FormData();
-        form.append('_token', document.querySelector('input[name="_csrf_token"]')?.value ||
-                            document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '');
+        form.append('_token', csrfToken);
         form.append('ip', ip);
         form.append('reason', reason);
 
