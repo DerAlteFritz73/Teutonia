@@ -727,6 +727,112 @@ class DropboxService
     }
 
     /**
+     * Copy a file from one location to another in Dropbox
+     */
+    public function copyFile(string $fromPath, string $toPath): bool
+    {
+        try {
+            $this->client->copy($fromPath, $toPath);
+            error_log("Dropbox: Copied $fromPath to $toPath");
+            return true;
+        } catch (\Exception $e) {
+            if ($this->isAuthError($e)) {
+                error_log('Dropbox: auth error copying file, refreshing token…');
+                $this->refreshAccessToken();
+                try {
+                    $this->client->copy($fromPath, $toPath);
+                    error_log("Dropbox: Successfully copied after token refresh");
+                    return true;
+                } catch (\Exception $retryError) {
+                    error_log("Error copying file after retry: " . $retryError->getMessage());
+                    return false;
+                }
+            }
+            error_log("Error copying $fromPath to $toPath: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Delete a file from Dropbox
+     */
+    public function deleteFile(string $path): bool
+    {
+        try {
+            $this->client->delete($path);
+            error_log("Dropbox: Deleted $path");
+            return true;
+        } catch (BadRequest $e) {
+            // File doesn't exist, which is fine
+            if (strpos($e->getMessage(), 'not_found') !== false) {
+                error_log("Dropbox: File not found (already deleted): $path");
+                return true;
+            }
+            error_log("Error deleting $path: " . $e->getMessage());
+            return false;
+        } catch (\Exception $e) {
+            if ($this->isAuthError($e)) {
+                error_log('Dropbox: auth error deleting file, refreshing token…');
+                $this->refreshAccessToken();
+                try {
+                    $this->client->delete($path);
+                    error_log("Dropbox: Successfully deleted after token refresh");
+                    return true;
+                } catch (\Exception $retryError) {
+                    error_log("Error deleting file after retry: " . $retryError->getMessage());
+                    return false;
+                }
+            }
+            error_log("Error deleting $path: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * List all files in a Dropbox folder (non-recursive)
+     */
+    public function listFolderFiles(string $folderPath): array
+    {
+        try {
+            $result = $this->client->listFolder($folderPath, false);
+            $files = [];
+
+            foreach (($result['entries'] ?? []) as $entry) {
+                if ($entry['.tag'] === 'file') {
+                    $files[] = [
+                        'name' => $entry['name'],
+                        'path' => $entry['path_display'],
+                        'size' => $entry['size'] ?? 0,
+                    ];
+                }
+            }
+
+            while ($result['has_more'] ?? false) {
+                $result = $this->client->listFolderContinue($result['cursor']);
+                foreach (($result['entries'] ?? []) as $entry) {
+                    if ($entry['.tag'] === 'file') {
+                        $files[] = [
+                            'name' => $entry['name'],
+                            'path' => $entry['path_display'],
+                            'size' => $entry['size'] ?? 0,
+                        ];
+                    }
+                }
+            }
+
+            return $files;
+        } catch (\Exception $e) {
+            if ($this->isAuthError($e)) {
+                error_log('Dropbox: auth error listing files, refreshing token…');
+                $this->refreshAccessToken();
+                return $this->listFolderFiles($folderPath); // Retry
+            }
+            error_log("Error listing folder $folderPath: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
      * Format file size in human-readable format
      */
     public static function formatFileSize(int $bytes): string

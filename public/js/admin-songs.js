@@ -140,6 +140,43 @@ if (!window._adminSongsInit) {
         const cell = e.target.closest('.editable-cell');
         if (cell) commit(cell);
     });
+
+    // Checkbox "Aktuell in Proben" changed → save
+    document.addEventListener('change', e => {
+        if (e.target.type !== 'checkbox' || e.target.dataset.field !== 'isAktuelleProben') return;
+        const row = e.target.closest('tr');
+        const songId = row.dataset.id;
+        const value = e.target.checked ? '1' : '0';
+        const wasChecked = e.target.checked;
+
+        // Disable checkbox during save
+        e.target.disabled = true;
+
+        fetch(`/admin/songs/${songId}/patch-field`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ _token: cfg.csrfPatch, field: 'isAktuelleProben', value }),
+        })
+        .then(res => {
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            return res.json();
+        })
+        .then(json => {
+            if (json.error) throw new Error(json.error);
+            flash(row, true);
+        })
+        .catch(err => {
+            e.target.checked = !wasChecked;
+            flash(row, false);
+            alert(err.message || 'Fehler beim Speichern');
+        })
+        .finally(() => {
+            // Re-enable checkbox unless it's supposed to be disabled
+            const hasDropbox = row.querySelector('[data-field="dropboxlink"] .display-val i.bi-folder-check') !== null;
+            if (!hasDropbox) e.target.disabled = true;
+            else e.target.disabled = false;
+        });
+    });
 }());
 
 /* ── Movement row drag & drop reorder ──────────────────────────────── */

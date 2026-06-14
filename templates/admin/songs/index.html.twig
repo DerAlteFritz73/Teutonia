@@ -88,6 +88,7 @@
                     <th class="d-none d-md-table-cell">Stile</th>
                     {{ _self.sort_th('Letzte Aufführung',  'latestKonzert', sort, dir, search, 'width:130px', 'class="d-none d-md-table-cell"') }}
                     {{ _self.sort_th('Dropbox',            'dropboxlink',   sort, dir, search, 'width:40px',  'class="d-none d-md-table-cell"') }}
+                    <th class="d-none d-md-table-cell" style="width:100px">Aktuell in Proben</th>
                     <th class="text-end" style="width:80px">Aktionen</th>
                 </tr>
             </thead>
@@ -174,6 +175,14 @@
                                        value="{{ song.dropboxlink ?? '' }}"
                                        placeholder="/Chorgemeinschaft Teutonia/Noten/…"
                                        style="min-width:220px">
+                            </td>
+
+                            {# Aktuell in Proben #}
+                            <td class="text-center" data-field="isAktuelleProben">
+                                <input type="checkbox" class="form-check-input"
+                                       data-field="isAktuelleProben"
+                                       {% if song.isAktuelleProben %}checked{% endif %}
+                                       {% if not song.dropboxlink %}disabled title="Dropbox-Pfad erforderlich"{% endif %}>
                             </td>
 
                             {# Aktionen #}
@@ -273,6 +282,14 @@
                                    style="min-width:220px">
                         </td>
 
+                        {# Aktuell in Proben #}
+                        <td class="text-center d-none d-md-table-cell" data-field="isAktuelleProben">
+                            <input type="checkbox" class="form-check-input"
+                                   data-field="isAktuelleProben"
+                                   {% if song.isAktuelleProben %}checked{% endif %}
+                                   {% if not song.dropboxlink %}disabled title="Dropbox-Pfad erforderlich"{% endif %}>
+                        </td>
+
                         {# Aktionen #}
                         <td class="text-end">
                             <a href="{{ path('admin_songs_edit', {id: song.id}) }}"
@@ -360,6 +377,14 @@
                                        value="{{ child.dropboxlink ?? '' }}"
                                        placeholder="/Chorgemeinschaft Teutonia/Noten/…"
                                        style="min-width:220px">
+                            </td>
+
+                            {# Aktuell in Proben #}
+                            <td class="text-center d-none d-md-table-cell" data-field="isAktuelleProben">
+                                <input type="checkbox" class="form-check-input"
+                                       data-field="isAktuelleProben"
+                                       {% if child.isAktuelleProben %}checked{% endif %}
+                                       {% if not child.dropboxlink %}disabled title="Dropbox-Pfad erforderlich"{% endif %}>
                             </td>
 
                             <td class="text-end">

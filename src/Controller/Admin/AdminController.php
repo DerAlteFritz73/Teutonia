@@ -400,8 +400,12 @@ class AdminController extends AbstractController
     }
 
     #[Route('/songs/{id}/patch-field', name: 'admin_songs_patch_field', methods: ['POST'])]
-    public function songsPatchField(SongKeyword $song, Request $request, EntityManagerInterface $em): JsonResponse
-    {
+    public function songsPatchField(
+        SongKeyword $song,
+        Request $request,
+        EntityManagerInterface $em,
+        \App\Service\AktuelleProbenSyncService $syncService
+    ): JsonResponse {
         $data  = json_decode($request->getContent(), true) ?? [];
         $token = $data['_token'] ?? '';
 
@@ -409,7 +413,7 @@ class AdminController extends AbstractController
             return new JsonResponse(['error' => 'Invalid CSRF token'], 403);
         }
 
-        $allowed = ['songName', 'composer', 'etikett', 'dropboxlink'];
+        $allowed = ['songName', 'composer', 'etikett', 'dropboxlink', 'isAktuelleProben'];
         $field   = $data['field'] ?? '';
         $value   = trim($data['value'] ?? '');
 
@@ -432,6 +436,25 @@ class AdminController extends AbstractController
                 break;
             case 'dropboxlink':
                 $song->setDropboxlink($value !== '' ? $value : null);
+                break;
+            case 'isAktuelleProben':
+                if (!$song->getDropboxlink()) {
+                    return new JsonResponse(['error' => 'Dropbox-Pfad erforderlich'], 422);
+                }
+
+                $isActive = in_array($value, ['1', 'true', true], true);
+
+                if ($isActive) {
+                    // Push to Aktuelle Proben
+                    if (!$syncService->pushSongToAktuelleProben($song)) {
+                        return new JsonResponse(['error' => 'Fehler beim Synchronisieren mit Dropbox'], 502);
+                    }
+                } else {
+                    // Remove from Aktuelle Proben
+                    if (!$syncService->removeSongFromAktuelleProben($song)) {
+                        return new JsonResponse(['error' => 'Fehler beim Entfernen aus Dropbox'], 502);
+                    }
+                }
                 break;
         }
 
