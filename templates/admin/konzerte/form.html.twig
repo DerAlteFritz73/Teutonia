@@ -58,6 +58,11 @@
                 {% endfor %}
             </div>
         </div>
+        <div class="col-12">
+            {{ form_label(form.introduction) }}
+            {{ form_widget(form.introduction) }}
+            {{ form_errors(form.introduction) }}
+        </div>
         <div class="col-md-6">
             {{ form_label(form.programmVorderseiteFile) }}
             <div class="drop-zone" data-new-preview="new-preview-programm-v" data-existing-preview="preview-programm-v"{% if konzert.programmVorderseite %} style="display:none"{% endif %}>
