@@ -32,3 +32,4 @@ services:
             $dropboxRefreshToken: '%env(DROPBOX_REFRESH_TOKEN)%'
             $dropboxAppKey: '%env(DROPBOX_APP_KEY)%'
             $dropboxAppSecret: '%env(DROPBOX_APP_SECRET)%'
+            $projectDir: '%kernel.project_dir%'

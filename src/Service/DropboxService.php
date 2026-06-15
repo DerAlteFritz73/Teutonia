@@ -20,12 +20,17 @@ class DropboxService
         string $dropboxAccessToken,
         string $dropboxRefreshToken,
         string $dropboxAppKey,
-        string $dropboxAppSecret
+        string $dropboxAppSecret,
+        string $projectDir
     ) {
         $this->refreshToken = $dropboxRefreshToken;
         $this->appKey = $dropboxAppKey;
         $this->appSecret = $dropboxAppSecret;
-        $this->tokenCacheFile = sys_get_temp_dir() . '/dropbox_token_cache.json';
+        $cacheDir = $projectDir . '/var/cache/dropbox';
+        if (!is_dir($cacheDir)) {
+            @mkdir($cacheDir, 0755, true);
+        }
+        $this->tokenCacheFile = $cacheDir . '/token_cache.json';
 
         // Get a valid access token (will refresh if needed)
         $accessToken = $this->getValidAccessToken($dropboxAccessToken);
@@ -154,7 +159,8 @@ class DropboxService
     public function getFileStructure(string $folderPath, bool $useCache = true): array
     {
         // Use cache to avoid re-fetching on every page load
-        $cacheFile = sys_get_temp_dir() . '/dropbox_cache_' . md5($folderPath) . '.json';
+        $cacheDir = dirname($this->tokenCacheFile);
+        $cacheFile = $cacheDir . '/structure_' . md5($folderPath) . '.json';
         $cacheMaxAge = 3600; // 1 hour
 
         if ($useCache && file_exists($cacheFile) && (time() - filemtime($cacheFile)) < $cacheMaxAge) {
@@ -389,7 +395,8 @@ class DropboxService
      */
     public function clearFileCache(): void
     {
-        foreach (glob(sys_get_temp_dir() . '/dropbox_cache_*.json') as $file) {
+        $cacheDir = dirname($this->tokenCacheFile);
+        foreach (glob($cacheDir . '/structure_*.json') as $file) {
             @unlink($file);
         }
         error_log('Dropbox: file structure cache cleared');
@@ -405,7 +412,8 @@ class DropboxService
     public function getFilesForFolder(string $folderPath): array
     {
         $basePath  = '/Chorgemeinschaft Teutonia';
-        $cacheFile = sys_get_temp_dir() . '/dropbox_cache_' . md5($basePath) . '.json';
+        $cacheDir = dirname($this->tokenCacheFile);
+        $cacheFile = $cacheDir . '/structure_' . md5($basePath) . '.json';
 
         if (file_exists($cacheFile)) {
             $tree = json_decode(file_get_contents($cacheFile), true) ?: [];
