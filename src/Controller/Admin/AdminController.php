@@ -385,6 +385,64 @@ class AdminController extends AbstractController
         return $response;
     }
 
+    #[Route('/songs/export-odt', name: 'admin_songs_export_odt')]
+    public function exportSongsOdt(SongKeywordRepository $songRepository): Response
+    {
+        $songs = $songRepository->createQueryBuilder('s')
+            ->leftJoin('s.styles', 'st')->addSelect('st')
+            ->leftJoin('s.parent', 'p')->addSelect('p')
+            ->where('s.etikett IS NULL OR s.etikett = :empty')
+            ->setParameter('empty', '')
+            ->getQuery()->getResult();
+
+        usort($songs, function ($a, $b) {
+            $aKey = ($a->getParent()?->getSongName() ?? $a->getSongName()) . "\0" . $a->getSongName();
+            $bKey = ($b->getParent()?->getSongName() ?? $b->getSongName()) . "\0" . $b->getSongName();
+            return strnatcasecmp($aKey, $bKey);
+        });
+
+        $phpWord = new \PhpOffice\PhpWord\PhpWord();
+        $phpWord->getSettings()->setThemeFontLang(new \PhpOffice\PhpWord\Style\Language('de-DE'));
+        $phpWord->setDefaultFontName('Calibri');
+        $phpWord->setDefaultFontSize(11);
+
+        $section = $phpWord->addSection([
+            'marginTop'    => \PhpOffice\PhpWord\Shared\Converter::cmToTwip(2),
+            'marginBottom' => \PhpOffice\PhpWord\Shared\Converter::cmToTwip(2),
+            'marginLeft'   => \PhpOffice\PhpWord\Shared\Converter::cmToTwip(2),
+            'marginRight'  => \PhpOffice\PhpWord\Shared\Converter::cmToTwip(2),
+        ]);
+
+        $phpWord->addTitleStyle(1, ['name' => 'Calibri', 'size' => 16, 'bold' => true], ['spaceAfter' => 240]);
+        $section->addTitle('Lieder ohne Etikett', 1);
+
+        $tableStyle = array('borderSize' => 6, 'borderColor' => 'CCCCCC', 'cellSpacing' => 0);
+        $table = $section->addTable($tableStyle);
+        $table->addRow();
+        foreach (['Titel', 'Komponist', 'Übergeordneter Titel', 'Stile'] as $header) {
+            $table->addCell(2000)->addParagraph($header, ['bold' => true]);
+        }
+
+        foreach ($songs as $song) {
+            $styles = $song->getStyles()->map(fn($s) => $s->getName())->toArray();
+            $table->addRow();
+            $table->addCell(2000)->addParagraph($song->getSongName());
+            $table->addCell(2000)->addParagraph($song->getComposer());
+            $table->addCell(2000)->addParagraph($song->getParent()?->getSongName());
+            $table->addCell(2000)->addParagraph(implode(', ', $styles));
+        }
+
+        $tmpFile = tempnam(sys_get_temp_dir(), 'songs_export_') . '.odt';
+        \PhpOffice\PhpWord\IOFactory::createWriter($phpWord, 'ODText')->save($tmpFile);
+
+        $response = new \Symfony\Component\HttpFoundation\BinaryFileResponse($tmpFile);
+        $response->setContentDisposition(\Symfony\Component\HttpFoundation\ResponseHeaderBag::DISPOSITION_ATTACHMENT, 'songs_export.odt');
+        $response->headers->set('Content-Type', 'application/vnd.oasis.opendocument.text');
+        $response->deleteFileAfterSend(true);
+
+        return $response;
+    }
+
     #[Route('/songs/new', name: 'admin_songs_new')]
     public function songsNew(Request $request, EntityManagerInterface $em): Response
     {
