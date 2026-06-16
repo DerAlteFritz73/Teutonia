@@ -179,6 +179,9 @@
 .llh-handle  { flex: 0 0 20px; }
 .llh-title   { flex: 1; }
 .llh-composer { flex: 0 0 15%; }
+.ll-list-wrap.show-etikett .llh-composer {
+    flex: 0 0 10%;
+}
 .llh-note    { flex: 0 0 110px; min-width: 0; }
 .llh-etikett { flex: 0 0 90px; min-width: 0; }
 .llh-dur     { flex: 0 0 80px; min-width: 0; text-align: center; }
@@ -199,6 +202,9 @@
     font-size: .8125rem; color: #6c757d;
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     padding-right: 8px;
+}
+.ll-list-wrap.show-etikett .llc-composer {
+    flex: 0 0 10%;
 }
 .llc-note {
     flex: 0 0 110px; min-width: 0;
@@ -459,6 +465,12 @@ window.FETCH_URL    = '{{ path('admin_liederlisten_fetch_duration') }}';
         const showEtikett = document.getElementById('show-etikett')?.checked;
         document.querySelector('.llh-etikett').style.display = showEtikett ? '' : 'none';
         rightListEl.querySelectorAll('.llc-etikett').forEach(c => c.style.display = showEtikett ? '' : 'none');
+
+        // Adjust composer width when etikett is visible
+        const listWrap = rightListEl.closest('.ll-list-wrap');
+        if (listWrap) {
+            listWrap.classList.toggle('show-etikett', showEtikett);
+        }
 
         // Show note column only when at least one song is duplicated
         const noteHeader = document.querySelector('.llh-note');
