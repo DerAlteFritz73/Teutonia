@@ -176,16 +176,16 @@
 .ll-row.drop-before { box-shadow: 0 -2px 0 0 #0d6efd; }
 .ll-row.drop-after  { box-shadow: 0  2px 0 0 #0d6efd; }
 
-.llh-handle  { width: 20px; min-width: 20px; }
+.llh-handle  { flex: 0 0 20px; }
 .llh-title   { flex: 1; }
-.llh-composer { width: 22%; min-width: 22%; max-width: 22%; }
+.llh-composer { flex: 0 0 22%; }
 .llh-note    { flex: 0 0 110px; min-width: 0; }
 .llh-etikett { flex: 0 0 90px; min-width: 0; }
 .llh-dur     { flex: 0 0 80px; min-width: 0; text-align: center; }
 .llh-del     { width: 56px; min-width: 56px; }
 
 .llc-handle {
-    width: 20px; min-width: 20px;
+    flex: 0 0 20px;
     text-align: center; color: #adb5bd; font-size: .8rem;
     cursor: grab;
 }
@@ -195,7 +195,7 @@
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .llc-composer {
-    width: 22%; min-width: 22%; max-width: 22%;
+    flex: 0 0 22%;
     font-size: .8125rem; color: #6c757d;
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     padding-right: 8px;
