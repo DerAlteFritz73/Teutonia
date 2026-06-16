@@ -70,8 +70,8 @@
                        placeholder="Filtern…" autocomplete="off">
                 <div class="ll-list-wrap">
                     <div class="ll-list-header">
-                        <span class="llh-composer">Komponist</span>
                         <span class="llh-title">Titel</span>
+                        <span class="llh-composer">Komponist</span>
                     </div>
                     <div class="ll-list" id="left-list"></div>
                 </div>
@@ -100,8 +100,8 @@
                 <div class="ll-list-wrap">
                     <div class="ll-list-header">
                         <span class="llh-handle"></span>
-                        <span class="llh-composer">Komponist</span>
                         <span class="llh-title">Titel</span>
+                        <span class="llh-composer">Komponist</span>
                         <span class="llh-note">Anmerkung</span>
                         <span class="llh-etikett">Etikett</span>
                         <span class="llh-dur">Dauer</span>
@@ -117,10 +117,10 @@
                         <span id="custom-add-title">Freies Stück hinzufügen</span>
                     </div>
                     <div class="d-flex gap-1">
-                        <input type="text" id="custom-composer" class="form-control form-control-sm"
-                               placeholder="Komponist (optional)" style="flex:0 0 28%">
                         <input type="text" id="custom-title-input" class="form-control form-control-sm"
-                               placeholder="Titel *">
+                               placeholder="Titel *" style="flex:0 0 50%">
+                        <input type="text" id="custom-composer" class="form-control form-control-sm"
+                               placeholder="Komponist (optional)">
                         <input type="text" id="custom-dur-input" class="form-control form-control-sm"
                                placeholder="Dauer" style="flex:0 0 70px">
                         <button type="button" id="btn-add-custom" class="btn btn-sm btn-warning text-nowrap">
@@ -177,8 +177,8 @@
 .ll-row.drop-after  { box-shadow: 0  2px 0 0 #0d6efd; }
 
 .llh-handle  { width: 20px; min-width: 20px; }
-.llh-composer { width: 22%; min-width: 22%; max-width: 22%; }
 .llh-title   { flex: 1; }
+.llh-composer { width: 22%; min-width: 22%; max-width: 22%; }
 .llh-note    { flex: 0 0 110px; min-width: 0; }
 .llh-etikett { flex: 0 0 90px; min-width: 0; }
 .llh-dur     { flex: 0 0 80px; min-width: 0; text-align: center; }
@@ -190,15 +190,15 @@
     cursor: grab;
 }
 .llc-handle:active { cursor: grabbing; }
+.llc-title {
+    flex: 1; font-size: .8125rem;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
 .llc-composer {
     width: 22%; min-width: 22%; max-width: 22%;
     font-size: .8125rem; color: #6c757d;
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     padding-right: 8px;
-}
-.llc-title {
-    flex: 1; font-size: .8125rem;
-    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .llc-note {
     flex: 0 0 110px; min-width: 0;
@@ -295,10 +295,6 @@ window.FETCH_URL    = '{{ path('admin_liederlisten_fetch_duration') }}';
         row.className = 'll-row';
         row.dataset.id = song.id;
 
-        const c = document.createElement('span');
-        c.className = 'llc-composer';
-        c.textContent = song.composer || '—';
-
         const t = document.createElement('span');
         t.className = 'llc-title';
         t.textContent = song.title;
@@ -310,8 +306,12 @@ window.FETCH_URL    = '{{ path('admin_liederlisten_fetch_duration') }}';
             t.appendChild(badge);
         }
 
-        row.appendChild(c);
+        const c = document.createElement('span');
+        c.className = 'llc-composer';
+        c.textContent = song.composer || '—';
+
         row.appendChild(t);
+        row.appendChild(c);
         return row;
     }
 
@@ -328,12 +328,6 @@ window.FETCH_URL    = '{{ path('admin_liederlisten_fetch_duration') }}';
         h.innerHTML = '<i class="bi bi-grip-vertical"></i>';
         row.appendChild(h);
 
-        // Composer
-        const c = document.createElement('span');
-        c.className = 'llc-composer';
-        c.textContent = item.composer || '—';
-        row.appendChild(c);
-
         // Title
         const t = document.createElement('span');
         t.className = 'llc-title';
@@ -343,6 +337,12 @@ window.FETCH_URL    = '{{ path('admin_liederlisten_fetch_duration') }}';
             t.textContent = item.title;
         }
         row.appendChild(t);
+
+        // Composer
+        const c = document.createElement('span');
+        c.className = 'llc-composer';
+        c.textContent = item.composer || '—';
+        row.appendChild(c);
 
         // Note
         const nWrap = document.createElement('span');
