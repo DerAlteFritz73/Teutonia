@@ -53,8 +53,19 @@
                     {{ form_label(form.parent) }}
                     <input type="search" id="parent-search" class="form-control form-control-sm mb-1"
                            placeholder="Filtern…" autocomplete="off">
-                    {{ form_widget(form.parent) }}
-                    {{ form_errors(form.parent) }}
+                    <div class="d-flex gap-2 align-items-start">
+                        <div class="flex-grow-1">
+                            {{ form_widget(form.parent) }}
+                            {{ form_errors(form.parent) }}
+                        </div>
+                        {% if not isNew and song.parent %}
+                        <button type="button" id="clear-parent-btn" class="btn btn-sm btn-outline-danger mt-2"
+                                title="Übergeordnetes Stück entfernen"
+                                data-tooltip="Übergeordnetes Stück entfernen">
+                            <i class="bi bi-x"></i>
+                        </button>
+                        {% endif %}
+                    </div>
                     {% if not isNew and song.children|length > 0 %}
                         <div class="mt-1 small text-muted">
                             <i class="bi bi-diagram-3 me-1"></i>
@@ -362,6 +373,23 @@ window.PROBEN_CONFIG = {
             });
         });
     }
+}());
+
+/* ── Clear parent assignment ── */
+(function () {
+    const clearBtn = document.getElementById('clear-parent-btn');
+    const select = document.getElementById('song_keyword_parent');
+    if (!clearBtn || !select) return;
+
+    clearBtn.addEventListener('click', function (e) {
+        e.preventDefault();
+        select.value = '';
+        const event = new Event('change', { bubbles: true });
+        select.dispatchEvent(event);
+        if (window.markFormDirty) window.markFormDirty();
+        // Hide the clear button after clearing
+        clearBtn.style.display = 'none';
+    });
 }());
 
 /* ── Tooltips ── */
