@@ -661,6 +661,7 @@ class AdminController extends AbstractController
             $aktuelleMatch = $findInFolders($normTitle, $normComposer, $aktuelleByFull, $aktuelleByTitle);
             if ($aktuelleMatch !== null) {
                 $newAktuelle = $aktuelleBase . '/' . $aktuelleMatch;
+                $oldAktuelle = $song->getAktuelleDropboxlink();
                 if (!$song->isAktuelleProben()) {
                     $song->setIsAktuelleProben(true);
                     $changed = true;
@@ -668,6 +669,16 @@ class AdminController extends AbstractController
                 if ($song->getAktuelleDropboxlink() !== $newAktuelle) {
                     $song->setAktuelleDropboxlink($newAktuelle);
                     $changed = true;
+
+                    // If Aktuelle Proben link changed due to folder rename, clear children's links
+                    // so the second pass can re-link them to correct subfolders
+                    if ($oldAktuelle && $oldAktuelle !== $newAktuelle && !$song->getParent()) {
+                        foreach ($song->getChildren() as $child) {
+                            if ($child->getAktuelleDropboxlink() && str_starts_with($child->getAktuelleDropboxlink(), $oldAktuelle . '/')) {
+                                $child->setAktuelleDropboxlink(null);
+                            }
+                        }
+                    }
                 }
             }
 
@@ -675,9 +686,20 @@ class AdminController extends AbstractController
             $notenFolder = $findInFolders($normTitle, $normComposer, $notenByFull, $notenByTitle);
             $notenLinkMissing = !$song->getDropboxlink() || !str_starts_with($song->getDropboxlink(), $notenBase . '/');
             $newNotenPath = $notenFolder !== null ? $notenBase . '/' . $notenFolder : null;
+            $oldNotenPath = $song->getDropboxlink();
             if ($notenFolder !== null && ($notenLinkMissing || $song->getDropboxlink() !== $newNotenPath)) {
                 $song->setDropboxlink($newNotenPath);
                 $changed = true;
+
+                // If parent's link changed due to folder rename, clear children's links
+                // so the second pass can re-link them to correct subfolders
+                if ($oldNotenPath && $newNotenPath && $oldNotenPath !== $newNotenPath && !$song->getParent()) {
+                    foreach ($song->getChildren() as $child) {
+                        if ($child->getDropboxlink() && str_starts_with($child->getDropboxlink(), $oldNotenPath . '/')) {
+                            $child->setDropboxlink(null);
+                        }
+                    }
+                }
             }
 
             $hasAnyLink = $song->getDropboxlink() || $song->getAktuelleDropboxlink();
