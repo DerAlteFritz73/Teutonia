@@ -671,14 +671,13 @@ class AdminController extends AbstractController
                 }
             }
 
-            // Try Noten match → sets dropboxlink if not yet pointing to Noten
+            // Try Noten match → always attempt to find a match, in case folders were renamed
+            $notenFolder = $findInFolders($normTitle, $normComposer, $notenByFull, $notenByTitle);
             $notenLinkMissing = !$song->getDropboxlink() || !str_starts_with($song->getDropboxlink(), $notenBase . '/');
-            if ($notenLinkMissing) {
-                $notenFolder = $findInFolders($normTitle, $normComposer, $notenByFull, $notenByTitle);
-                if ($notenFolder !== null) {
-                    $song->setDropboxlink($notenBase . '/' . $notenFolder);
-                    $changed = true;
-                }
+            $newNotenPath = $notenFolder !== null ? $notenBase . '/' . $notenFolder : null;
+            if ($notenFolder !== null && ($notenLinkMissing || $song->getDropboxlink() !== $newNotenPath)) {
+                $song->setDropboxlink($newNotenPath);
+                $changed = true;
             }
 
             $hasAnyLink = $song->getDropboxlink() || $song->getAktuelleDropboxlink();
