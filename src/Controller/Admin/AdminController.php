@@ -361,9 +361,14 @@ class AdminController extends AbstractController
 
         foreach (['A' => 'Titel', 'B' => 'Komponist', 'C' => 'Übergeordneter Titel', 'D' => 'Stile'] as $col => $header) {
             $sheet->setCellValue($col . '1', $header);
-            $sheet->getColumnDimension($col)->setAutoSize(true);
             $sheet->getStyle($col . '1')->getFont()->setBold(true);
         }
+
+        // Set column widths - Title gets the most space
+        $sheet->getColumnDimension('A')->setWidth(35);
+        $sheet->getColumnDimension('B')->setWidth(18);
+        $sheet->getColumnDimension('C')->setWidth(22);
+        $sheet->getColumnDimension('D')->setWidth(16);
 
         $row = 2;
         foreach ($songs as $song) {
@@ -419,17 +424,18 @@ class AdminController extends AbstractController
         $tableStyle = array('borderSize' => 6, 'borderColor' => 'CCCCCC', 'cellSpacing' => 0);
         $table = $section->addTable($tableStyle);
         $table->addRow();
-        foreach (['Titel', 'Komponist', 'Übergeordneter Titel', 'Stile'] as $header) {
-            $table->addCell(2000)->addParagraph($header, ['bold' => true]);
+        $headerWidths = [3000, 2000, 2200, 1500]; // Title gets the most space
+        foreach (['Titel', 'Komponist', 'Übergeordneter Titel', 'Stile'] as $i => $header) {
+            $table->addCell($headerWidths[$i])->addParagraph($header, ['bold' => true]);
         }
 
         foreach ($songs as $song) {
             $styles = $song->getStyles()->map(fn($s) => $s->getName())->toArray();
             $table->addRow();
-            $table->addCell(2000)->addParagraph($song->getSongName());
+            $table->addCell(3000)->addParagraph($song->getSongName());
             $table->addCell(2000)->addParagraph($song->getComposer());
-            $table->addCell(2000)->addParagraph($song->getParent()?->getSongName());
-            $table->addCell(2000)->addParagraph(implode(', ', $styles));
+            $table->addCell(2200)->addParagraph($song->getParent()?->getSongName());
+            $table->addCell(1500)->addParagraph(implode(', ', $styles));
         }
 
         $tmpFile = tempnam(sys_get_temp_dir(), 'songs_export_') . '.odt';
