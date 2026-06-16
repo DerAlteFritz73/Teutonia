@@ -358,6 +358,15 @@ window.FETCH_URL    = '{{ path('admin_liederlisten_fetch_duration') }}';
         nWrap.appendChild(nInput);
         row.appendChild(nWrap);
 
+        // Etikett
+        const etWrap = document.createElement('span');
+        etWrap.className = 'llc-etikett';
+        if (!isCustom && item.songId != null) {
+            const song = songById.get(item.songId);
+            etWrap.textContent = song?.etikett || '';
+        }
+        row.appendChild(etWrap);
+
         // Duration
         const durWrap = document.createElement('span');
         durWrap.className = 'llc-dur';
@@ -377,15 +386,6 @@ window.FETCH_URL    = '{{ path('admin_liederlisten_fetch_duration') }}';
         durWrap.appendChild(spinner);
 
         row.appendChild(durWrap);
-
-        // Etikett
-        const etWrap = document.createElement('span');
-        etWrap.className = 'llc-etikett';
-        if (!isCustom && item.songId != null) {
-            const song = songById.get(item.songId);
-            etWrap.textContent = song?.etikett || '';
-        }
-        row.appendChild(etWrap);
 
         // Delete (and edit for custom)
         const del = document.createElement('span');
