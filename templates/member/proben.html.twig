@@ -10,6 +10,8 @@
             'extrabox': 'bg-secondary text-white'
         }[prefix] ?? 'bg-light text-dark border' %}
         <span class="badge {{ class }} fw-normal">{{ etikett }}</span>
+    {% else %}
+        <span class="badge bg-light border fw-normal"><span class="invisible">Rosa 155</span></span>
     {% endif %}
 {% endmacro %}
 
@@ -38,6 +40,9 @@
                                     aria-expanded="false"
                                     {% set probenPath = song.aktuelleDropboxlink ?? song.dropboxlink %}
                     {% if probenPath %}data-dropbox-path="{{ probenPath }}"{% endif %}>
+                                <span class="accordion-btn-etikett flex-shrink-0 text-start me-2">
+                                    {{ _self.etikett_badge(song.etikett) }}
+                                </span>
                                 <i class="bi bi-folder2-open me-2"></i>
                                 <span class="d-flex flex-column lh-sm flex-grow-1">
                                     {{ song.songName }}
@@ -45,7 +50,7 @@
                                         <small class="text-muted fw-normal">{{ song.composer }}</small>
                                     {% endif %}
                                 </span>
-                                <span class="ps-3 me-3 d-flex align-items-center gap-2 flex-shrink-0">
+                                <span class="ps-3 me-3 d-flex align-items-center gap-2 accordion-btn-badges">
                                     {% for style in song.styles %}
                                         {% if style.image %}
                                             <img src="{{ asset('images/styles/' ~ style.image) }}" alt="{{ style.name }}" title="{{ style.name }}" class="d-sm-none rounded" style="height:2.2rem;width:2.2rem;object-fit:contain;">
@@ -105,7 +110,7 @@
                                                             {% if movement.dropboxlink %}data-dropbox-path="{{ movement.dropboxlink }}"{% endif %}>
                                                         <i class="bi bi-music-note me-2 text-primary"></i>
                                                         {{ movement.songName }}
-                                                        <span class="ps-3 me-3 d-flex align-items-center gap-2 flex-shrink-0">
+                                                        <span class="ps-3 me-3 d-flex align-items-center gap-2 accordion-btn-badges">
                                                             <span class="d-flex gap-1 file-count-badges"></span>
                                                         </span>
                                                     </button>
@@ -171,6 +176,9 @@
                                     data-bs-target="#{{ allFolderId }}"
                                     aria-expanded="false"
                                     {% if hasDropbox %}data-dropbox-path="{{ notenPath }}"{% endif %}>
+                                <span class="accordion-btn-etikett flex-shrink-0 text-start me-2">
+                                    {{ _self.etikett_badge(song.etikett) }}
+                                </span>
                                 {% if hasMovements %}
                                     <i class="bi bi-folder2-open me-2"></i>
                                 {% elseif hasDropbox %}
@@ -184,14 +192,13 @@
                                         <small class="text-muted fw-normal">{{ song.composer }}</small>
                                     {% endif %}
                                 </span>
-                                <span class="ps-3 me-3 d-flex align-items-center gap-2 flex-shrink-0">
+                                <span class="ps-3 me-3 d-flex align-items-center gap-2 accordion-btn-badges">
                                     {% for style in song.styles %}
                                         {% if style.image %}
                                             <img src="{{ asset('images/styles/' ~ style.image) }}" alt="{{ style.name }}" title="{{ style.name }}" class="d-sm-none rounded" style="height:2.2rem;width:2.2rem;object-fit:contain;">
                                         {% endif %}
                                         <span class="badge rounded-pill fw-normal text-white {% if style.image %}d-none d-sm-inline{% endif %}" style="background:{{ style.color ?? 'rgba(0,0,0,.25)' }};font-size:.75rem">{{ style.name }}</span>
                                     {% endfor %}
-                                    {% if not hasMovements %}{{ _self.etikett_badge(song.etikett) }}{% endif %}
                                     {% if hasMovements %}
                                         <span class="badge bg-secondary fw-normal">{{ song.children|length }} Sätze</span>
                                     {% endif %}
@@ -266,7 +273,7 @@
                                                             {% if movHasDropbox %}data-dropbox-path="{{ movement.dropboxlink }}"{% endif %}>
                                                         <i class="bi bi-music-note me-2 text-primary"></i>
                                                         {{ movement.songName }}
-                                                        <span class="ps-3 me-3 d-flex align-items-center gap-2 flex-shrink-0">
+                                                        <span class="ps-3 me-3 d-flex align-items-center gap-2 accordion-btn-badges">
                                                             <span class="d-flex gap-1 file-count-badges"></span>
                                                         </span>
                                                     </button>

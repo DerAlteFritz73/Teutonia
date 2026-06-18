@@ -56,5 +56,25 @@ p:has(br:only-child) { display: none; }
     box-shadow: 0 0 40px rgba(0,0,0,0.6);
 }
 
-/* Right-align file count badges in accordion buttons */
-.accordion-btn-files::after { margin-left: 0.5rem !important; }
+/* Pin the expand chevron to the right edge so it stays vertically aligned
+   across rows regardless of genre/file-badge width (esp. on mobile). */
+.accordion-btn-files { position: relative; padding-right: 3rem; }
+.accordion-btn-files::after {
+    position: absolute;
+    right: 1.25rem;
+    top: 50%;
+    margin: -0.625rem 0 0 0; /* vertical centering without touching transform (Bootstrap rotates ::after) */
+}
+/* Reserve at least half the width for the title so it stays readable. */
+.accordion-btn-files > .flex-grow-1 { min-width: 50%; }
+/* Let the genre/Etikett badges wrap onto multiple lines instead of pushing
+   the layout; keep them right-aligned next to the chevron. */
+.accordion-btn-badges { flex-wrap: wrap; justify-content: flex-end; min-width: 0; }
+/* Etikett rendered as a fixed-width first column so song titles line up.
+   min/max-width pin the size regardless of badge text; long Etiketts wrap. */
+.accordion-btn-etikett {
+    flex: 0 0 90px;
+    min-width: 90px;
+    max-width: 90px;
+}
+.accordion-btn-etikett .badge { white-space: normal; text-align: left; }
