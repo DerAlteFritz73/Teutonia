@@ -140,7 +140,7 @@
             <div class="modal-content bg-transparent border-0">
                 <div class="modal-body p-0 text-center position-relative">
                     <button type="button" class="btn-close btn-close-white position-absolute top-0 end-0 m-2" data-bs-dismiss="modal"></button>
-                    <img src="" alt="Programm aussen" class="img-fluid rounded" style="max-height:90vh">
+                    <img src="" alt="Programm aussen" class="img-fluid rounded zoomable-img" style="max-height:90vh">
                 </div>
             </div>
         </div>
@@ -150,7 +150,7 @@
             <div class="modal-content bg-transparent border-0">
                 <div class="modal-body p-0 text-center position-relative">
                     <button type="button" class="btn-close btn-close-white position-absolute top-0 end-0 m-2" data-bs-dismiss="modal"></button>
-                    <img src="" alt="Programm innen" class="img-fluid rounded" style="max-height:90vh">
+                    <img src="" alt="Programm innen" class="img-fluid rounded zoomable-img" style="max-height:90vh">
                 </div>
             </div>
         </div>
@@ -160,7 +160,7 @@
             <div class="modal-content bg-transparent border-0">
                 <div class="modal-body p-0 text-center position-relative">
                     <button type="button" class="btn-close btn-close-white position-absolute top-0 end-0 m-2" data-bs-dismiss="modal"></button>
-                    <img src="" alt="Kritik" class="img-fluid rounded" style="max-height:90vh">
+                    <img src="" alt="Kritik" class="img-fluid rounded zoomable-img" style="max-height:90vh">
                 </div>
             </div>
         </div>
@@ -451,6 +451,16 @@
     // Left: ALL songs sorted alpha (never removed — catalog stays static)
     const unlinked = allSongs.slice().sort((a, b) => a.title.localeCompare(b.title, 'de'));
 
+    // parentId -> [child song, …] (movements), in catalog order
+    const childrenByParent = {};
+    unlinked.forEach(s => {
+        const pid = SONG_PARENTS[s.value];
+        if (pid != null) {
+            const key = String(pid);
+            (childrenByParent[key] = childrenByParent[key] || []).push(s);
+        }
+    });
+
     // Right: restore full order (songs + custom pieces interleaved)
     const SAVED_ORDER = window.KONZERT_ORDER || [];
     const CUSTOM_LIST = window.KONZERT_CUSTOM || [];
@@ -674,7 +684,9 @@
             renderedLeft.add(s.value);
 
             kids.forEach(child => {
-                if (lTerms.length > 0 && !matchesL(child)) return;
+                // When the parent itself matches, show ALL its movements; only
+                // filter movements when the parent matched via a child.
+                if (lTerms.length > 0 && !ownMatch && !matchesL(child)) return;
                 const childRow = makeLeftRow(child, true, false);
                 if (lSel.has(child.value)) childRow.classList.add('selected');
                 leftListEl.appendChild(childRow);
@@ -739,9 +751,16 @@
     document.getElementById('btn-link').addEventListener('click', () => {
         const sel = new Set(Array.from(leftListEl.querySelectorAll('.song-row.selected')).map(r => r.dataset.value));
         if (!sel.size) return;
-        unlinked.filter(s => sel.has(s.value)).forEach(s =>
-            rightItems.push({ ...s, uid: 'r_' + (customUid++), note: '', video: '' })
-        );
+        const pushSong = (s) => rightItems.push({ ...s, uid: 'r_' + (customUid++), note: '', video: '' });
+        unlinked.forEach(s => {
+            if (!sel.has(s.value)) return;
+            // A selected movement whose parent is also selected is added via the parent below.
+            const pid = SONG_PARENTS[s.value];
+            if (pid != null && sel.has(String(pid))) return;
+            pushSong(s);
+            // Adding a parent also adds all its movements, right after it.
+            (childrenByParent[String(s.value)] || []).forEach(pushSong);
+        });
         renderAndDirty();
     });
 
@@ -749,8 +768,18 @@
     document.getElementById('btn-unlink').addEventListener('click', () => {
         const sel = new Set(Array.from(rightListEl.querySelectorAll('.song-row.selected')).map(r => r.dataset.uid));
         if (!sel.size) return;
+        // Removing a parent song also removes all its movements.
+        const childValues = new Set();
+        rightItems.forEach(it => {
+            if (sel.has(it.uid) && it.value != null) {
+                (childrenByParent[String(it.value)] || []).forEach(c => childValues.add(c.value));
+            }
+        });
         for (let i = rightItems.length - 1; i >= 0; i--) {
-            if (sel.has(rightItems[i].uid)) rightItems.splice(i, 1);
+            const it = rightItems[i];
+            if (sel.has(it.uid) || (it.value != null && childValues.has(it.value))) {
+                rightItems.splice(i, 1);
+            }
         }
         renderAndDirty();
     });

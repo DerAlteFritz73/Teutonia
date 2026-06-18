@@ -100,15 +100,21 @@ class LiederlisteController extends AbstractController
     {
         $showEtikett = $liste->isShowEtikett();
 
-        // Pre-load etiketts keyed by song ID to avoid N+1
-        $etikettMap = [];
-        if ($showEtikett) {
-            foreach ($liste->getItems() as $item) {
-                $songId = $item['songId'] ?? null;
-                if ($songId && !isset($etikettMap[$songId])) {
-                    $song = $songRepo->find($songId);
-                    $etikettMap[$songId] = $song?->getEtikett() ?? '';
+        // Pre-load per-song data (etikett + whether the song is a parent "shell"
+        // that only groups movements) keyed by song ID to avoid N+1 queries.
+        $etikettMap  = [];
+        $isParentMap = [];
+        foreach ($liste->getItems() as $item) {
+            $songId = $item['songId'] ?? null;
+            if ($songId !== null && !array_key_exists($songId, $isParentMap)) {
+                $song = $songRepo->find($songId);
+                // Movements (child songs) inherit the parent's Etikett when their own is empty.
+                $etikett = $song?->getEtikett() ?? '';
+                if ($etikett === '' && $song?->getParent()) {
+                    $etikett = $song->getParent()->getEtikett() ?? '';
                 }
+                $etikettMap[$songId]  = $etikett;
+                $isParentMap[$songId] = $song !== null && $song->getChildren()->count() > 0;
             }
         }
 
@@ -154,25 +160,36 @@ class LiederlisteController extends AbstractController
 
         $table->addRow();
         $table->addCell($wNum, $cellBg)->addText('#', $headerStyle, ['alignment' => Jc::CENTER]);
-        $table->addCell($wComposer, $cellBg)->addText('Komponist', $headerStyle);
-        $table->addCell($wTitle, $cellBg)->addText('Titel', $headerStyle);
         if ($showEtikett) {
             $table->addCell($wEtikett, $cellBg)->addText('Etikett', $headerStyle);
         }
+        $table->addCell($wTitle, $cellBg)->addText('Titel', $headerStyle);
+        $table->addCell($wComposer, $cellBg)->addText('Komponist', $headerStyle);
         $table->addCell($wDur, $cellBg)->addText('Dauer', $headerStyle, ['alignment' => Jc::CENTER]);
 
         $numStyle    = ['size' => 10, 'color' => '888888'];
         $textStyle   = ['size' => 10];
         $italicStyle = ['size' => 10, 'italic' => true];
 
-        foreach ($liste->getItems() as $i => $item) {
+        $counter = 0;
+        foreach ($liste->getItems() as $item) {
             $isCustom = ($item['type'] ?? '') === 'custom';
             $note     = trim((string) ($item['note'] ?? ''));
             $songId   = $item['songId'] ?? null;
+            $isParent = $songId !== null && ($isParentMap[$songId] ?? false);
 
             $table->addRow();
-            $table->addCell($wNum)->addText((string)($i + 1), $numStyle, ['alignment' => Jc::CENTER]);
-            $table->addCell($wComposer)->addText($item['composer'] ?? '', $textStyle);
+            // Parent songs are only a shell for their movements → no running number.
+            $numText = $isParent ? '' : (string) (++$counter);
+            $table->addCell($wNum)->addText($numText, $numStyle, ['alignment' => Jc::CENTER]);
+
+            if ($showEtikett) {
+                $etikettText = $songId ? ($etikettMap[$songId] ?? '') : '';
+                $etikettStyle = $etikettText !== ''
+                    ? ['size' => 10, 'color' => self::etikettColor($etikettText)]
+                    : $textStyle;
+                $table->addCell($wEtikett)->addText($etikettText, $etikettStyle);
+            }
 
             $titleCell = $table->addCell($wTitle);
             $titlePara = $titleCell->addTextRun();
@@ -181,24 +198,39 @@ class LiederlisteController extends AbstractController
                 $titlePara->addText(' (' . $note . ')', ['size' => 9, 'italic' => true, 'color' => '888888']);
             }
 
-            if ($showEtikett) {
-                $table->addCell($wEtikett)->addText($songId ? ($etikettMap[$songId] ?? '') : '', $textStyle);
-            }
-
+            $table->addCell($wComposer)->addText($item['composer'] ?? '', $textStyle);
             $table->addCell($wDur)->addText($item['duration'] ?? '', ['size' => 10], ['alignment' => Jc::CENTER]);
         }
 
         $total = $liste->getTotalDuration();
         $table->addRow();
         $table->addCell($wNum);
-        $table->addCell($wComposer)->addText('Gesamt', ['bold' => true, 'size' => 10], ['alignment' => Jc::RIGHT]);
-        $table->addCell($wTitle);
         if ($showEtikett) {
             $table->addCell($wEtikett);
         }
+        $table->addCell($wTitle);
+        $table->addCell($wComposer)->addText('Gesamt', ['bold' => true, 'size' => 10], ['alignment' => Jc::RIGHT]);
         $table->addCell($wDur)->addText($total, ['bold' => true, 'size' => 10], ['alignment' => Jc::CENTER]);
 
         return $phpWord;
+    }
+
+    /**
+     * Maps an Etikett to a text colour (hex, no '#') that echoes the Bootstrap badge
+     * colours from the web page while staying readable on white. Keyed on the first
+     * word, lower-cased.
+     */
+    private static function etikettColor(string $etikett): string
+    {
+        $prefix = strtolower(explode(' ', trim($etikett))[0] ?? '');
+
+        return match ($prefix) {
+            'blau'     => '0D6EFD', // primary blue
+            'gelb'     => '997404', // readable amber (warning-text-emphasis)
+            'rosa'     => 'DC3545', // danger red
+            'extrabox' => '6C757D', // secondary gray
+            default    => '212529', // dark
+        };
     }
 
     #[Route('/fetch-duration', name: '_fetch_duration', methods: ['GET'])]
@@ -274,6 +306,7 @@ class LiederlisteController extends AbstractController
         foreach ($allSongs as $song) {
             $songData[] = [
                 'id'       => $song->getId(),
+                'parentId' => $song->getParent()?->getId(),
                 'composer' => $song->getComposer() ?? '',
                 'title'    => $song->getSongName() ?? '',
                 'etikett'  => $song->getEtikett() ?? '',

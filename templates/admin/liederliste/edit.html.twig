@@ -171,6 +171,11 @@
 .ll-row.custom-item           { background: #fffbf0; }
 .ll-row.custom-item:hover     { background: #fff3cd; }
 .ll-row.custom-item.selected  { background: #e0a800; color: #000; }
+.ll-row.movement-item         { background: #f5f7ff; }
+.ll-row.movement-item:hover   { background: #e8ecff; }
+.ll-row.movement-item.selected { background: #0d6efd; color: #fff; }
+.movement-indent              { color: #6c757d; margin-right: 2px; font-size: .85rem; }
+.ll-row.selected .movement-indent { color: rgba(255,255,255,.7); }
 
 .ll-row.dragging    { opacity: .35; }
 .ll-row.drop-before { box-shadow: 0 -2px 0 0 #0d6efd; }
@@ -258,8 +263,17 @@ window.FETCH_URL    = '{{ path('admin_liederlisten_fetch_duration') }}';
 <script>
 (function () {
     // ── Data ──────────────────────────────────────────────────────────────
-    const allSongs = window.ALL_SONGS || [];  // [{id, composer, title, hasDropbox, hasLinks}]
+    const allSongs = window.ALL_SONGS || [];  // [{id, parentId, composer, title, hasDropbox, hasLinks}]
     const songById = new Map(allSongs.map(s => [s.id, s]));
+
+    // parentId -> [child song, …] (movements), in catalog order
+    const childrenById = new Map();
+    allSongs.forEach(s => {
+        if (s.parentId != null) {
+            if (!childrenById.has(s.parentId)) childrenById.set(s.parentId, []);
+            childrenById.get(s.parentId).push(s);
+        }
+    });
 
     // left list: static catalog — never mutated (enables duplicate adds)
     let leftSongs  = allSongs.slice();
@@ -296,14 +310,20 @@ window.FETCH_URL    = '{{ path('admin_liederlisten_fetch_duration') }}';
     }
 
     // ── Row factories ──────────────────────────────────────────────────────
-    function makeLeftRow(song, rightCount) {
+    function makeLeftRow(song, rightCount, isMovement) {
         const row = document.createElement('div');
-        row.className = 'll-row';
+        row.className = 'll-row' + (isMovement ? ' movement-item' : '');
         row.dataset.id = song.id;
 
         const t = document.createElement('span');
         t.className = 'llc-title';
-        t.textContent = song.title;
+        if (isMovement) {
+            const indent = document.createElement('span');
+            indent.className = 'movement-indent';
+            indent.textContent = '↳ ';
+            t.appendChild(indent);
+        }
+        t.appendChild(document.createTextNode(song.title));
         if (rightCount > 0) {
             const badge = document.createElement('span');
             badge.className = 'badge bg-primary rounded-pill ms-1';
@@ -447,11 +467,45 @@ window.FETCH_URL    = '{{ path('admin_liederlisten_fetch_duration') }}';
         leftListEl.innerHTML  = '';
         rightListEl.innerHTML = '';
 
+        // Grouped left list: top-level songs first, movements indented under their parent.
+        const childrenOf = new Map();   // parentId -> [song]
         leftSongs.forEach(s => {
-            if (lTerms.length && !matchL(s)) return;
-            const row = makeLeftRow(s, rightCounts.get(s.id) || 0);
+            if (s.parentId != null) {
+                if (!childrenOf.has(s.parentId)) childrenOf.set(s.parentId, []);
+                childrenOf.get(s.parentId).push(s);
+            }
+        });
+        const rendered = new Set();
+
+        const appendLeftRow = (s, isMovement) => {
+            const row = makeLeftRow(s, rightCounts.get(s.id) || 0, isMovement);
             if (lSel.has(s.id)) row.classList.add('selected');
             leftListEl.appendChild(row);
+            rendered.add(s.id);
+        };
+
+        // Pass 1: top-level songs (no parent), each followed by its movements.
+        leftSongs.forEach(s => {
+            if (s.parentId != null) return;          // movement — handled under its parent
+            const kids     = childrenOf.get(s.id) || [];
+            const ownMatch = !lTerms.length || matchL(s);
+            const kidMatch = kids.some(c => !lTerms.length || matchL(c));
+            if (!ownMatch && !kidMatch) return;
+            appendLeftRow(s, false);
+            kids.forEach(c => {
+                // When the parent itself matches, show ALL its movements (they
+                // belong to it even if their own title/composer doesn't match).
+                // Only filter movements when the parent matched via a child.
+                if (lTerms.length && !ownMatch && !matchL(c)) return;
+                appendLeftRow(c, true);
+            });
+        });
+
+        // Pass 2: orphaned movements whose parent isn't in the catalog.
+        leftSongs.forEach(s => {
+            if (rendered.has(s.id) || s.parentId == null) return;
+            if (lTerms.length && !matchL(s)) return;
+            appendLeftRow(s, true);
         });
 
         rightItems.forEach(item => {
@@ -557,10 +611,18 @@ window.FETCH_URL    = '{{ path('admin_liederlisten_fetch_duration') }}';
         const sel = new Set(Array.from(leftListEl.querySelectorAll('.ll-row.selected')).map(r => +r.dataset.id));
         if (!sel.size) return;
         const added = [];
-        leftSongs.filter(s => sel.has(s.id)).forEach(s => {
+        const pushSong = (s) => {
             const item = { type: 'song', songId: s.id, composer: s.composer, title: s.title, duration: '', note: '', uid: freshUid() };
             rightItems.push(item);
             added.push(item);
+        };
+        leftSongs.forEach(s => {
+            if (!sel.has(s.id)) return;
+            // A selected movement whose parent is also selected is added via the parent below.
+            if (s.parentId != null && sel.has(s.parentId)) return;
+            pushSong(s);
+            // Adding a parent also adds all its movements, right after it.
+            (childrenById.get(s.id) || []).forEach(pushSong);
         });
         render();
         added.forEach(fetchDuration);
@@ -570,8 +632,18 @@ window.FETCH_URL    = '{{ path('admin_liederlisten_fetch_duration') }}';
     document.getElementById('btn-remove').addEventListener('click', () => {
         const sel = new Set(Array.from(rightListEl.querySelectorAll('.ll-row.selected')).map(r => r.dataset.uid));
         if (!sel.size) return;
+        // Removing a parent song also removes all its movements.
+        const childSongIds = new Set();
+        rightItems.forEach(it => {
+            if (sel.has(it.uid) && it.type === 'song' && it.songId != null) {
+                (childrenById.get(it.songId) || []).forEach(c => childSongIds.add(c.id));
+            }
+        });
         for (let i = rightItems.length - 1; i >= 0; i--) {
-            if (sel.has(rightItems[i].uid)) rightItems.splice(i, 1);
+            const it = rightItems[i];
+            if (sel.has(it.uid) || (it.type === 'song' && it.songId != null && childSongIds.has(it.songId))) {
+                rightItems.splice(i, 1);
+            }
         }
         render();
     });

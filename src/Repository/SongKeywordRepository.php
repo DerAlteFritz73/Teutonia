@@ -17,20 +17,6 @@ class SongKeywordRepository extends ServiceEntityRepository
         parent::__construct($registry, SongKeyword::class);
     }
 
-    /**
-     * Full-text search across song name, composer and etikett.
-     */
-    public function search(string $term): array
-    {
-        $like = '%' . $term . '%';
-        return $this->createQueryBuilder('s')
-            ->where('s.songName LIKE :q OR s.composer LIKE :q OR s.etikett LIKE :q')
-            ->setParameter('q', $like)
-            ->orderBy('s.songName', 'ASC')
-            ->getQuery()
-            ->getResult();
-    }
-
     public function findByStylePaginated(Style $style, int $page, int $limit): array
     {
         return $this->createQueryBuilder('s')
@@ -154,45 +140,6 @@ class SongKeywordRepository extends ServiceEntityRepository
     }
 
     /**
-     * Unified filtered query supporting optional text search and optional style filter.
-     */
-    public function findFilteredPaginated(
-        string $search,
-        ?Style $style,
-        int $page,
-        int $limit,
-        string $sort = 'songName',
-        string $dir = 'ASC'
-    ): array {
-        $qb = $this->createQueryBuilder('s');
-        if ($style !== null) {
-            $qb->join('s.styles', 'st')->andWhere('st = :style')->setParameter('style', $style);
-        }
-        if ($search !== '') {
-            $qb->andWhere('s.songName LIKE :q OR s.composer LIKE :q OR s.etikett LIKE :q')
-               ->setParameter('q', '%' . $search . '%');
-        }
-        return $qb->orderBy('s.' . $sort, $dir)
-                  ->setFirstResult(($page - 1) * $limit)
-                  ->setMaxResults($limit)
-                  ->getQuery()
-                  ->getResult();
-    }
-
-    public function countFiltered(string $search, ?Style $style): int
-    {
-        $qb = $this->createQueryBuilder('s')->select('COUNT(s.id)');
-        if ($style !== null) {
-            $qb->join('s.styles', 'st')->andWhere('st = :style')->setParameter('style', $style);
-        }
-        if ($search !== '') {
-            $qb->andWhere('s.songName LIKE :q OR s.composer LIKE :q OR s.etikett LIKE :q')
-               ->setParameter('q', '%' . $search . '%');
-        }
-        return (int) $qb->getQuery()->getSingleScalarResult();
-    }
-
-    /**
      * Return top-level songs (no parent) in a given folder.
      */
     public function findByFolderTopLevel(string $folder): array
@@ -281,34 +228,5 @@ class SongKeywordRepository extends ServiceEntityRepository
         }
 
         return $titles;
-    }
-
-    /**
-     * Get all keywords for word cloud
-     */
-    public function getAllKeywords(string $folder = 'Noten'): array
-    {
-        $keywords = [];
-
-        $results = $this->createQueryBuilder('s')
-            ->select('s.keywords')
-            ->where('s.folder = :folder')
-            ->setParameter('folder', $folder)
-            ->getQuery()
-            ->getResult();
-
-        foreach ($results as $result) {
-            if (!empty($result['keywords'])) {
-                foreach ($result['keywords'] as $keyword) {
-                    if (isset($keywords[$keyword])) {
-                        $keywords[$keyword]++;
-                    } else {
-                        $keywords[$keyword] = 1;
-                    }
-                }
-            }
-        }
-
-        return $keywords;
     }
 }

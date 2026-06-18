@@ -25,4 +25,12 @@ class KonzertRepository extends ServiceEntityRepository
             ->getQuery()
             ->getResult();
     }
+
+    public function countAll(): int
+    {
+        return (int) $this->createQueryBuilder('k')
+            ->select('COUNT(k.id)')
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
 }

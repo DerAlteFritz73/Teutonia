@@ -9,9 +9,8 @@
         return Math.round(bytes * 100) / 100 + ' ' + units[i];
     }
 
-    function escHtml(str) {
-        return str.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-    }
+    /* Canonical escaper from base.html.twig. */
+    const escHtml = window.escapeHtml;
 
     function fileItemHtml(file) {
         const icon = file.type === 'pdf'
@@ -152,7 +151,11 @@
                     }
                 }
             })
-            .catch(function () { /* silently ignore */ });
+            .catch(function (err) {
+                // Background prefetch only — the lazy loader (show.bs.collapse)
+                // re-fetches and shows a visible error if the user opens the panel.
+                console.warn('Dropbox prefetch failed for', dropboxPath, err);
+            });
     }
 
     /* ── Aktuelle Proben: eager pre-fetch (few songs) ────────────────── */

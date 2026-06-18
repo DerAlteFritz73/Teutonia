@@ -412,37 +412,98 @@ class DropboxService
     public function getFilesForFolder(string $folderPath): array
     {
         $basePath  = '/Chorgemeinschaft Teutonia';
-        $cacheDir = dirname($this->tokenCacheFile);
+        $cacheDir  = dirname($this->tokenCacheFile);
         $cacheFile = $cacheDir . '/structure_' . md5($basePath) . '.json';
 
+        // Fast path: serve from the whole-tree cache when it is already present.
         if (file_exists($cacheFile)) {
             $tree = json_decode(file_get_contents($cacheFile), true) ?: [];
-        } else {
-            // Warm the cache and try again
-            $tree = $this->getFileStructure($basePath);
+
+            $relative = ltrim(str_replace($basePath, '', $folderPath), '/');
+            $parts    = $relative === '' ? [] : explode('/', $relative);
+
+            // Navigate: first segment is a top-level key, subsequent ones are _subfolders
+            $node = $tree;
+            foreach ($parts as $i => $part) {
+                $node = $i === 0
+                    ? ($node[$part] ?? null)
+                    : (($node['_subfolders'] ?? [])[$part] ?? null);
+                if ($node === null) {
+                    break;
+                }
+            }
+
+            if ($node !== null) {
+                return [
+                    'files'         => $node['_files'] ?? [],
+                    'hasSubfolders' => !empty($node['_subfolders']),
+                ];
+            }
+            // Path not in the cached tree → fall through to a direct fetch.
         }
 
-        // Strip base prefix and split into path segments
-        $relative = ltrim(str_replace($basePath, '', $folderPath), '/');
-        $parts    = explode('/', $relative);
+        // Fallback: fetch just this one folder directly. This avoids re-downloading
+        // the entire "/Chorgemeinschaft Teutonia" tree on every cold-cache request —
+        // which caused timeouts/rate-limits when the member page loaded many songs at once.
+        return $this->listFolderContents($folderPath);
+    }
 
-        // Navigate: first segment is a top-level key, subsequent ones are _subfolders
-        $node = $tree;
-        foreach ($parts as $i => $part) {
-            if ($i === 0) {
-                $node = $node[$part] ?? null;
+    /**
+     * List a single Dropbox folder's immediate files (+ whether it has subfolders),
+     * returning the same shape as the cached tree nodes used by getFilesForFolder().
+     *
+     * @return array{files: list<array{name:string,path:string,size:int,link:null,type:string}>, hasSubfolders: bool}
+     */
+    private function listFolderContents(string $folderPath): array
+    {
+        $fetch = function () use ($folderPath): array {
+            $files         = [];
+            $hasSubfolders = false;
+
+            $collect = function (array $entries) use (&$files, &$hasSubfolders): void {
+                foreach ($entries as $entry) {
+                    $tag = $entry['.tag'] ?? '';
+                    if ($tag === 'folder') {
+                        $hasSubfolders = true;
+                    } elseif ($tag === 'file') {
+                        $files[] = [
+                            'name' => $entry['name'],
+                            'path' => $entry['path_display'],
+                            'size' => $entry['size'] ?? 0,
+                            'link' => null,
+                            'type' => $this->getFileType($entry['name']),
+                        ];
+                    }
+                }
+            };
+
+            $result = $this->client->listFolder($folderPath, false);
+            $collect($result['entries'] ?? []);
+            while ($result['has_more'] ?? false) {
+                $result = $this->client->listFolderContinue($result['cursor']);
+                $collect($result['entries'] ?? []);
+            }
+
+            usort($files, fn($a, $b) => strcasecmp($a['name'], $b['name']));
+            return ['files' => $files, 'hasSubfolders' => $hasSubfolders];
+        };
+
+        try {
+            return $fetch();
+        } catch (\Exception $e) {
+            if ($this->isAuthError($e)) {
+                error_log('Dropbox: auth error listing folder, refreshing token…');
+                $this->refreshAccessToken();
+                try {
+                    return $fetch();
+                } catch (\Exception $retry) {
+                    error_log("Error listing folder $folderPath after retry: " . $retry->getMessage());
+                }
             } else {
-                $node = ($node['_subfolders'] ?? [])[$part] ?? null;
+                error_log("Error listing folder $folderPath: " . $e->getMessage());
             }
-            if ($node === null) {
-                return [];
-            }
+            return ['files' => [], 'hasSubfolders' => false];
         }
-
-        return [
-            'files'          => $node['_files'] ?? [],
-            'hasSubfolders'  => !empty($node['_subfolders']),
-        ];
     }
 
     /**
@@ -508,47 +569,6 @@ class DropboxService
                 }
             }
             error_log("Error getting temporary link for {$path}: " . $e->getMessage());
-            return null;
-        }
-    }
-
-    /**
-     * Get or create a shared link for a file (SLOW - use getTemporaryLink instead!)
-     */
-    public function getSharedLink(string $path): ?string
-    {
-        try {
-            // Try to get existing shared links
-            $links = $this->client->listSharedLinks($path);
-
-            if (!empty($links['links'])) {
-                // Convert the link to a direct download link
-                return str_replace('?dl=0', '?dl=1', $links['links'][0]['url']);
-            }
-
-            // Create a new shared link if none exists
-            $result = $this->client->createSharedLinkWithSettings($path, [
-                'requested_visibility' => 'public'
-            ]);
-
-            // Convert to direct download link
-            return str_replace('?dl=0', '?dl=1', $result['url']);
-
-        } catch (BadRequest $e) {
-            // If link already exists, try to retrieve it again
-            if (strpos($e->getMessage(), 'shared_link_already_exists') !== false) {
-                try {
-                    $links = $this->client->listSharedLinks($path);
-                    if (!empty($links['links'])) {
-                        return str_replace('?dl=0', '?dl=1', $links['links'][0]['url']);
-                    }
-                } catch (\Exception $e) {
-                    error_log("Error getting shared link: " . $e->getMessage());
-                }
-            }
-            return null;
-        } catch (\Exception $e) {
-            error_log("Error creating shared link for {$path}: " . $e->getMessage());
             return null;
         }
     }
@@ -776,7 +796,7 @@ class DropboxService
                 error_log("Dropbox: File not found (already deleted): $path");
                 return true;
             }
-            error_log("Error deleting $path: " . $e->getMessage());
+            error_log("Error deleting $path: " . ($e->dropboxCode ?? $e->getMessage() ?: (string) $e->response->getBody()));
             return false;
         } catch (\Exception $e) {
             if ($this->isAuthError($e)) {
@@ -793,50 +813,6 @@ class DropboxService
             }
             error_log("Error deleting $path: " . $e->getMessage());
             return false;
-        }
-    }
-
-    /**
-     * List all files in a Dropbox folder (non-recursive)
-     */
-    public function listFolderFiles(string $folderPath): array
-    {
-        try {
-            $result = $this->client->listFolder($folderPath, false);
-            $files = [];
-
-            foreach (($result['entries'] ?? []) as $entry) {
-                if ($entry['.tag'] === 'file') {
-                    $files[] = [
-                        'name' => $entry['name'],
-                        'path' => $entry['path_display'],
-                        'size' => $entry['size'] ?? 0,
-                    ];
-                }
-            }
-
-            while ($result['has_more'] ?? false) {
-                $result = $this->client->listFolderContinue($result['cursor']);
-                foreach (($result['entries'] ?? []) as $entry) {
-                    if ($entry['.tag'] === 'file') {
-                        $files[] = [
-                            'name' => $entry['name'],
-                            'path' => $entry['path_display'],
-                            'size' => $entry['size'] ?? 0,
-                        ];
-                    }
-                }
-            }
-
-            return $files;
-        } catch (\Exception $e) {
-            if ($this->isAuthError($e)) {
-                error_log('Dropbox: auth error listing files, refreshing token…');
-                $this->refreshAccessToken();
-                return $this->listFolderFiles($folderPath); // Retry
-            }
-            error_log("Error listing folder $folderPath: " . $e->getMessage());
-            return [];
         }
     }
 

@@ -26,16 +26,6 @@ class BlacklistedIpRepository extends ServiceEntityRepository
         return $entry !== null;
     }
 
-    public function findActive()
-    {
-        return $this->createQueryBuilder('b')
-            ->where('b.expiresAt IS NULL OR b.expiresAt > :now')
-            ->setParameter('now', new \DateTimeImmutable())
-            ->orderBy('b.blacklistedAt', 'DESC')
-            ->getQuery()
-            ->getResult();
-    }
-
     public function addIp(string $ipAddress, ?string $reason = null, ?\DateTimeImmutable $expiresAt = null): BlacklistedIp
     {
         $ip = new BlacklistedIp();

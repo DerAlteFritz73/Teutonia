@@ -1,4 +1,18 @@
 pageLoad(function () {
+    const imageModalEl = document.getElementById('concertImageModal');
+    if (imageModalEl) {
+        const modalImg = imageModalEl.querySelector('img');
+        const modalTitle = document.getElementById('concertImageModalTitle');
+        document.querySelectorAll('.concert-zoom-thumb').forEach(function (thumb) {
+            thumb.addEventListener('click', function () {
+                modalImg.src = thumb.dataset.imgSrc;
+                modalImg.alt = thumb.dataset.imgTitle || '';
+                if (modalTitle) modalTitle.textContent = thumb.dataset.imgTitle || '';
+                bootstrap.Modal.getOrCreateInstance(imageModalEl).show();
+            });
+        });
+    }
+
     const yearSelector = document.getElementById('year-selector');
     if (!yearSelector) return;
 

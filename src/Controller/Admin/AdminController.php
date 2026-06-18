@@ -2,7 +2,6 @@
 
 namespace App\Controller\Admin;
 
-use App\Entity\BlacklistedIp;
 use App\Entity\Konzert;
 use App\Entity\Post;
 use App\Entity\SongKeyword;
@@ -23,7 +22,6 @@ use App\Repository\StyleRepository;
 use App\Repository\UserRepository;
 use App\Service\DropboxService;
 use Doctrine\ORM\EntityManagerInterface;
-use Spatie\PdfToImage\Pdf;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -95,10 +93,10 @@ class AdminController extends AbstractController
 
         return $this->render('admin/dashboard.html.twig', [
             'userCount'           => $userRepository->countMembers(),
-            'postCount'           => count($postRepository->findAll()),
+            'postCount'           => $postRepository->countAll(),
             'songCount'           => $songRepository->countAllIncludingMovements(),
-            'konzertCount'        => count($konzertRepository->findAll()),
-            'liederlistenCount'   => count($liederlisteRepository->findAll()),
+            'konzertCount'        => $konzertRepository->countAll(),
+            'liederlistenCount'   => $liederlisteRepository->countAll(),
             'memberLoginSum'          => $userRepository->sumLoginCountExcluding('joel'),
             'memberUniqueLoginCount'  => $userRepository->countUsersWithLoginsExcluding('joel'),
             'memberLastLoginAt'       => $userRepository->lastLoginAtExcluding('joel'),
@@ -113,7 +111,11 @@ class AdminController extends AbstractController
         #[Autowire('%kernel.logs_dir%')] string $logsDir,
         #[Autowire('%kernel.environment%')] string $env,
     ): Response {
-        $logFile  = "$logsDir/$env.log";
+        $logEnv = $request->query->get('env', $env);
+        if (!in_array($logEnv, ['dev', 'prod', 'test'], true)) {
+            $logEnv = $env;
+        }
+        $logFile  = "$logsDir/$logEnv.log";
         $minLevel = $request->query->get('level', 'WARNING');
         $levels   = ['DEBUG', 'INFO', 'NOTICE', 'WARNING', 'ERROR', 'CRITICAL', 'ALERT', 'EMERGENCY'];
         if (!in_array($minLevel, $levels, true)) {
@@ -146,6 +148,7 @@ class AdminController extends AbstractController
             'minLevel' => $minLevel,
             'levels'   => $levels,
             'logFile'  => basename($logFile),
+            'logEnv'   => $logEnv,
         ]);
     }
 
@@ -481,6 +484,10 @@ class AdminController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
+            // Movements (child songs) inherit the parent's Etikett.
+            foreach ($song->getChildren() as $child) {
+                $child->setEtikett($song->getEtikett());
+            }
             $em->flush();
 
             $this->addFlash('success', 'Lied wurde aktualisiert.');
@@ -532,6 +539,34 @@ class AdminController extends AbstractController
         return $this->redirectToRoute('admin_songs');
     }
 
+    #[Route('/songs/bulk-delete', name: 'admin_songs_bulk_delete', methods: ['POST'])]
+    public function songsBulkDelete(Request $request, EntityManagerInterface $em, SongKeywordRepository $songRepository): JsonResponse
+    {
+        if (!$this->isCsrfTokenValid('song_patch', $request->headers->get('X-CSRF-Token'))) {
+            return $this->json(['error' => 'CSRF token invalid'], 403);
+        }
+
+        $data = json_decode($request->getContent(), true);
+        $ids = $data['ids'] ?? [];
+
+        if (!is_array($ids) || empty($ids)) {
+            return $this->json(['error' => 'No IDs provided'], 400);
+        }
+
+        $deleted = 0;
+        foreach ($ids as $id) {
+            $song = $songRepository->find($id);
+            if ($song) {
+                $em->remove($song);
+                $deleted++;
+            }
+        }
+
+        $em->flush();
+
+        return $this->json(['deleted' => $deleted]);
+    }
+
     #[Route('/songs/{id}/patch-field', name: 'admin_songs_patch_field', methods: ['POST'])]
     public function songsPatchField(
         SongKeyword $song,
@@ -565,7 +600,12 @@ class AdminController extends AbstractController
                 $song->setComposer($value !== '' ? $value : null);
                 break;
             case 'etikett':
-                $song->setEtikett($value !== '' ? $value : null);
+                $newEtikett = $value !== '' ? $value : null;
+                $song->setEtikett($newEtikett);
+                // Movements (child songs) inherit the parent's Etikett.
+                foreach ($song->getChildren() as $child) {
+                    $child->setEtikett($newEtikett);
+                }
                 break;
             case 'dropboxlink':
                 $song->setDropboxlink($value !== '' ? $value : null);
@@ -578,14 +618,14 @@ class AdminController extends AbstractController
                 $isActive = in_array($value, ['1', 'true', true], true);
 
                 if ($isActive) {
-                    // Push to Aktuelle Proben
+                    // Push to Aktuelle Proben (copies the Dropbox folder)
                     if (!$syncService->pushSongToAktuelleProben($song)) {
-                        return new JsonResponse(['error' => 'Fehler beim Synchronisieren mit Dropbox'], 502);
+                        return new JsonResponse(['error' => 'Kopieren nach „Aktuelle Proben" fehlgeschlagen. Möglicherweise fehlt der Dropbox-App das Schreibrecht (Scope „files.content.write").'], 502);
                     }
                 } else {
-                    // Remove from Aktuelle Proben
+                    // Remove from Aktuelle Proben (deletes the Dropbox folder)
                     if (!$syncService->removeSongFromAktuelleProben($song)) {
-                        return new JsonResponse(['error' => 'Fehler beim Entfernen aus Dropbox'], 502);
+                        return new JsonResponse(['error' => 'Entfernen aus „Aktuelle Proben" fehlgeschlagen. Möglicherweise fehlt der Dropbox-App das Schreibrecht (Scope „files.content.write").'], 502);
                     }
                 }
                 break;
@@ -635,10 +675,12 @@ class AdminController extends AbstractController
         // Clear stale file-name cache so renames/moves are picked up immediately
         $dropboxService->clearFileCache();
 
-        // Fetch immediate subfolders from both Dropbox locations
+        // Fetch immediate subfolders from the Noten location only.
+        // "Aktuelle Proben" is no longer a sync source — membership there is
+        // controlled exclusively by the "Aktuell in Proben" checkbox on the
+        // songs page, which copies/removes the folder via AktuelleProbenSyncService.
         try {
-            $notenFolders    = $dropboxService->listSubfolders('/Chorgemeinschaft Teutonia/Noten');
-            $aktuelleFolders = $dropboxService->listSubfolders('/Chorgemeinschaft Teutonia/Aktuelle Proben');
+            $notenFolders = $dropboxService->listSubfolders('/Chorgemeinschaft Teutonia/Noten');
         } catch (\Exception $e) {
             return $this->json(['error' => 'Dropbox-Verbindung fehlgeschlagen: ' . $e->getMessage()], 502);
         }
@@ -653,8 +695,8 @@ class AdminController extends AbstractController
                 }
                 $norm = $this->normalizeForSync($name);
                 $byFull[$norm] = $name;
-                if (str_contains($name, ' - ')) {
-                    [, $titlePart] = explode(' - ', $name, 2);
+                if (str_contains($name, ' #')) {
+                    [$titlePart] = explode(' #', $name, 2);
                     $normTitle = $this->normalizeForSync(trim($titlePart));
                     $byTitle[$normTitle] ??= $name;
                 }
@@ -662,8 +704,7 @@ class AdminController extends AbstractController
             return [$byFull, $byTitle];
         };
 
-        [$notenByFull,    $notenByTitle]    = $buildLookup($notenFolders);
-        [$aktuelleByFull, $aktuelleByTitle] = $buildLookup($aktuelleFolders);
+        [$notenByFull, $notenByTitle] = $buildLookup($notenFolders);
 
         // Match a song against a set of Dropbox folders using all strategies.
         // Returns the matched folder name or null.
@@ -671,7 +712,7 @@ class AdminController extends AbstractController
             // 1. Exact match on full folder name
             if (isset($byFull[$normTitle])) return $byFull[$normTitle];
 
-            // 2. Match on the title part after " - "
+            // 2. Match on the title part before " #"
             if (isset($byTitle[$normTitle])) return $byTitle[$normTitle];
 
             // 3. Composer last name + title combined substring match
@@ -709,81 +750,40 @@ class AdminController extends AbstractController
         $alreadyLinked = 0;
         $unmatched     = [];
 
-        $aktuelleBase = '/Chorgemeinschaft Teutonia/Aktuelle Proben';
-        $notenBase    = '/Chorgemeinschaft Teutonia/Noten';
+        $notenBase = '/Chorgemeinschaft Teutonia/Noten';
 
         foreach ($songs as $song) {
             // Movements are handled in the second pass below; skip here to avoid
-            // false matches against top-level Noten/Aktuelle Proben folders.
+            // false matches against top-level Noten folders.
             if ($song->isMovement()) continue;
+
+            // Skip songs that already have a dropboxlink (treat it as authoritative).
+            // Members can change the song name/composer in the DB without breaking the link.
+            // To re-match a song, manually clear its dropboxlink first.
+            if ($song->getDropboxlink()) {
+                $alreadyLinked++;
+                continue;
+            }
 
             $normTitle    = $this->normalizeForSync($song->getSongName());
             $normComposer = $song->getComposer() ? $this->normalizeForSync($song->getComposer()) : '';
-            $changed      = false;
 
-            // Try Aktuelle Proben match → sets isAktuelleProben + aktuelleDropboxlink
-            $aktuelleMatch = $findInFolders($normTitle, $normComposer, $aktuelleByFull, $aktuelleByTitle);
-            if ($aktuelleMatch !== null) {
-                $newAktuelle = $aktuelleBase . '/' . $aktuelleMatch;
-                $oldAktuelle = $song->getAktuelleDropboxlink();
-                if (!$song->isAktuelleProben()) {
-                    $song->setIsAktuelleProben(true);
-                    $changed = true;
-                }
-                if ($song->getAktuelleDropboxlink() !== $newAktuelle) {
-                    $song->setAktuelleDropboxlink($newAktuelle);
-                    $changed = true;
-
-                    // If Aktuelle Proben link changed due to folder rename, clear children's links
-                    // so the second pass can re-link them to correct subfolders
-                    if ($oldAktuelle && $oldAktuelle !== $newAktuelle && !$song->getParent()) {
-                        foreach ($song->getChildren() as $child) {
-                            if ($child->getAktuelleDropboxlink() && str_starts_with($child->getAktuelleDropboxlink(), $oldAktuelle . '/')) {
-                                $child->setAktuelleDropboxlink(null);
-                            }
-                        }
-                    }
-                }
-            }
-
-            // Try Noten match → always attempt to find a match, in case folders were renamed
+            // Match against Noten only. "Aktuelle Proben" is managed by the checkbox.
             $notenFolder = $findInFolders($normTitle, $normComposer, $notenByFull, $notenByTitle);
-            $notenLinkMissing = !$song->getDropboxlink() || !str_starts_with($song->getDropboxlink(), $notenBase . '/');
-            $newNotenPath = $notenFolder !== null ? $notenBase . '/' . $notenFolder : null;
-            $oldNotenPath = $song->getDropboxlink();
-            if ($notenFolder !== null && ($notenLinkMissing || $song->getDropboxlink() !== $newNotenPath)) {
-                $song->setDropboxlink($newNotenPath);
-                $changed = true;
-
-                // If parent's link changed due to folder rename, clear children's links
-                // so the second pass can re-link them to correct subfolders
-                if ($oldNotenPath && $newNotenPath && $oldNotenPath !== $newNotenPath && !$song->getParent()) {
-                    foreach ($song->getChildren() as $child) {
-                        if ($child->getDropboxlink() && str_starts_with($child->getDropboxlink(), $oldNotenPath . '/')) {
-                            $child->setDropboxlink(null);
-                        }
-                    }
-                }
-            }
-
-            $hasAnyLink = $song->getDropboxlink() || $song->getAktuelleDropboxlink();
-            if (!$hasAnyLink) {
-                $unmatched[] = $song->getSongName();
-            } elseif ($changed) {
+            if ($notenFolder !== null) {
+                $song->setDropboxlink($notenBase . '/' . $notenFolder);
                 $matched++;
             } else {
-                $alreadyLinked++;
+                $unmatched[] = $song->getSongName();
             }
         }
 
         $em->flush();
 
         // Dedup: merge top-level songs that share the same normalised name.
-        // The sync can create one entry per Dropbox location (Noten + Aktuelle Proben)
-        // for the same song; children (movements) end up on only one of them.  This
-        // pass collapses duplicates into the canonical entry — the one with children,
-        // or with isAktuelleProben=true, or with both Dropbox links — so the lower
-        // "Noten und Aufnahmen" section shows the same sub-songs as the upper section.
+        // Collapses any duplicates into the canonical entry — the one with children,
+        // or with isAktuelleProben=true, or with both Dropbox links — preserving the
+        // "Aktuelle Proben" state (set via the checkbox) on the surviving entry.
         $mergedIds   = [];
         $mergedCount = 0;
         $byNorm      = [];
@@ -822,6 +822,7 @@ class AdminController extends AbstractController
                 // Move any children the duplicate might own
                 foreach ($dup->getChildren() as $child) {
                     $child->setParent($canonical);
+                    $child->setEtikett($canonical->getEtikett()); // inherit new parent's Etikett
                 }
 
                 // Transfer style associations not already on canonical
@@ -869,16 +870,10 @@ class AdminController extends AbstractController
             [$subByFull, $subByTitle] = $buildLookup($subfolderNames);
 
             // Link already-registered children to their subfolder.
-            // Accept any path that starts with one of this song's Dropbox roots.
-            $parentRoots = array_filter([$song->getDropboxlink(), $song->getAktuelleDropboxlink()]);
+            // Skip movements that already have a dropboxlink (treat it as authoritative).
             foreach ($song->getChildren() as $movement) {
                 if ($movement->getDropboxlink()) {
-                    $movPath = $movement->getDropboxlink();
-                    foreach ($parentRoots as $root) {
-                        if (str_starts_with($movPath, $root . '/')) {
-                            continue 2; // already correctly linked
-                        }
-                    }
+                    continue; // already linked, don't re-match
                 }
                 $normTitle    = $this->normalizeForSync($movement->getSongName());
                 $normComposer = $movement->getComposer() ? $this->normalizeForSync($movement->getComposer()) : '';
@@ -894,15 +889,18 @@ class AdminController extends AbstractController
                 $subPath   = $parentPath . '/' . $subfolder;
                 $normFull  = $this->normalizeForSync($subfolder);
                 $normTitle = $normFull;
-                if (str_contains($subfolder, ' - ')) {
-                    [, $titlePart] = explode(' - ', $subfolder, 2);
+                if (str_contains($subfolder, ' #')) {
+                    [$titlePart] = explode(' #', $subfolder, 2);
                     $normTitle = $this->normalizeForSync(trim($titlePart));
                 }
 
+                // Try exact matches first
                 foreach (array_unique([$normTitle, $normFull]) as $norm) {
                     if (!isset($adoptable[$norm])) continue;
                     foreach ($adoptable[$norm] as $key => $candidate) {
                         if ($candidate === $song) continue;
+                        // Skip adopting a song that already has a parent (prevent re-adoption)
+                        if ($candidate->getParent()) continue;
                         $sortOrder = 0;
                         if (preg_match('/^(\d+)/', $subfolder, $m)) {
                             $sortOrder = (int) $m[1];
@@ -910,6 +908,7 @@ class AdminController extends AbstractController
                         $candidate->setParent($song);
                         $candidate->setDropboxlink($subPath);
                         $candidate->setSortOrder($sortOrder);
+                        $candidate->setEtikett($song->getEtikett()); // inherit parent's Etikett
                         unset($adoptable[$norm][$key]);
                         $movementsMatched++;
                         break 2;
@@ -935,46 +934,35 @@ class AdminController extends AbstractController
             }
         }
 
-        // Create DB entries for Dropbox folders that have no matching song yet
+        // Create DB entries for Noten folders that have no matching song yet.
+        // "Aktuelle Proben" folders are never imported — that folder is a working
+        // copy populated by the "Aktuell in Proben" checkbox, not a source of songs.
         $created = 0;
-        $toCreate = [
-            $notenBase    => $notenFolders,
-            $aktuelleBase => $aktuelleFolders,
-        ];
-
-        foreach ($toCreate as $base => $folders) {
-            $folderLabel = $base === $aktuelleBase ? 'Aktuelle Proben' : 'Notenverzeichnis';
-            foreach ($folders as $folderName) {
-                if (str_starts_with($folderName, '_')) {
-                    continue;
-                }
-                $path = $base . '/' . $folderName;
-                if (isset($linkedPaths[mb_strtolower($path)])) {
-                    continue;
-                }
-
-                // Parse "Composer - Title" pattern from folder name
-                $composer = null;
-                $title    = $folderName;
-                if (str_contains($folderName, ' - ')) {
-                    [$composerPart, $titlePart] = explode(' - ', $folderName, 2);
-                    $composer = trim($composerPart);
-                    $title    = trim($titlePart);
-                }
-
-                $song = new SongKeyword();
-                $song->setSongName($title);
-                $song->setComposer($composer);
-                $song->setFolder($base === $aktuelleBase ? 'Aktuelle Proben' : 'Notenverzeichnis');
-                if ($base === $aktuelleBase) {
-                    $song->setIsAktuelleProben(true);
-                    $song->setAktuelleDropboxlink($path);
-                } else {
-                    $song->setDropboxlink($path);
-                }
-                $em->persist($song);
-                $created++;
+        foreach ($notenFolders as $folderName) {
+            if (str_starts_with($folderName, '_')) {
+                continue;
             }
+            $path = $notenBase . '/' . $folderName;
+            if (isset($linkedPaths[mb_strtolower($path)])) {
+                continue;
+            }
+
+            // Parse "[title] #[composer]" pattern from folder name
+            $composer = null;
+            $title    = $folderName;
+            if (str_contains($folderName, ' #')) {
+                [$titlePart, $composerPart] = explode(' #', $folderName, 2);
+                $title    = trim($titlePart);
+                $composer = trim($composerPart);
+            }
+
+            $song = new SongKeyword();
+            $song->setSongName($title);
+            $song->setComposer($composer);
+            $song->setFolder('Notenverzeichnis');
+            $song->setDropboxlink($path);
+            $em->persist($song);
+            $created++;
         }
 
         if ($created > 0) {
@@ -995,6 +983,8 @@ class AdminController extends AbstractController
     private function normalizeForSync(string $s): string
     {
         $s   = mb_strtolower($s, 'UTF-8');
+        // Treat / and , as equivalent (Dropbox replaced / with , in folder names)
+        $s = str_replace(['/', ','], ' ', $s);
         $map = [
             'ä' => 'a', 'ö' => 'o', 'ü' => 'u', 'ß' => 'ss',
             'à' => 'a', 'â' => 'a', 'á' => 'a', 'ã' => 'a', 'å' => 'a',

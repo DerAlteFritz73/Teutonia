@@ -3,7 +3,6 @@
 namespace App\Service;
 
 use App\Entity\SongKeyword;
-use App\Repository\SongKeywordRepository;
 use Doctrine\ORM\EntityManagerInterface;
 
 class AktuelleProbenSyncService
@@ -13,12 +12,18 @@ class AktuelleProbenSyncService
     public function __construct(
         private DropboxService $dropboxService,
         private EntityManagerInterface $entityManager,
-        private SongKeywordRepository $songRepository,
     ) {
     }
 
     /**
-     * Push a song to the "Aktuelle Proben" folder on Dropbox
+     * Mark a song as "Aktuell in Proben".
+     *
+     * The boolean flag is what drives the member "Aktuelle Proben" page, so it is
+     * always set (the toggle never fails on Dropbox issues). As a best effort we
+     * also copy the song's folder into the dedicated "Aktuelle Proben" Dropbox
+     * folder — but that needs the `files.content.write` scope; when it isn't
+     * available the member page simply falls back to the song's Noten folder
+     * (`aktuelleDropboxlink ?? dropboxlink`).
      */
     public function pushSongToAktuelleProben(SongKeyword $song): bool
     {
@@ -27,96 +32,46 @@ class AktuelleProbenSyncService
             return false;
         }
 
-        $sourcePath = $song->getDropboxlink();
-        $songName = $song->getSongName();
-        $targetFolder = self::AKTUELLE_PROBEN_BASE . '/' . $songName;
+        $song->setIsAktuelleProben(true);
 
-        // Get all files from the source folder
-        $files = $this->dropboxService->listFolderFiles($sourcePath);
-
-        if (empty($files)) {
-            error_log("No files found in source folder: $sourcePath");
-            return false;
-        }
-
-        $allSuccess = true;
-        foreach ($files as $file) {
-            $fromPath = $file['path'];
-            $toPath = $targetFolder . '/' . $file['name'];
-
-            if (!$this->dropboxService->copyFile($fromPath, $toPath)) {
-                error_log("Failed to copy file: $fromPath to $toPath");
-                $allSuccess = false;
+        // Best-effort copy (mirrors the source folder name so the "[title] #[composer]"
+        // convention is kept). Only attempt it if there is no copy yet.
+        if (!$song->getAktuelleDropboxlink()) {
+            $sourcePath   = rtrim($song->getDropboxlink(), '/');
+            $folderName   = substr($sourcePath, strrpos($sourcePath, '/') + 1);
+            $targetFolder = self::AKTUELLE_PROBEN_BASE . '/' . $folderName;
+            if ($this->dropboxService->copyFile($sourcePath, $targetFolder)) {
+                $song->setAktuelleDropboxlink($targetFolder);
             }
         }
 
-        if ($allSuccess) {
-            $song->setIsAktuelleProben(true);
-            $song->setAktuelleDropboxlink($targetFolder);
-            $this->entityManager->persist($song);
-            $this->entityManager->flush();
-            error_log("Song {$song->getId()} pushed to Aktuelle Proben");
-        }
+        $this->entityManager->persist($song);
+        $this->entityManager->flush();
 
-        return $allSuccess;
+        return true;
     }
 
     /**
-     * Remove a song from the "Aktuelle Proben" folder on Dropbox
+     * Unmark a song as "Aktuell in Proben".
+     *
+     * Clears the flag unconditionally (so unchecking always works). As a best
+     * effort it also deletes the dedicated "Aktuelle Proben" Dropbox copy; if
+     * that isn't possible (e.g. missing write scope) the link is left in place
+     * and the orphaned folder can be cleaned up later — the flag being off is
+     * enough to hide the song from the member page.
      */
     public function removeSongFromAktuelleProben(SongKeyword $song): bool
     {
-        if (!$song->getAktuelleDropboxlink()) {
-            // Already not in Aktuelle Proben
-            $song->setIsAktuelleProben(false);
-            $this->entityManager->persist($song);
-            $this->entityManager->flush();
-            return true;
-        }
+        $song->setIsAktuelleProben(false);
 
         $folderPath = $song->getAktuelleDropboxlink();
-        $files = $this->dropboxService->listFolderFiles($folderPath);
-
-        $allSuccess = true;
-        foreach ($files as $file) {
-            if (!$this->dropboxService->deleteFile($file['path'])) {
-                error_log("Failed to delete file: {$file['path']}");
-                $allSuccess = false;
-            }
-        }
-
-        if ($allSuccess) {
-            $song->setIsAktuelleProben(false);
+        if ($folderPath && $this->dropboxService->deleteFile($folderPath)) {
             $song->setAktuelleDropboxlink(null);
-            $this->entityManager->persist($song);
-            $this->entityManager->flush();
-            error_log("Song {$song->getId()} removed from Aktuelle Proben");
         }
 
-        return $allSuccess;
-    }
+        $this->entityManager->persist($song);
+        $this->entityManager->flush();
 
-    /**
-     * Synchronize all songs: push those marked as aktuelle, remove those not marked
-     */
-    public function syncAllAktuelleProben(): void
-    {
-        $allSongs = $this->songRepository->findAll();
-
-        foreach ($allSongs as $song) {
-            if ($song->isIsAktuelleProben()) {
-                // Should be in Aktuelle Proben
-                if (!$song->getAktuelleDropboxlink()) {
-                    // Not yet pushed
-                    $this->pushSongToAktuelleProben($song);
-                }
-            } else {
-                // Should NOT be in Aktuelle Proben
-                if ($song->getAktuelleDropboxlink()) {
-                    // Currently in Aktuelle Proben, remove it
-                    $this->removeSongFromAktuelleProben($song);
-                }
-            }
-        }
+        return true;
     }
 }

@@ -90,6 +90,7 @@
                     {% endif %}
                     <div class="d-flex gap-2 mt-2">
                         <a href="{{ path('admin_logs') }}" class="btn btn-light btn-sm stretched-link position-relative"><i class="bi bi-file-text me-1"></i>Logs anzeigen</a>
+                        <a href="{{ path('admin_logs', {env: 'dev'}) }}" class="btn btn-outline-light btn-sm position-relative" style="z-index:2"><i class="bi bi-bug me-1"></i>Dev Logs</a>
                         <button type="button" class="btn btn-outline-light btn-sm position-relative" id="btn-hetzner-terminal" style="z-index:2"><i class="bi bi-terminal me-1"></i>Prod Terminal</button>
                     </div>
                 </div>
@@ -100,7 +101,10 @@
                 <div class="card-body">
                     <h5 class="card-title">Datenbank</h5>
                     <p class="card-text">MariaDB verwalten</p>
-                    <a href="/phpmyadmin" target="_blank" class="btn btn-light stretched-link"><i class="bi bi-database me-1"></i>PHPMyAdmin öffnen</a>
+                    <div class="d-flex flex-wrap gap-2">
+                        <a href="/phpmyadmin" target="_blank" class="btn btn-light stretched-link"><i class="bi bi-database me-1"></i>PHPMyAdmin öffnen</a>
+                        <button type="button" id="btn-prod-sync" class="btn btn-outline-light position-relative" style="z-index:2"><i class="bi bi-cloud-download me-1"></i>Von Prod kopieren</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -270,7 +274,9 @@ window.DASHBOARD_CONFIG = {
     csrfToken:      '{{ csrf_token('sync_dropbox') }}',
     syncUrl:        '{{ path('admin_songs_sync_dropbox') }}',
     cacheClearToken: '{{ csrf_token('cache_clear') }}',
-    cacheClearUrl:  '{{ path('admin_cache_clear') }}'
+    cacheClearUrl:  '{{ path('admin_cache_clear') }}',
+    prodSyncToken:  '{{ csrf_token('prod_sync_copy') }}',
+    prodSyncUrl:    '{{ path('admin_prod_sync_copy') }}'
 };
 </script>
 <script src="{{ asset('js/admin-dashboard.js') }}"></script>

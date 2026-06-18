@@ -31,18 +31,4 @@ class SongSuggestionLikeRepository extends ServiceEntityRepository
             ->getQuery()
             ->getOneOrNullResult();
     }
-
-    /**
-     * Find all likes by a specific user
-     *
-     * @return SongSuggestionLike[]
-     */
-    public function findLikesByUser(User $user): array
-    {
-        return $this->createQueryBuilder('l')
-            ->where('l.user = :user')
-            ->setParameter('user', $user)
-            ->getQuery()
-            ->getResult();
-    }
 }

@@ -25,7 +25,15 @@
 
 <div class="container-fluid py-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1>Lieder <span class="badge bg-secondary fs-6">{{ totalAll }}</span></h1>
+        <div>
+            <h1 class="d-inline-block">Lieder
+                <span class="badge bg-secondary fs-6">{{ search|trim != '' ? total : totalAll }}</span>
+                {% if search|trim != '' %}<small class="text-muted fs-6 fw-normal">von {{ totalAll }}</small>{% endif %}
+            </h1>
+            <button id="btn-delete-selected" class="btn btn-danger ms-3" style="display:none">
+                <i class="bi bi-trash me-1"></i><span id="delete-count">0</span> löschen
+            </button>
+        </div>
         <div class="d-flex gap-2">
             <button id="btn-sync-dropbox" class="btn btn-outline-primary" title="Dropbox-Ordner abgleichen und fehlende Verknüpfungen automatisch setzen">
                 <i class="bi bi-cloud-arrow-down me-1"></i>Dropbox synchronisieren
@@ -85,6 +93,9 @@
         <table class="table table-striped table-hover table-sm align-middle" id="songs-table">
             <thead class="table-dark">
                 <tr>
+                    <th style="width:40px" class="text-center">
+                        <input type="checkbox" id="selectAllCheckbox" class="form-check-input" title="Alle auswählen">
+                    </th>
                     {{ _self.sort_th('Etikett',           'etikett',       sort, dir, search, 'width:115px', 'class="d-none d-md-table-cell"') }}
                     {{ _self.sort_th('Liedtitel',          'songName',      sort, dir, search, null,         '') }}
                     {{ _self.sort_th('Komponist',          'composer',      sort, dir, search, 'width:190px', 'class="d-none d-md-table-cell"') }}
@@ -97,111 +108,6 @@
             </thead>
             <tbody>
                 {% for song in songs %}
-                    {% set prefix = song.etikett ? song.etikett|split(' ')|first|lower : '' %}
-                    {% set badgeClass = {
-                        'blau':     'bg-primary text-white',
-                        'gelb':     'bg-warning text-dark',
-                        'rosa':     'bg-danger-subtle text-danger-emphasis border border-danger-subtle',
-                        'extrabox': 'bg-secondary text-white'
-                    }[prefix] ?? 'bg-light text-dark border' %}
-                    {# ── macro: render one song row (reused for parent + children) ── #}
-                    {% macro song_row(song, months_de, isChild) %}
-                        {% set prefix = song.etikett ? song.etikett|split(' ')|first|lower : '' %}
-                        {% set badgeClass = {
-                            'blau':     'bg-primary text-white',
-                            'gelb':     'bg-warning text-dark',
-                            'rosa':     'bg-danger-subtle text-danger-emphasis border border-danger-subtle',
-                            'extrabox': 'bg-secondary text-white'
-                        }[prefix] ?? 'bg-light text-dark border' %}
-                        <tr data-id="{{ song.id }}"
-                            {% if isChild %}class="movement-row" style="background:#f5f7ff; display:none"{% endif %}>
-
-                            {# Etikett #}
-                            <td class="editable-cell" data-field="etikett">
-                                {% if isChild %}<span class="text-muted ps-2" title="Satz">↳</span>{% endif %}
-                                <span class="display-val">
-                                    {% if song.etikett %}
-                                        <span class="badge {{ badgeClass }} fw-normal">{{ song.etikett }}</span>
-                                    {% elseif not isChild %}
-                                        <span class="text-muted">—</span>
-                                    {% endif %}
-                                </span>
-                                <input class="edit-input form-control form-control-sm d-none"
-                                       type="text" maxlength="20"
-                                       value="{{ song.etikett ?? '' }}"
-                                       placeholder="z.B. Blau 29">
-                            </td>
-
-                            {# Liedtitel #}
-                            <td class="editable-cell {% if not isChild %}fw-semibold{% endif %}" data-field="songName">
-                                <span class="display-val {% if isChild %}fst-italic text-secondary{% endif %}">{{ song.songName }}</span>
-                                <input class="edit-input form-control form-control-sm d-none"
-                                       type="text"
-                                       value="{{ song.songName|e('html_attr') }}">
-                            </td>
-
-                            {# Komponist #}
-                            <td class="editable-cell" data-field="composer">
-                                <span class="display-val text-muted">{{ song.composer ?? '—' }}</span>
-                                <input class="edit-input form-control form-control-sm d-none"
-                                       type="text"
-                                       value="{{ song.composer ?? '' }}"
-                                       placeholder="Komponist">
-                            </td>
-
-                            {# Stile #}
-                            <td>
-                                {% for style in song.styles %}
-                                    <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle fw-normal">{{ style.name }}</span>
-                                {% endfor %}
-                            </td>
-
-                            {# Letztes Konzert #}
-                            <td>
-                                {% set latestDate = song.latestKonzertDate %}
-                                <span class="text-muted">
-                                    {{ latestDate ? latestDate|date('d.m.Y') : '—' }}
-                                </span>
-                            </td>
-
-                            {# Dropbox #}
-                            <td class="editable-cell" data-field="dropboxlink">
-                                <span class="display-val">
-                                    {% if song.dropboxlink %}
-                                        <i class="bi bi-folder-check text-success" title="{{ song.dropboxlink }}"></i>
-                                    {% else %}
-                                        <i class="bi bi-folder-x text-danger"></i>
-                                    {% endif %}
-                                </span>
-                                <input class="edit-input form-control form-control-sm d-none"
-                                       type="text"
-                                       value="{{ song.dropboxlink ?? '' }}"
-                                       placeholder="/Chorgemeinschaft Teutonia/Noten/…"
-                                       style="min-width:220px">
-                            </td>
-
-                            {# Aktuell in Proben #}
-                            <td class="text-center" data-field="isAktuelleProben">
-                                <input type="checkbox" class="form-check-input"
-                                       data-field="isAktuelleProben"
-                                       {% if song.isAktuelleProben %}checked{% endif %}
-                                       {% if not song.dropboxlink %}disabled title="Dropbox-Pfad erforderlich"{% endif %}>
-                            </td>
-
-                            {# Aktionen #}
-                            <td class="text-end">
-                                <a href="{{ path('admin_songs_edit', {id: song.id}) }}"
-                                   class="btn btn-sm btn-outline-primary" title="Bearbeiten">
-                                    <i class="bi bi-pencil"></i>
-                                </a>
-                                <form action="{{ path('admin_songs_delete', {id: song.id}) }}" method="post"
-                                      class="d-inline" onsubmit="return confirm('Lied wirklich löschen?')">
-                                    <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ song.id) }}">
-                                    <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
-                                </form>
-                            </td>
-                        </tr>
-                    {% endmacro %}
 
                     {# ── Parent row ──────────────────────────────────── #}
                     {% set prefix = song.etikett ? song.etikett|split(' ')|first|lower : '' %}
@@ -212,6 +118,11 @@
                         'extrabox': 'bg-secondary text-white'
                     }[prefix] ?? 'bg-light text-dark border' %}
                     <tr data-id="{{ song.id }}">
+                        {# Checkbox #}
+                        <td class="text-center" style="vertical-align: middle">
+                            <input type="checkbox" class="form-check-input song-checkbox" data-id="{{ song.id }}">
+                        </td>
+
                         {# Etikett #}
                         <td class="editable-cell d-none d-md-table-cell" data-field="etikett">
                             <span class="display-val">
@@ -233,7 +144,7 @@
                                 <div class="btn-expand-movements d-flex align-items-center gap-1 mb-1"
                                      data-parent="{{ song.id }}" role="button"
                                      title="{{ song.children|length }} Satz/Sätze ein-/ausblenden">
-                                    <i class="bi bi-chevron-right text-muted" id="chev-{{ song.id }}"></i>
+                                    <i class="bi {{ search|trim != '' ? 'bi-chevron-down text-primary' : 'bi-chevron-right text-muted' }}" id="chev-{{ song.id }}"></i>
                                     <span class="badge bg-secondary rounded-pill" style="font-size:.6rem">{{ song.children|length }}</span>
                                 </div>
                             {% endif %}
@@ -321,21 +232,19 @@
                         <tr data-id="{{ child.id }}"
                             class="movement-row movement-parent-{{ song.id }}"
                             data-parent-id="{{ song.id }}"
-                            style="background:#f0f3ff; display:none;"
+                            style="background:#f0f3ff;{% if search|trim == '' %} display:none;{% endif %}"
                             draggable="true">
 
-                            <td class="editable-cell d-none d-md-table-cell" data-field="etikett">
+                            {# First cell spans the checkbox + Etikett columns so the remaining
+                               cells (incl. the action buttons) stay aligned with the parent row,
+                               without a separate empty leading cell. #}
+                            {# Etikett is inherited from the parent — show it read-only (no edit textbox). #}
+                            <td class="d-none d-md-table-cell" colspan="2" style="padding-left:2.5rem">
                                 <span class="drag-handle" title="Verschieben"><i class="bi bi-grip-vertical"></i></span>
                                 <span class="text-primary opacity-50 ps-1">↳</span>
-                                <span class="display-val">
-                                    {% if child.etikett %}
-                                        <span class="badge {{ badgeClass }} fw-normal">{{ child.etikett }}</span>
-                                    {% endif %}
-                                </span>
-                                <input class="edit-input form-control form-control-sm d-none"
-                                       type="text" maxlength="20"
-                                       value="{{ child.etikett ?? '' }}"
-                                       placeholder="z.B. Blau 29">
+                                {% if child.etikett %}
+                                    <span class="badge {{ badgeClass }} fw-normal">{{ child.etikett }}</span>
+                                {% endif %}
                             </td>
 
                             <td class="editable-cell" data-field="songName">
@@ -465,7 +374,8 @@
 window.SONGS_CONFIG = {
     csrfPatch: '{{ csrf_token('song_patch') }}',
     csrfSync:  '{{ csrf_token('sync_dropbox') }}',
-    syncUrl:   '{{ path('admin_songs_sync_dropbox') }}'
+    syncUrl:   '{{ path('admin_songs_sync_dropbox') }}',
+    bulkDeleteUrl: '{{ path('admin_songs_bulk_delete') }}'
 };
 </script>
 <script>

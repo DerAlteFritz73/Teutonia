@@ -4,12 +4,14 @@
 if (!window._adminSongsInit) {
     window._adminSongsInit = true;
 
+    /* Canonical escaper from base.html.twig; aliased for all IIFEs in this file. */
+    const esc = window.escapeHtml;
+
 (function () {
     'use strict';
     const cfg = window.SONGS_CONFIG || {};
 
     /* ── Helpers ─────────────────────────────────────────────────────── */
-    function esc(s)     { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
     function escAttr(s) { return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;'); }
 
     function updateDisplay(cell, field, value) {
@@ -318,7 +320,7 @@ if (!window._adminSongsInit) {
 
             if (data.unmatched_names && data.unmatched_names.length) {
                 html += `<details><summary class="text-muted small mb-1">Nicht zugeordnete Lieder (${data.unmatched_names.length})</summary>
-                    <ul class="small mt-2 mb-0 ps-3">${data.unmatched_names.map(n => `<li>${n}</li>`).join('')}</ul>
+                    <ul class="small mt-2 mb-0 ps-3">${data.unmatched_names.map(n => `<li>${esc(n)}</li>`).join('')}</ul>
                 </details>`;
             }
 
@@ -329,6 +331,71 @@ if (!window._adminSongsInit) {
         } catch (err) {
             body.innerHTML = `<div class="alert alert-danger mb-0"><i class="bi bi-exclamation-triangle me-1"></i>Netzwerkfehler: ${err.message}</div>`;
         }
+    });
+
+    /* ── Bulk delete ─────────────────────────────────────────────────────── */
+    /* Document-level delegation so the controls keep working after Turbo
+       swaps the table body; only visible (filtered) rows are ever acted on. */
+
+    // Checkboxes whose row is currently displayed (offsetParent is null if hidden)
+    function getVisibleCheckboxes() {
+        const table = document.getElementById('songs-table');
+        if (!table) return [];
+        return Array.from(table.querySelectorAll('.song-checkbox'))
+            .filter(cb => { const row = cb.closest('tr'); return row && row.offsetParent !== null; });
+    }
+
+    function updateDeleteButton() {
+        const deleteBtn   = document.getElementById('btn-delete-selected');
+        const deleteCount = document.getElementById('delete-count');
+        if (!deleteBtn || !deleteCount) return;
+        const count = getVisibleCheckboxes().filter(cb => cb.checked).length;
+        deleteCount.textContent = count;
+        deleteBtn.style.display = count > 0 ? 'inline-block' : 'none';
+    }
+
+    // Select-all → toggle every visible checkbox
+    document.addEventListener('change', e => {
+        if (e.target.id !== 'selectAllCheckbox') return;
+        getVisibleCheckboxes().forEach(cb => { cb.checked = e.target.checked; });
+        updateDeleteButton();
+    });
+
+    // Individual checkbox → reconcile the select-all tri-state
+    document.addEventListener('change', e => {
+        if (!e.target.classList.contains('song-checkbox')) return;
+        const visible        = getVisibleCheckboxes();
+        const selectAll      = document.getElementById('selectAllCheckbox');
+        if (selectAll) {
+            const allChecked  = visible.length > 0 && visible.every(cb => cb.checked);
+            const someChecked = visible.some(cb => cb.checked);
+            selectAll.checked       = allChecked;
+            selectAll.indeterminate = someChecked && !allChecked;
+        }
+        updateDeleteButton();
+    });
+
+    // Delete button → POST selected IDs
+    document.addEventListener('click', e => {
+        if (!e.target.closest('#btn-delete-selected')) return;
+        const cfg = window.SONGS_CONFIG || {};
+        const selected = getVisibleCheckboxes()
+            .filter(cb => cb.checked)
+            .map(cb => parseInt(cb.dataset.id, 10));
+
+        if (!selected.length) return;
+        if (!confirm(`Wirklich ${selected.length} Lied(er) löschen?`)) return;
+
+        fetch(cfg.bulkDeleteUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-Token': cfg.csrfPatch
+            },
+            body: JSON.stringify({ ids: selected })
+        })
+        .then(r => r.ok ? location.reload() : Promise.reject(r.statusText))
+        .catch(err => alert('Fehler beim Löschen: ' + err));
     });
 })();
 

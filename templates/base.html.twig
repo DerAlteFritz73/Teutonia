@@ -21,8 +21,16 @@
                 if (_fired) fn();
             };
         }());
+        // Canonical HTML-escape helper, shared by all page scripts.
+        // Escapes a superset (& < > " ') so it is safe in text and attribute contexts.
+        window.escapeHtml = function (s) {
+            return String(s == null ? '' : s)
+                .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        };
         </script>
         <script src="/js/app.js"></script>
+        <script src="/js/image-zoom.js"></script>
         {% block javascripts %}
             {% block importmap %}{{ importmap('app') }}{% endblock %}
         {% endblock %}

@@ -7,7 +7,11 @@
             <div class="row">
                 {% if konzert.plakatPath %}
                 <div class="col-md-3 mb-3 mb-md-0">
-                    <img src="{{ asset(konzert.plakatPath) }}" alt="{{ konzert.name }}" class="img-fluid rounded" style="max-width: 100%; height: auto;">
+                    <img src="{{ asset(konzert.plakatPath) }}" alt="{{ konzert.name }}"
+                         class="img-fluid rounded concert-zoom-thumb"
+                         style="max-width: 100%; height: auto; cursor:zoom-in;"
+                         data-img-src="{{ asset(konzert.plakatPath) }}"
+                         data-img-title="{{ konzert.name }}">
                 </div>
                 <div class="col-md-9">
                 {% else %}
@@ -24,10 +28,35 @@
                     {% set songCount = konzert.songs|length + konzert.customSongs|length %}
                     {% if songCount > 0 %}
                     {% endif %}
+                    {% if konzert.kritikPath %}
+                    <div class="concert-kritik mt-3">
+                        <h6 class="text-muted mb-2"><i class="bi bi-newspaper"></i> Pressekritik</h6>
+                        <img src="{{ asset(konzert.kritikPath) }}"
+                             alt="Pressekritik – {{ konzert.name }}"
+                             class="img-fluid rounded border concert-zoom-thumb"
+                             style="max-height:200px;cursor:zoom-in;"
+                             data-img-src="{{ asset(konzert.kritikPath) }}"
+                             data-img-title="{{ konzert.name }} – Pressekritik">
+                    </div>
+                    {% endif %}
                 </div>
             </div>
         </div>
     </div>
     {% endfor %}
+
+    <div class="modal fade" id="concertImageModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="concertImageModalTitle"></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Schließen"></button>
+                </div>
+                <div class="modal-body text-center">
+                    <img src="" alt="" class="img-fluid rounded zoomable-img" style="max-height:85vh">
+                </div>
+            </div>
+        </div>
+    </div>
 {% endif %}
 </div>

@@ -14,6 +14,7 @@
     </div>
 
     <form class="d-flex align-items-center gap-2 mb-3" method="get">
+        <input type="hidden" name="env" value="{{ logEnv }}">
         <label class="form-label mb-0 fw-semibold">Mindest-Level:</label>
         <select name="level" class="form-select form-select-sm w-auto" onchange="this.form.submit()">
             {% for lvl in levels %}

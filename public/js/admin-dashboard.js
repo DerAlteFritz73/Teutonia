@@ -75,6 +75,45 @@ document.addEventListener('click', async (e) => {
 });
 
 document.addEventListener('click', async (e) => {
+    if (!e.target.closest('#btn-prod-sync')) return;
+
+    const cfg = window.DASHBOARD_CONFIG || {};
+    const btn = document.getElementById('btn-prod-sync');
+
+    if (!confirm('Datenbank und Assets von der Produktion (Hetzner) nach Dev kopieren?\n\nDie lokale Dev-Datenbank wird dabei überschrieben.')) {
+        return;
+    }
+
+    const original = btn.innerHTML;
+    btn.disabled  = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status"></span>Kopiere…';
+
+    try {
+        const form = new FormData();
+        form.append('_token', cfg.prodSyncToken);
+        const res  = await fetch(cfg.prodSyncUrl, { method: 'POST', body: form });
+        const data = await res.json();
+
+        if (data.error) {
+            showCacheToast(data.error, 'error');
+        } else {
+            const lines = (data.steps || []).map(s =>
+                `${s.ok ? '✓' : '✗'} ${s.label}: ${s.detail}`).join('\n');
+            showCacheToast(
+                (data.success ? 'Von Prod kopiert:\n' : 'Mit Fehlern abgeschlossen:\n') + lines,
+                data.success ? 'success' : 'error'
+            );
+        }
+    } catch (err) {
+        showCacheToast('Netzwerkfehler: ' + err.message, 'error');
+    } finally {
+        btn.disabled  = false;
+        btn.innerHTML = original;
+    }
+    return;
+});
+
+document.addEventListener('click', async (e) => {
     if (!e.target.closest('#btn-sync-dropbox-dash')) return;
 
     const cfg   = window.DASHBOARD_CONFIG || {};

@@ -13,10 +13,12 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 
 #[AsCommand(
     name: 'app:populate-song-keywords',
-    description: 'Populate song keywords from Dropbox file names',
+    description: 'Create missing song entries from Dropbox folders ("[title] #[composer]" naming)',
 )]
 class PopulateSongKeywordsCommand extends Command
 {
+    private const NOTEN_PATH = '/Chorgemeinschaft Teutonia/Noten';
+
     public function __construct(
         private EntityManagerInterface $entityManager,
         private DropboxService $dropboxService
@@ -27,16 +29,27 @@ class PopulateSongKeywordsCommand extends Command
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $io = new SymfonyStyle($input, $output);
-
         $io->title('Populating Song Keywords from Dropbox');
 
-        // Process Noten folder
-        $io->section('Processing Noten folder...');
-        $this->processFolder('/Chorgemeinschaft Teutonia/Noten', 'Noten', $io);
+        // Preload existing songs once so we never create a duplicate of a song
+        // that already exists — either by Dropbox path or by normalised title.
+        $linkedPaths   = []; // lowercased dropbox path => true
+        $existingNorms = []; // normalised song title => true
+        foreach ($this->entityManager->getRepository(SongKeyword::class)->findAll() as $song) {
+            if ($song->getDropboxlink()) {
+                $linkedPaths[mb_strtolower(rtrim($song->getDropboxlink(), '/'))] = true;
+            }
+            if ($song->getAktuelleDropboxlink()) {
+                $linkedPaths[mb_strtolower(rtrim($song->getAktuelleDropboxlink(), '/'))] = true;
+            }
+            $existingNorms[$this->normalize($song->getSongName())] = true;
+        }
 
-        // Process Aktuelle Proben folder
-        $io->section('Processing Aktuelle Proben folder...');
-        $this->processFolder('/Chorgemeinschaft Teutonia/Aktuelle Proben', 'Aktuelle Proben', $io);
+        // Only the Noten folder is a source of songs. "Aktuelle Proben" is a
+        // working copy managed solely by the "Aktuell in Proben" checkbox on the
+        // songs page (AktuelleProbenSyncService), so it is never imported here.
+        $io->section('Processing Noten folder...');
+        $this->processFolder(self::NOTEN_PATH, 'Notenverzeichnis', $linkedPaths, $existingNorms, $io);
 
         $this->entityManager->flush();
 
@@ -45,55 +58,93 @@ class PopulateSongKeywordsCommand extends Command
         return Command::SUCCESS;
     }
 
-    private function processFolder(string $dropboxPath, string $folderName, SymfonyStyle $io): void
-    {
+    /**
+     * @param array<string,bool> $linkedPaths   shared across calls, updated in place
+     * @param array<string,bool> $existingNorms shared across calls, updated in place
+     */
+    private function processFolder(
+        string $dropboxPath,
+        string $folderLabel,
+        array &$linkedPaths,
+        array &$existingNorms,
+        SymfonyStyle $io
+    ): void {
         $files = $this->dropboxService->getFileStructure($dropboxPath, false);
         $count = 0;
 
-        foreach ($files as $songFolderName => $folderData) {
-            if ($songFolderName === '_root_files' || !isset($folderData['_type'])) {
+        foreach ($files as $folderName => $folderData) {
+            if (str_starts_with((string) $folderName, '_') || !isset($folderData['_type'])) {
                 continue;
             }
 
-            // Extract composer from folder name (first part before dash or entire name)
-            $composer = $this->extractComposer($songFolderName);
+            [$title, $composer] = $this->parseFolderName($folderName);
+            $path = $dropboxPath . '/' . $folderName;
 
-            if (!$composer) {
+            // Skip folders already linked to a song, or whose title already exists.
+            if (isset($linkedPaths[mb_strtolower($path)])) {
+                continue;
+            }
+            $norm = $this->normalize($title);
+            if (isset($existingNorms[$norm])) {
                 continue;
             }
 
-            // Check if this song already exists
-            $existingSong = $this->entityManager->getRepository(SongKeyword::class)
-                ->findOneBy(['songName' => $songFolderName, 'folder' => $folderName]);
+            $song = new SongKeyword();
+            $song->setSongName($title);
+            $song->setComposer($composer);
+            $song->setFolder($folderLabel);
+            $song->setKeywords($composer !== null ? [$composer] : []);
+            $song->setDropboxlink($path);
+            $this->entityManager->persist($song);
 
-            if (!$existingSong) {
-                $songKeyword = new SongKeyword();
-                $songKeyword->setSongName($songFolderName);
-                $songKeyword->setComposer($composer);
-                $songKeyword->setFolder($folderName);
-                $songKeyword->setKeywords([$composer]); // For now, just use composer as keyword
-
-                $this->entityManager->persist($songKeyword);
-                $count++;
-            }
+            // Register immediately so duplicates inside this run are skipped too.
+            $linkedPaths[mb_strtolower($path)] = true;
+            $existingNorms[$norm]              = true;
+            $count++;
         }
 
-        $io->text("Added $count songs from $folderName");
+        $io->text("Added $count songs from $folderLabel");
     }
 
-    private function extractComposer(string $songName): ?string
+    /**
+     * Split "[title] #[composer]" into [title, composer|null].
+     * Folders without " #" are treated as a bare title.
+     *
+     * @return array{0:string,1:?string}
+     */
+    private function parseFolderName(string $folderName): array
     {
-        // Try to extract composer name (part before dash)
-        if (preg_match('/^([^-]+)\s*-/', $songName, $matches)) {
-            return trim($matches[1]);
+        if (str_contains($folderName, ' #')) {
+            [$titlePart, $composerPart] = explode(' #', $folderName, 2);
+            $composer = trim($composerPart);
+            return [trim($titlePart), $composer !== '' ? $composer : null];
         }
 
-        // If no dash, use first 2-3 words as composer
-        $words = explode(' ', $songName);
-        if (count($words) >= 2) {
-            return implode(' ', array_slice($words, 0, min(2, count($words))));
-        }
+        return [trim($folderName), null];
+    }
 
-        return trim($songName);
+    /**
+     * Mirror of AdminController::normalizeForSync — "/" and "," are treated as
+     * equivalent (Dropbox replaces "/" with "," in folder names) so titles match
+     * regardless of which character is used.
+     */
+    private function normalize(string $s): string
+    {
+        $s = mb_strtolower($s, 'UTF-8');
+        $s = str_replace(['/', ','], ' ', $s);
+        $map = [
+            'ä' => 'a', 'ö' => 'o', 'ü' => 'u', 'ß' => 'ss',
+            'à' => 'a', 'â' => 'a', 'á' => 'a', 'ã' => 'a', 'å' => 'a',
+            'è' => 'e', 'ê' => 'e', 'é' => 'e', 'ë' => 'e',
+            'ì' => 'i', 'î' => 'i', 'í' => 'i', 'ï' => 'i',
+            'ò' => 'o', 'ô' => 'o', 'ó' => 'o', 'õ' => 'o', 'ø' => 'o',
+            'ù' => 'u', 'û' => 'u', 'ú' => 'u',
+            'ñ' => 'n', 'ç' => 'c',
+            "\xc2\x85" => '', "\xc2\x92" => '', "\xe2\x80\x99" => '',
+        ];
+        $s = str_replace(array_keys($map), array_values($map), $s);
+        $s = preg_replace('/[^\p{L}\p{N} ]/u', ' ', $s);
+        $s = preg_replace('/\s+/', ' ', $s);
+        return trim($s);
     }
 }

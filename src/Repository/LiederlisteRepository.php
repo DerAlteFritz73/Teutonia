@@ -12,4 +12,12 @@ class LiederlisteRepository extends ServiceEntityRepository
     {
         parent::__construct($registry, Liederliste::class);
     }
+
+    public function countAll(): int
+    {
+        return (int) $this->createQueryBuilder('l')
+            ->select('COUNT(l.id)')
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
 }

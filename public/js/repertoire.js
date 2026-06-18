@@ -1,3 +1,5 @@
+var esc = window.escapeHtml;
+
 function loadWordCloud(retries) {
     if (retries === undefined) retries = 30;
     const cfg       = window.REPERTOIRE_CONFIG || {};
@@ -71,7 +73,7 @@ function randomizeSongs(n) {
         var pick = arr.slice(0, n);
 
         ul.innerHTML = pick.map(function (song) {
-            var label = (song.composer ? song.composer + ' \u2013 ' : '') + song.songName;
+            var label = (song.composer ? esc(song.composer) + ' \u2013 ' : '') + esc(song.songName);
             return '<li><i class="bi bi-music-note me-1 text-muted"></i>' + label + '</li>';
         }).join('');
     });

@@ -3,7 +3,6 @@
 namespace App\Repository;
 
 use App\Entity\SongSuggestion;
-use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -38,20 +37,5 @@ class SongSuggestionRepository extends ServiceEntityRepository
         }
 
         return $qb->getQuery()->getResult();
-    }
-
-    /**
-     * Find all suggestions submitted by a specific user
-     *
-     * @return SongSuggestion[]
-     */
-    public function findByUser(User $user): array
-    {
-        return $this->createQueryBuilder('s')
-            ->where('s.submittedBy = :user')
-            ->setParameter('user', $user)
-            ->orderBy('s.createdAt', 'DESC')
-            ->getQuery()
-            ->getResult();
     }
 }

@@ -650,10 +650,10 @@ pageLoad(function () {
         return html;
     }
 
+    // Delegates to the canonical escaper in base.html.twig (kept as a hoisted
+    // function because call sites above reference it before this line).
     function escapeHtml(text) {
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
+        return window.escapeHtml(text);
     }
 
     // "Zur Seite" button
