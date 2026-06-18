@@ -38,3 +38,7 @@ dump.sql
 /enrich_songs.php
 docker/init.sql
 compose.override.yaml
+
+# Database dumps/backups (contain credentials & personal data)
+/db_backups/
+*.sql
