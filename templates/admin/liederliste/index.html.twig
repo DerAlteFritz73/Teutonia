@@ -40,7 +40,7 @@
                         <th style="width:80px" class="text-center">Lieder</th>
                         <th style="width:90px" class="text-center">Dauer</th>
                         <th style="width:130px">Zuletzt bearbeitet</th>
-                        <th style="width:130px" class="text-end">Aktionen</th>
+                        <th style="width:210px" class="text-end">Aktionen</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -55,7 +55,7 @@
                         <td class="text-center"><span class="badge bg-secondary">{{ liste.items|length }}</span></td>
                         <td class="text-center text-muted small">{{ liste.totalDuration }}</td>
                         <td class="text-muted small">{{ liste.updatedAt|date('d.m.Y H:i') }}</td>
-                        <td class="text-end">
+                        <td class="text-end text-nowrap">
                             {% if is_granted('ROLE_ADMIN') %}
                             <a href="{{ path('admin_liederlisten_edit', {id: liste.id}) }}"
                                class="btn btn-sm btn-outline-primary"
