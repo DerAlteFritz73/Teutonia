@@ -445,7 +445,7 @@ class AdminController extends AbstractController
         \PhpOffice\PhpWord\IOFactory::createWriter($phpWord, 'ODText')->save($tmpFile);
 
         $response = new \Symfony\Component\HttpFoundation\BinaryFileResponse($tmpFile);
-        $response->setContentDisposition(\Symfony\Component\HttpFoundation\ResponseHeaderBag::DISPOSITION_ATTACHMENT, 'songs_export.odt');
+        $response->setContentDisposition(\Symfony\Component\HttpFoundation\ResponseHeaderBag::DISPOSITION_INLINE, 'songs_export.odt');
         $response->headers->set('Content-Type', 'application/vnd.oasis.opendocument.text');
         $response->deleteFileAfterSend(true);
 

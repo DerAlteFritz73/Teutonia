@@ -73,7 +73,7 @@ class LiederlisteController extends AbstractController
         $filename  = 'Liederliste_' . str_replace(' ', '_', $safeName) . '.docx';
 
         $response = new BinaryFileResponse($tmpFile);
-        $response->setContentDisposition(ResponseHeaderBag::DISPOSITION_ATTACHMENT, $filename);
+        $response->setContentDisposition(ResponseHeaderBag::DISPOSITION_INLINE, $filename);
         $response->headers->set('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
         $response->deleteFileAfterSend(true);
 
@@ -92,7 +92,7 @@ class LiederlisteController extends AbstractController
         $filename  = 'Liederliste_' . str_replace(' ', '_', $safeName) . '.odt';
 
         $response = new BinaryFileResponse($tmpFile);
-        $response->setContentDisposition(ResponseHeaderBag::DISPOSITION_ATTACHMENT, $filename);
+        $response->setContentDisposition(ResponseHeaderBag::DISPOSITION_INLINE, $filename);
         $response->headers->set('Content-Type', 'application/vnd.oasis.opendocument.text');
         $response->deleteFileAfterSend(true);
 
