@@ -27,10 +27,12 @@ security:
 
     role_hierarchy:
         ROLE_GUEST: [ROLE_USER]
+        ROLE_NOTENWART: [ROLE_USER]
         ROLE_ADMIN: [ROLE_USER]
 
     access_control:
         - { path: ^/admin/blacklist-ip-from-email, roles: PUBLIC_ACCESS }
+        - { path: ^/admin/liederlisten, roles: [ROLE_ADMIN, ROLE_NOTENWART] }
         - { path: ^/admin, roles: ROLE_ADMIN }
         - { path: ^/mitglieder, roles: ROLE_USER }
 

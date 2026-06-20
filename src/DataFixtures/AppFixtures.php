@@ -3,6 +3,7 @@
 namespace App\DataFixtures;
 
 use App\Entity\Konzert;
+use App\Entity\Liederliste;
 use App\Entity\SongKeyword;
 use App\Entity\SongSuggestion;
 use App\Entity\Style;
@@ -13,9 +14,10 @@ use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
 class AppFixtures extends Fixture
 {
-    public const MEMBER_USERNAME = 'testuser';
-    public const ADMIN_USERNAME  = 'testadmin';
-    public const PASSWORD        = 'Test1234!';
+    public const MEMBER_USERNAME    = 'testuser';
+    public const ADMIN_USERNAME     = 'testadmin';
+    public const NOTENWART_USERNAME = 'testnotenwart';
+    public const PASSWORD           = 'Test1234!';
 
     public function __construct(private UserPasswordHasherInterface $hasher) {}
 
@@ -37,6 +39,15 @@ class AppFixtures extends Fixture
         $admin->setPassword($this->hasher->hashPassword($admin, self::PASSWORD));
         $admin->setRoles(['ROLE_ADMIN']);
         $manager->persist($admin);
+
+        $notenwart = new User();
+        $notenwart->setUsername(self::NOTENWART_USERNAME);
+        $notenwart->setFirstName('Test');
+        $notenwart->setLastName('Notenwart');
+        $notenwart->setEmail('testnotenwart@example.com');
+        $notenwart->setPassword($this->hasher->hashPassword($notenwart, self::PASSWORD));
+        $notenwart->setRoles(['ROLE_NOTENWART']);
+        $manager->persist($notenwart);
 
         $style = new Style();
         $style->setName('Gospel');
@@ -111,6 +122,33 @@ class AppFixtures extends Fixture
         $suggestion->setDescription('Ein Klassiker für den Chor');
         $suggestion->setSubmittedBy($member);
         $manager->persist($suggestion);
+
+        $manager->flush();
+
+        // A Liederliste for the Notenwart read-only flow. Built after the flush so
+        // the referenced song already has a database ID.
+        $liederliste = new Liederliste();
+        $liederliste->setName('Notenwart Liste');
+        $liederliste->setTitle('Programm Notenwart');
+        $liederliste->setItems([
+            [
+                'type'     => 'song',
+                'songId'   => $song->getId(),
+                'composer' => $song->getComposer(),
+                'title'    => $song->getSongName(),
+                'duration' => '3:30',
+                'note'     => '',
+            ],
+            [
+                'type'     => 'custom',
+                'songId'   => null,
+                'composer' => 'Anonymus',
+                'title'    => 'Notenwart Test Zugabe',
+                'duration' => '2:00',
+                'note'     => '',
+            ],
+        ]);
+        $manager->persist($liederliste);
 
         $manager->flush();
     }

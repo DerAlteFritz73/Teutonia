@@ -4,6 +4,7 @@
 
 {% block body %}
 <!-- template: templates/admin/liederliste/edit.html.twig -->
+{% set canEdit = is_granted('ROLE_ADMIN') %}
 <div class="container-fluid py-4" style="max-width:1200px">
 
     {% for message in app.flashes('success') %}
@@ -24,16 +25,18 @@
                        style="max-width:420px"
                        placeholder="Name der Liederliste"
                        value="{{ liste.name }}"
-                       required>
+                       {{ canEdit ? 'required' : 'readonly' }}>
                 <input type="text" name="liste_title" id="liste-title"
                        class="form-control"
                        style="max-width:420px"
                        placeholder="Titel (erscheint im Word-Dokument)"
-                       value="{{ liste.title ?? '' }}">
+                       value="{{ liste.title ?? '' }}"
+                       {{ canEdit ? '' : 'readonly' }}>
                 <div class="form-check">
                     <input type="checkbox" name="show_etikett" id="show-etikett"
                            class="form-check-input"
-                           {{ liste.isShowEtikett() ? 'checked' : '' }}>
+                           {{ liste.isShowEtikett() ? 'checked' : '' }}
+                           {{ canEdit ? '' : 'disabled' }}>
                     <label class="form-check-label small" for="show-etikett">Etikett-Spalte in Export anzeigen</label>
                 </div>
             </div>
@@ -51,17 +54,19 @@
                     <i class="bi bi-file-earmark-text me-1"></i>ODT
                 </a>
                 {% endif %}
+                {% if canEdit %}
                 <button type="submit" class="btn btn-primary" id="save-btn">
                     <i class="bi bi-check-lg me-1"></i>{{ isNew ? 'Erstellen' : 'Speichern' }}
                 </button>
+                {% endif %}
             </div>
         </div>
 
         {# ── Dual-list song picker ──────────────────────────────────────────── #}
         <div class="d-flex flex-column flex-md-row gap-2 align-items-md-stretch">
 
-            {# Left — available songs #}
-            <div class="flex-grow-1" style="min-width:0">
+            {# Left — available songs (hidden for read-only NOTENWART users) #}
+            <div class="flex-grow-1{{ canEdit ? '' : ' d-none' }}" style="min-width:0">
                 <div class="d-flex justify-content-between align-items-center mb-1">
                     <span class="fw-semibold text-muted">Alle Lieder</span>
                     <span class="badge bg-secondary" id="left-count">0</span>
@@ -77,8 +82,8 @@
                 </div>
             </div>
 
-            {# Middle — action buttons #}
-            <div class="d-flex flex-row flex-md-column justify-content-center gap-2 px-2 flex-shrink-0">
+            {# Middle — action buttons (hidden for read-only NOTENWART users) #}
+            <div class="d-flex flex-row flex-md-column justify-content-center gap-2 px-2 flex-shrink-0{{ canEdit ? '' : ' d-none' }}">
                 <button type="button" id="btn-add" class="btn btn-primary btn-sm" title="Zur Liste hinzufügen">
                     <i class="bi bi-chevron-right d-none d-md-inline"></i>
                     <i class="bi bi-chevron-down d-inline d-md-none"></i>
@@ -110,8 +115,8 @@
                     <div class="ll-list" id="right-list"></div>
                 </div>
 
-                {# Add free entry #}
-                <div id="custom-add-panel" class="custom-add-panel mt-2 p-2 border rounded" style="background:#fffbf0">
+                {# Add free entry (hidden for read-only NOTENWART users) #}
+                <div id="custom-add-panel" class="custom-add-panel mt-2 p-2 border rounded{{ canEdit ? '' : ' d-none' }}" style="background:#fffbf0">
                     <div class="small fw-semibold text-warning-emphasis mb-1 custom-add-label">
                         <i class="bi bi-plus-circle me-1" id="custom-add-icon"></i>
                         <span id="custom-add-title">Freies Stück hinzufügen</span>
@@ -131,11 +136,17 @@
             </div>
         </div>
 
+        {% if canEdit %}
         <p class="text-muted small mt-2">
             Klick / <kbd>Strg</kbd>+Klick / <kbd>Shift</kbd>+Klick zum Auswählen &middot;
             Doppelklick zum schnellen Verschieben &middot;
             Rechte Liste: Drag &amp; Drop zum Umsortieren
         </p>
+        {% else %}
+        <p class="text-muted small mt-2">
+            <i class="bi bi-eye me-1"></i>Nur-Lese-Ansicht – die Liste kann nicht verändert werden.
+        </p>
+        {% endif %}
     </form>
 </div>
 
@@ -262,6 +273,10 @@ window.FETCH_URL    = '{{ path('admin_liederlisten_fetch_duration') }}';
 </script>
 <script>
 (function () {
+    // Read-only mode for NOTENWART users: the right list is displayed but no
+    // editing affordances (add/remove/reorder/custom/inputs) are wired up.
+    const READ_ONLY = {{ canEdit ? 'false' : 'true' }};
+
     // ── Data ──────────────────────────────────────────────────────────────
     const allSongs = window.ALL_SONGS || [];  // [{id, parentId, composer, title, hasDropbox, hasLinks}]
     const songById = new Map(allSongs.map(s => [s.id, s]));
@@ -346,7 +361,7 @@ window.FETCH_URL    = '{{ path('admin_liederlisten_fetch_duration') }}';
         const row = document.createElement('div');
         row.className = 'll-row' + (isCustom ? ' custom-item' : '');
         row.dataset.uid = item.uid;
-        row.setAttribute('draggable', 'true');
+        if (!READ_ONLY) row.setAttribute('draggable', 'true');
 
         // Handle
         const h = document.createElement('span');
@@ -378,6 +393,7 @@ window.FETCH_URL    = '{{ path('admin_liederlisten_fetch_duration') }}';
         nInput.className = 'form-control form-control-sm';
         nInput.placeholder = 'Anmerkung…';
         nInput.value = item.note || '';
+        nInput.readOnly = READ_ONLY;
         nInput.addEventListener('click', e => e.stopPropagation());
         nInput.addEventListener('mousedown', e => e.stopPropagation());
         nInput.addEventListener('input', () => { item.note = nInput.value; });
@@ -401,6 +417,7 @@ window.FETCH_URL    = '{{ path('admin_liederlisten_fetch_duration') }}';
         durInput.className = 'form-control form-control-sm';
         durInput.placeholder = '0:00';
         durInput.value = item.duration || '';
+        durInput.readOnly = READ_ONLY;
         durInput.addEventListener('click', e => e.stopPropagation());
         durInput.addEventListener('mousedown', e => e.stopPropagation());
         durInput.addEventListener('input', () => { item.duration = durInput.value.trim(); });
@@ -413,33 +430,35 @@ window.FETCH_URL    = '{{ path('admin_liederlisten_fetch_duration') }}';
 
         row.appendChild(durWrap);
 
-        // Delete (and edit for custom)
+        // Delete (and edit for custom) — omitted entirely in read-only mode.
         const del = document.createElement('span');
         del.className = 'llc-del';
 
-        if (isCustom) {
-            const editBtn = document.createElement('button');
-            editBtn.type = 'button';
-            editBtn.className = 'btn-edit-item';
-            editBtn.title = 'Bearbeiten';
-            editBtn.innerHTML = '<i class="bi bi-pencil"></i>';
-            editBtn.addEventListener('click', e => { e.stopPropagation(); enterEditMode(item); });
-            del.appendChild(editBtn);
-        }
+        if (!READ_ONLY) {
+            if (isCustom) {
+                const editBtn = document.createElement('button');
+                editBtn.type = 'button';
+                editBtn.className = 'btn-edit-item';
+                editBtn.title = 'Bearbeiten';
+                editBtn.innerHTML = '<i class="bi bi-pencil"></i>';
+                editBtn.addEventListener('click', e => { e.stopPropagation(); enterEditMode(item); });
+                del.appendChild(editBtn);
+            }
 
-        const delBtn = document.createElement('button');
-        delBtn.type = 'button';
-        delBtn.className = 'btn-del-item';
-        delBtn.title = 'Entfernen';
-        delBtn.innerHTML = '<i class="bi bi-x-lg"></i>';
-        delBtn.addEventListener('click', e => {
-            e.stopPropagation();
-            const idx = rightItems.findIndex(x => x.uid === item.uid);
-            if (idx !== -1) rightItems.splice(idx, 1);
-            if (editingUid === item.uid) exitEditMode();
-            render();
-        });
-        del.appendChild(delBtn);
+            const delBtn = document.createElement('button');
+            delBtn.type = 'button';
+            delBtn.className = 'btn-del-item';
+            delBtn.title = 'Entfernen';
+            delBtn.innerHTML = '<i class="bi bi-x-lg"></i>';
+            delBtn.addEventListener('click', e => {
+                e.stopPropagation();
+                const idx = rightItems.findIndex(x => x.uid === item.uid);
+                if (idx !== -1) rightItems.splice(idx, 1);
+                if (editingUid === item.uid) exitEditMode();
+                render();
+            });
+            del.appendChild(delBtn);
+        }
 
         row.appendChild(del);
         return row;
@@ -608,6 +627,7 @@ window.FETCH_URL    = '{{ path('admin_liederlisten_fetch_duration') }}';
 
     // ── Move left → right (catalog stays, duplicates allowed) ─────────────
     document.getElementById('btn-add').addEventListener('click', () => {
+        if (READ_ONLY) return;
         const sel = new Set(Array.from(leftListEl.querySelectorAll('.ll-row.selected')).map(r => +r.dataset.id));
         if (!sel.size) return;
         const added = [];
@@ -630,6 +650,7 @@ window.FETCH_URL    = '{{ path('admin_liederlisten_fetch_duration') }}';
 
     // ── Remove from right list ─────────────────────────────────────────────
     document.getElementById('btn-remove').addEventListener('click', () => {
+        if (READ_ONLY) return;
         const sel = new Set(Array.from(rightListEl.querySelectorAll('.ll-row.selected')).map(r => r.dataset.uid));
         if (!sel.size) return;
         // Removing a parent song also removes all its movements.
@@ -650,6 +671,7 @@ window.FETCH_URL    = '{{ path('admin_liederlisten_fetch_duration') }}';
 
     // ── Double-click shortcut ──────────────────────────────────────────────
     leftListEl.addEventListener('dblclick', e => {
+        if (READ_ONLY) return;
         const row = e.target.closest('.ll-row');
         if (!row) return;
         leftListEl.querySelectorAll('.ll-row').forEach(r => r.classList.remove('selected'));
@@ -657,6 +679,7 @@ window.FETCH_URL    = '{{ path('admin_liederlisten_fetch_duration') }}';
         document.getElementById('btn-add').click(); // btn-add handler calls fetchDuration
     });
     rightListEl.addEventListener('dblclick', e => {
+        if (READ_ONLY) return;
         const row = e.target.closest('.ll-row');
         if (!row || e.target.closest('.btn-del-item, .btn-edit-item, input')) return;
         rightListEl.querySelectorAll('.ll-row').forEach(r => r.classList.remove('selected'));
@@ -698,6 +721,7 @@ window.FETCH_URL    = '{{ path('admin_liederlisten_fetch_duration') }}';
     }
 
     function addCustomItem() {
+        if (READ_ONLY) return;
         const title = customTitleEl.value.trim();
         if (!title) { customTitleEl.focus(); customTitleEl.classList.add('is-invalid'); return; }
         customTitleEl.classList.remove('is-invalid');
@@ -751,6 +775,7 @@ window.FETCH_URL    = '{{ path('admin_liederlisten_fetch_duration') }}';
     let dragUid = null;
 
     rightListEl.addEventListener('dragstart', e => {
+        if (READ_ONLY) { e.preventDefault(); return; }
         const row = e.target.closest('.ll-row');
         if (!row) { e.preventDefault(); return; }
         dragUid = row.dataset.uid;
