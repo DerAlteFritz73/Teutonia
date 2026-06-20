@@ -118,12 +118,18 @@ class LiederlisteController extends AbstractController
 
         $safeName = preg_replace('/[^a-zA-Z0-9äöüÄÖÜß _-]/', '', $liste->getName());
         $filename = 'Liederliste_' . str_replace(' ', '_', $safeName) . '.pdf';
+        // makeDisposition() needs a pure-ASCII fallback for the non-UTF-8 clients.
+        $asciiFallback = strtr($filename, [
+            'ä' => 'ae', 'ö' => 'oe', 'ü' => 'ue',
+            'Ä' => 'Ae', 'Ö' => 'Oe', 'Ü' => 'Ue', 'ß' => 'ss',
+        ]);
+        $asciiFallback = preg_replace('/[^\x20-\x7E]/', '_', $asciiFallback);
 
         $response = new Response($dompdf->output());
         $response->headers->set('Content-Type', 'application/pdf');
         $response->headers->set(
             'Content-Disposition',
-            $response->headers->makeDisposition(ResponseHeaderBag::DISPOSITION_INLINE, $filename),
+            $response->headers->makeDisposition(ResponseHeaderBag::DISPOSITION_INLINE, $filename, $asciiFallback),
         );
 
         return $response;
