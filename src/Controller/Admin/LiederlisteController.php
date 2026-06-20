@@ -99,7 +99,45 @@ class LiederlisteController extends AbstractController
         return $response;
     }
 
-    private function buildPhpWord(Liederliste $liste, SongKeywordRepository $songRepo): PhpWord
+    #[Route('/{id}/download-pdf', name: '_download_pdf', requirements: ['id' => '\d+'], methods: ['GET'])]
+    public function downloadPdf(Liederliste $liste, SongKeywordRepository $songRepo): Response
+    {
+        $data = $this->buildRows($liste, $songRepo);
+
+        $html = $this->renderView('admin/liederliste/pdf.html.twig', [
+            'title'       => $liste->getTitle() ?: $liste->getName(),
+            'showEtikett' => $data['showEtikett'],
+            'rows'        => $data['rows'],
+            'total'       => $data['total'],
+        ]);
+
+        $dompdf = new \Dompdf\Dompdf(['defaultFont' => 'DejaVu Sans']);
+        $dompdf->setPaper('A4', 'portrait');
+        $dompdf->loadHtml($html, 'UTF-8');
+        $dompdf->render();
+
+        $safeName = preg_replace('/[^a-zA-Z0-9äöüÄÖÜß _-]/', '', $liste->getName());
+        $filename = 'Liederliste_' . str_replace(' ', '_', $safeName) . '.pdf';
+
+        $response = new Response($dompdf->output());
+        $response->headers->set('Content-Type', 'application/pdf');
+        $response->headers->set(
+            'Content-Disposition',
+            $response->headers->makeDisposition(ResponseHeaderBag::DISPOSITION_INLINE, $filename),
+        );
+
+        return $response;
+    }
+
+    /**
+     * Normalises a Liederliste into flat rows shared by every export format
+     * (DOCX/ODT via PhpWord and PDF/HTML via Twig). Each row carries the values
+     * already resolved (running number, inherited Etikett + colour, note, …) so
+     * the renderers only have to lay them out.
+     *
+     * @return array{showEtikett: bool, rows: list<array{num: string, etikett: string, etikettColor: ?string, title: string, note: string, composer: string, duration: string, isCustom: bool}>, total: string}
+     */
+    private function buildRows(Liederliste $liste, SongKeywordRepository $songRepo): array
     {
         $showEtikett = $liste->isShowEtikett();
 
@@ -120,6 +158,40 @@ class LiederlisteController extends AbstractController
                 $isParentMap[$songId] = $song !== null && $song->getChildren()->count() > 0;
             }
         }
+
+        $rows    = [];
+        $counter = 0;
+        foreach ($liste->getItems() as $item) {
+            $isCustom = ($item['type'] ?? '') === 'custom';
+            $songId   = $item['songId'] ?? null;
+            $isParent = $songId !== null && ($isParentMap[$songId] ?? false);
+
+            // Parent songs are only a shell for their movements → no running number.
+            $etikettText = $songId ? ($etikettMap[$songId] ?? '') : '';
+
+            $rows[] = [
+                'num'          => $isParent ? '' : (string) (++$counter),
+                'etikett'      => $etikettText,
+                'etikettColor' => $etikettText !== '' ? self::etikettColor($etikettText) : null,
+                'title'        => (string) ($item['title'] ?? ''),
+                'note'         => trim((string) ($item['note'] ?? '')),
+                'composer'     => (string) ($item['composer'] ?? ''),
+                'duration'     => (string) ($item['duration'] ?? ''),
+                'isCustom'     => $isCustom,
+            ];
+        }
+
+        return [
+            'showEtikett' => $showEtikett,
+            'rows'        => $rows,
+            'total'       => $liste->getTotalDuration(),
+        ];
+    }
+
+    private function buildPhpWord(Liederliste $liste, SongKeywordRepository $songRepo): PhpWord
+    {
+        $data        = $this->buildRows($liste, $songRepo);
+        $showEtikett = $data['showEtikett'];
 
         $phpWord = new PhpWord();
         $phpWord->getSettings()->setThemeFontLang(new \PhpOffice\PhpWord\Style\Language('de-DE'));
@@ -174,38 +246,29 @@ class LiederlisteController extends AbstractController
         $textStyle   = ['size' => 10];
         $italicStyle = ['size' => 10, 'italic' => true];
 
-        $counter = 0;
-        foreach ($liste->getItems() as $item) {
-            $isCustom = ($item['type'] ?? '') === 'custom';
-            $note     = trim((string) ($item['note'] ?? ''));
-            $songId   = $item['songId'] ?? null;
-            $isParent = $songId !== null && ($isParentMap[$songId] ?? false);
-
+        foreach ($data['rows'] as $row) {
             $table->addRow();
-            // Parent songs are only a shell for their movements → no running number.
-            $numText = $isParent ? '' : (string) (++$counter);
-            $table->addCell($wNum)->addText($numText, $numStyle, ['alignment' => Jc::CENTER]);
+            $table->addCell($wNum)->addText($row['num'], $numStyle, ['alignment' => Jc::CENTER]);
 
             if ($showEtikett) {
-                $etikettText = $songId ? ($etikettMap[$songId] ?? '') : '';
-                $etikettStyle = $etikettText !== ''
-                    ? ['size' => 10, 'color' => self::etikettColor($etikettText)]
+                $etikettStyle = $row['etikettColor'] !== null
+                    ? ['size' => 10, 'color' => $row['etikettColor']]
                     : $textStyle;
-                $table->addCell($wEtikett)->addText($etikettText, $etikettStyle);
+                $table->addCell($wEtikett)->addText($row['etikett'], $etikettStyle);
             }
 
             $titleCell = $table->addCell($wTitle);
             $titlePara = $titleCell->addTextRun();
-            $titlePara->addText($item['title'] ?? '', $isCustom ? $italicStyle : $textStyle);
-            if ($note !== '') {
-                $titlePara->addText(' (' . $note . ')', ['size' => 9, 'italic' => true, 'color' => '888888']);
+            $titlePara->addText($row['title'], $row['isCustom'] ? $italicStyle : $textStyle);
+            if ($row['note'] !== '') {
+                $titlePara->addText(' (' . $row['note'] . ')', ['size' => 9, 'italic' => true, 'color' => '888888']);
             }
 
-            $table->addCell($wComposer)->addText($item['composer'] ?? '', $textStyle);
-            $table->addCell($wDur)->addText($item['duration'] ?? '', ['size' => 10], ['alignment' => Jc::CENTER]);
+            $table->addCell($wComposer)->addText($row['composer'], $textStyle);
+            $table->addCell($wDur)->addText($row['duration'], ['size' => 10], ['alignment' => Jc::CENTER]);
         }
 
-        $total = $liste->getTotalDuration();
+        $total = $data['total'];
         $table->addRow();
         $table->addCell($wNum);
         if ($showEtikett) {

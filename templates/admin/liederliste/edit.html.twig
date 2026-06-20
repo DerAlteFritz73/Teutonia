@@ -53,6 +53,10 @@
                    class="btn btn-outline-success" title="LibreOffice herunterladen (.odt)">
                     <i class="bi bi-file-earmark-text me-1"></i>ODT
                 </a>
+                <a href="{{ path('admin_liederlisten_download_pdf', {id: liste.id}) }}"
+                   class="btn btn-outline-danger" target="_blank" title="PDF öffnen (.pdf)">
+                    <i class="bi bi-file-earmark-pdf me-1"></i>PDF
+                </a>
                 {% endif %}
                 {% if canEdit %}
                 <button type="submit" class="btn btn-primary" id="save-btn">

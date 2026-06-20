@@ -79,6 +79,11 @@
                                data-bs-toggle="tooltip" title="LibreOffice herunterladen (.odt)">
                                 <i class="bi bi-file-earmark-text"></i>
                             </a>
+                            <a href="{{ path('admin_liederlisten_download_pdf', {id: liste.id}) }}"
+                               class="btn btn-sm btn-outline-danger" target="_blank"
+                               data-bs-toggle="tooltip" title="PDF öffnen (.pdf)">
+                                <i class="bi bi-file-earmark-pdf"></i>
+                            </a>
                             {% if is_granted('ROLE_ADMIN') %}
                             <form action="{{ path('admin_liederlisten_delete', {id: liste.id}) }}" method="post"
                                   class="d-inline" onsubmit="return confirm('Liste wirklich löschen?')">

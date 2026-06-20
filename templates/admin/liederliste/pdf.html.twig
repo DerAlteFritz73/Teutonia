@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        @page { margin: 2.5cm 2.5cm 2cm 2.5cm; }
+        body { font-family: "DejaVu Sans", sans-serif; color: #212529; }
+        h1 { font-size: 16pt; margin: 0 0 12pt; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td {
+            border: 0.5pt solid #cccccc;
+            padding: 2pt 4pt;
+            font-size: 9pt;
+            vertical-align: top;
+        }
+        th { background-color: #e8e8e8; font-weight: bold; text-align: left; }
+        .num { width: 5%; text-align: center; color: #888888; }
+        .num-head { text-align: center; }
+        .etikett { width: 16%; }
+        .composer { width: 24%; }
+        .dur { width: 8%; text-align: center; }
+        .dur-head { text-align: center; }
+        .custom { font-style: italic; }
+        .note { font-size: 8pt; font-style: italic; color: #888888; }
+        .total td { font-weight: bold; }
+        .total .total-label { text-align: right; }
+    </style>
+</head>
+<body>
+    <h1>{{ title }}</h1>
+    <table>
+        <thead>
+            <tr>
+                <th class="num-head">#</th>
+                {% if showEtikett %}<th class="etikett">Etikett</th>{% endif %}
+                <th>Titel</th>
+                <th class="composer">Komponist</th>
+                <th class="dur-head">Dauer</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in rows %}
+            <tr>
+                <td class="num">{{ row.num }}</td>
+                {% if showEtikett %}
+                <td class="etikett"{% if row.etikettColor %} style="color: #{{ row.etikettColor }};"{% endif %}>{{ row.etikett }}</td>
+                {% endif %}
+                <td>
+                    <span{% if row.isCustom %} class="custom"{% endif %}>{{ row.title }}</span>{% if row.note %} <span class="note">({{ row.note }})</span>{% endif %}
+                </td>
+                <td>{{ row.composer }}</td>
+                <td class="dur">{{ row.duration }}</td>
+            </tr>
+            {% endfor %}
+            <tr class="total">
+                <td></td>
+                {% if showEtikett %}<td></td>{% endif %}
+                <td></td>
+                <td class="total-label">Gesamt</td>
+                <td class="dur">{{ total }}</td>
+            </tr>
+        </tbody>
+    </table>
+</body>
+</html>
