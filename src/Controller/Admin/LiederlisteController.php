@@ -15,10 +15,11 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\ResponseHeaderBag;
+use Symfony\Component\ExpressionLanguage\Expression;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
-#[IsGranted('ROLE_ADMIN')]
+#[IsGranted(new Expression("is_granted('ROLE_ADMIN') or is_granted('ROLE_NOTENWART')"))]
 #[Route('/admin/liederlisten', name: 'admin_liederlisten')]
 class LiederlisteController extends AbstractController
 {
@@ -31,6 +32,7 @@ class LiederlisteController extends AbstractController
     }
 
     #[Route('/new', name: '_new', methods: ['GET', 'POST'])]
+    #[IsGranted('ROLE_ADMIN')]
     public function new(Request $request, EntityManagerInterface $em, SongKeywordRepository $songRepo): Response
     {
         $liste = new Liederliste();
@@ -44,6 +46,7 @@ class LiederlisteController extends AbstractController
     }
 
     #[Route('/{id}/delete', name: '_delete', requirements: ['id' => '\d+'], methods: ['POST'])]
+    #[IsGranted('ROLE_ADMIN')]
     public function delete(Liederliste $liste, Request $request, EntityManagerInterface $em): Response
     {
         if (!$this->isCsrfTokenValid('delete_liederliste' . $liste->getId(), $request->request->get('_token'))) {
@@ -234,6 +237,7 @@ class LiederlisteController extends AbstractController
     }
 
     #[Route('/fetch-duration', name: '_fetch_duration', methods: ['GET'])]
+    #[IsGranted('ROLE_ADMIN')]
     public function fetchDuration(
         Request $request,
         SongKeywordRepository $songRepo,
@@ -277,6 +281,9 @@ class LiederlisteController extends AbstractController
         bool $isNew,
     ): Response {
         if ($request->isMethod('POST')) {
+            // NOTENWART users may view the edit page but never persist changes.
+            $this->denyAccessUnlessGranted('ROLE_ADMIN');
+
             $name = trim((string) $request->request->get('liste_name', ''));
             if ($name === '') {
                 $this->addFlash('error', 'Bitte einen Namen eingeben.');

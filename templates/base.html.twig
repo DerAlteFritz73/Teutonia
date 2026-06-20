@@ -112,6 +112,10 @@
                         <li class="nav-item"><a class="nav-link text-danger py-1{{ currentRoute starts with 'admin_' ? ' fw-semibold' : '' }}" href="{{ path('admin_dashboard') }}">
                             <i class="bi bi-gear-fill me-1"></i>Admin
                         </a></li>
+                        {% elseif is_granted('ROLE_NOTENWART') %}
+                        <li class="nav-item"><a class="nav-link text-warning py-1{{ currentRoute starts with 'admin_liederlisten' ? ' fw-semibold' : '' }}" href="{{ path('admin_liederlisten') }}">
+                            <i class="bi bi-music-note-list me-1"></i>LiederListe
+                        </a></li>
                         {% endif %}
                     </ul>
                 </div>

@@ -44,6 +44,8 @@
                             {% for role in user.rawRoles|sort %}
                                 {% if role == 'ROLE_ADMIN' %}
                                     <span class="badge bg-danger">Admin</span>
+                                {% elseif role == 'ROLE_NOTENWART' %}
+                                    <span class="badge bg-warning text-dark">Notenwart</span>
                                 {% elseif role == 'ROLE_GUEST' %}
                                     <span class="badge bg-info text-dark">Gast</span>
                                 {% elseif role == 'ROLE_USER' %}
