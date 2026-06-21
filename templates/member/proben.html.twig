@@ -20,7 +20,7 @@
    toggle button so clicking it never expands/collapses the panel. #}
 {% macro admin_proben_toggle(song) %}
     {% if is_granted('ROLE_ADMIN') %}
-        <div class="admin-proben-toggle d-flex align-items-center flex-shrink-0 gap-2 px-3"
+        <div class="admin-proben-toggle d-flex align-items-center flex-shrink-0 gap-2 px-3" style="font-size:1rem"
              title="{{ song.dropboxlink ? 'In „Aktuelle Proben“ aufnehmen bzw. entfernen' : 'Dropbox-Pfad erforderlich' }}">
             <input id="proben-check-{{ song.id }}" type="checkbox"
                    class="form-check-input mt-0 admin-proben-check"
