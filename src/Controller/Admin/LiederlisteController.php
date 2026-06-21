@@ -5,6 +5,7 @@ namespace App\Controller\Admin;
 use App\Entity\Liederliste;
 use App\Repository\LiederlisteRepository;
 use App\Repository\SongKeywordRepository;
+use App\Service\AktuelleProbenSyncService;
 use App\Service\DropboxService;
 use Doctrine\ORM\EntityManagerInterface;
 use PhpOffice\PhpWord\PhpWord;
@@ -133,6 +134,64 @@ class LiederlisteController extends AbstractController
         );
 
         return $response;
+    }
+
+    #[Route('/{id}/add-to-proben', name: '_add_to_proben', requirements: ['id' => '\d+'], methods: ['POST'])]
+    #[IsGranted('ROLE_ADMIN')]
+    public function addToProben(
+        Liederliste $liste,
+        Request $request,
+        SongKeywordRepository $songRepo,
+        AktuelleProbenSyncService $syncService,
+    ): Response {
+        if (!$this->isCsrfTokenValid('add_to_proben' . $liste->getId(), $request->request->get('_token'))) {
+            $this->addFlash('error', 'Ungültiges CSRF-Token.');
+            return $this->redirectToRoute('admin_liederlisten_edit', ['id' => $liste->getId()]);
+        }
+
+        // Unique song IDs referenced by the list (custom items carry no songId).
+        $songIds = [];
+        foreach ($liste->getItems() as $item) {
+            $songId = $item['songId'] ?? null;
+            if ($songId !== null) {
+                $songIds[$songId] = true;
+            }
+        }
+
+        $added = $already = $skipped = 0;
+        foreach (array_keys($songIds) as $songId) {
+            $song = $songRepo->find($songId);
+            if ($song === null) {
+                $skipped++;
+                continue;
+            }
+            if ($song->isAktuelleProben()) {
+                $already++;
+                continue;
+            }
+            // Returns false only when the song has no Dropbox (Noten) path.
+            if ($syncService->pushSongToAktuelleProben($song)) {
+                $added++;
+            } else {
+                $skipped++;
+            }
+        }
+
+        if ($added === 0 && $already === 0 && $skipped === 0) {
+            $this->addFlash('error', 'Diese Liste enthält keine Lieder, die hinzugefügt werden können.');
+        } else {
+            $parts = [];
+            $parts[] = $added . ' ' . ($added === 1 ? 'Lied' : 'Lieder') . ' zu „Aktuelle Proben" hinzugefügt';
+            if ($already > 0) {
+                $parts[] = $already . ' bereits enthalten';
+            }
+            if ($skipped > 0) {
+                $parts[] = $skipped . ' ohne Dropbox-Pfad übersprungen';
+            }
+            $this->addFlash($added > 0 ? 'success' : 'error', implode(', ', $parts) . '.');
+        }
+
+        return $this->redirectToRoute('admin_liederlisten_edit', ['id' => $liste->getId()]);
     }
 
     /**
