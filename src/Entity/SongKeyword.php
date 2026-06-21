@@ -24,6 +24,9 @@ class SongKeyword
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $composer = null;
 
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $arrangeur = null;
+
     #[ORM\Column(type: Types::JSON, nullable: true)]
     private ?array $keywords = [];
 
@@ -98,6 +101,17 @@ class SongKeyword
     public function setComposer(?string $composer): static
     {
         $this->composer = $composer;
+        return $this;
+    }
+
+    public function getArrangeur(): ?string
+    {
+        return $this->arrangeur;
+    }
+
+    public function setArrangeur(?string $arrangeur): static
+    {
+        $this->arrangeur = $arrangeur;
         return $this;
     }
 

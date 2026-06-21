@@ -26,6 +26,11 @@ class SongKeywordType extends AbstractType
                 'required' => false,
                 'attr'     => ['class' => 'form-control'],
             ])
+            ->add('arrangeur', TextType::class, [
+                'label'    => 'Arrangeur',
+                'required' => false,
+                'attr'     => ['class' => 'form-control'],
+            ])
             ->add('etikett', TextType::class, [
                 'label'    => 'Etikett (z.B. Rosa 01)',
                 'required' => false,

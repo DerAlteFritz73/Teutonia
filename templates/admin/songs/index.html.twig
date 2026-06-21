@@ -99,6 +99,7 @@
                     {{ _self.sort_th('Etikett',           'etikett',       sort, dir, search, 'width:115px', 'class="d-none d-md-table-cell"') }}
                     {{ _self.sort_th('Liedtitel',          'songName',      sort, dir, search, null,         '') }}
                     {{ _self.sort_th('Komponist',          'composer',      sort, dir, search, 'width:190px', 'class="d-none d-md-table-cell"') }}
+                    {{ _self.sort_th('Arrangeur',          'arrangeur',     sort, dir, search, 'width:170px', 'class="d-none d-lg-table-cell"') }}
                     <th class="d-none d-md-table-cell">Stile</th>
                     {{ _self.sort_th('Letzte Aufführung',  'latestKonzert', sort, dir, search, 'width:130px', 'class="d-none d-md-table-cell"') }}
                     {{ _self.sort_th('Dropbox',            'dropboxlink',   sort, dir, search, 'width:40px',  'class="d-none d-md-table-cell"') }}
@@ -163,6 +164,15 @@
                                    type="text"
                                    value="{{ song.composer ?? '' }}"
                                    placeholder="Komponist">
+                        </td>
+
+                        {# Arrangeur #}
+                        <td class="editable-cell d-none d-lg-table-cell" data-field="arrangeur">
+                            <span class="display-val text-muted">{{ song.arrangeur ?? '—' }}</span>
+                            <input class="edit-input form-control form-control-sm d-none"
+                                   type="text"
+                                   value="{{ song.arrangeur ?? '' }}"
+                                   placeholder="Arrangeur">
                         </td>
 
                         {# Stile #}
@@ -261,6 +271,14 @@
                                        type="text"
                                        value="{{ child.composer ?? '' }}"
                                        placeholder="Komponist">
+                            </td>
+
+                            <td class="editable-cell d-none d-lg-table-cell" data-field="arrangeur">
+                                <span class="display-val text-muted">{{ child.arrangeur ?? '—' }}</span>
+                                <input class="edit-input form-control form-control-sm d-none"
+                                       type="text"
+                                       value="{{ child.arrangeur ?? '' }}"
+                                       placeholder="Arrangeur">
                             </td>
 
                             <td class="d-none d-md-table-cell">
