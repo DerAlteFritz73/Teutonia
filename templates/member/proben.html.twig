@@ -15,6 +15,23 @@
     {% endif %}
 {% endmacro %}
 
+{# Admin-only switch to toggle a song's "Aktuell in Proben" flag, mirroring the
+   checkbox on the Admin-Lieder page. Rendered as a sibling of the accordion
+   toggle button so clicking it never expands/collapses the panel. #}
+{% macro admin_proben_toggle(song) %}
+    {% if is_granted('ROLE_ADMIN') %}
+        <div class="admin-proben-toggle d-flex align-items-center flex-shrink-0 gap-2 px-3"
+             title="{{ song.dropboxlink ? 'In „Aktuelle Proben“ aufnehmen bzw. entfernen' : 'Dropbox-Pfad erforderlich' }}">
+            <input id="proben-check-{{ song.id }}" type="checkbox"
+                   class="form-check-input mt-0 admin-proben-check"
+                   data-song-id="{{ song.id }}"
+                   {% if song.isAktuelleProben %}checked{% endif %}
+                   {% if not song.dropboxlink %}disabled{% endif %}>
+            <label for="proben-check-{{ song.id }}" class="small text-muted d-none d-lg-inline mb-0" style="cursor:pointer">Aktuelle Proben</label>
+        </div>
+    {% endif %}
+{% endmacro %}
+
 {% block title %}Aktuelle Proben - {{ parent() }}{% endblock %}
 
 {% block body %}
@@ -32,7 +49,7 @@
                     {% set folderId = 'proben-' ~ loop.index %}
                     {% set hasMovements = song.children|length > 0 %}
                     <div class="accordion-item">
-                        <h2 class="accordion-header">
+                        <h2 class="accordion-header d-flex align-items-center">
                             <button class="accordion-button collapsed accordion-btn-files"
                                     type="button"
                                     data-bs-toggle="collapse"
@@ -63,6 +80,7 @@
                                     <span class="d-flex gap-1 file-count-badges"></span>
                                 </span>
                             </button>
+                            {{ _self.admin_proben_toggle(song) }}
                         </h2>
                         <div id="{{ folderId }}" class="accordion-collapse collapse"
                              data-bs-parent="#probenAccordion">
@@ -169,7 +187,7 @@
                     {% set hasDropbox = notenPath is not null and notenPath != '' %}
                     {% set hasMovements = song.children|length > 0 %}
                     <div class="accordion-item">
-                        <h2 class="accordion-header">
+                        <h2 class="accordion-header d-flex align-items-center">
                             <button class="accordion-button collapsed accordion-btn-files"
                                     type="button"
                                     data-bs-toggle="collapse"
@@ -205,6 +223,7 @@
                                     <span class="d-flex gap-1 file-count-badges"></span>
                                 </span>
                             </button>
+                            {{ _self.admin_proben_toggle(song) }}
                         </h2>
                         <div id="{{ allFolderId }}" class="accordion-collapse collapse"
                              data-bs-parent="#allFilesAccordion">
@@ -390,4 +409,36 @@ window.PROBEN_CONFIG = {
 };
 </script>
 <script src="{{ asset('js/member-proben.js') }}?v=2"></script>
+{% if is_granted('ROLE_ADMIN') %}
+<script>
+/* Admin-only: toggle a song's "Aktuell in Proben" flag, same endpoint as the
+   Admin-Lieder page. The checkbox sits outside the accordion button, so a click
+   here does not expand the panel. */
+(function () {
+    const token = '{{ csrf_token('song_patch') }}';
+    document.addEventListener('change', function (e) {
+        const cb = e.target;
+        if (!cb.classList || !cb.classList.contains('admin-proben-check')) return;
+        const id = cb.dataset.songId;
+        const wasChecked = cb.checked;
+        cb.disabled = true;
+        fetch('/admin/songs/' + id + '/patch-field', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ _token: token, field: 'isAktuelleProben', value: cb.checked ? '1' : '0' })
+        })
+        .then(function (r) { return r.json().then(function (j) {
+            if (!r.ok || j.error) throw new Error(j.error || ('HTTP ' + r.status));
+            return j;
+        }); })
+        .then(function () { cb.disabled = false; })
+        .catch(function (err) {
+            cb.checked = !wasChecked;
+            cb.disabled = false;
+            alert(err.message || 'Fehler beim Speichern');
+        });
+    });
+}());
+</script>
+{% endif %}
 {% endblock %}
