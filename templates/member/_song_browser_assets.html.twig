@@ -1,0 +1,197 @@
+{# Shared styles, modals and scripts for the song-browser pages
+   (Aktuelle Proben + Noten). Included once per page after the accordion markup. #}
+<style>
+    /* Fixed-width Etikett column so song titles line up vertically (md+ only;
+       on small screens the badge keeps its natural width to save space). */
+    @media (min-width: 768px) {
+        .accordion-btn-etikett,
+        .editable-etikett {
+            width: 8rem;
+            min-width: 8rem;
+        }
+    }
+    .accordion-btn-etikett .badge,
+    .editable-etikett .display-val .badge {
+        display: inline-block;
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        vertical-align: middle;
+    }
+</style>
+
+<!-- PDF Viewer Modal -->
+<div class="modal fade" id="pdfViewerModal" tabindex="-1" aria-labelledby="pdfViewerModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-fullscreen-lg-down">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="pdfViewerModalLabel">
+                    <i class="bi bi-file-pdf-fill text-danger me-2"></i>
+                    <span id="pdfFileName"></span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-0" style="height: 80vh;">
+                <iframe id="pdfViewerFrame" style="width: 100%; height: 100%; border: none;"></iframe>
+            </div>
+            <div class="modal-footer">
+                <a id="pdfDownloadLink" href="#" download class="btn btn-primary">
+                    <i class="bi bi-download me-2"></i>Herunterladen
+                </a>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Schließen</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Audio Player Modal -->
+<div class="modal fade" id="audioPlayerModal" tabindex="-1" aria-labelledby="audioPlayerModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="audioPlayerModalLabel">
+                    <i class="bi bi-music-note-beamed text-primary me-2"></i>
+                    <span id="audioFileName"></span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <audio id="audioPlayer" controls class="w-100 mb-4" style="outline: none;">
+                    Ihr Browser unterstützt das Audio-Element nicht.
+                </audio>
+
+                <div class="card">
+                    <div class="card-body">
+                        <h6 class="card-title mb-3">
+                            <i class="bi bi-speedometer2 me-2"></i>Wiedergabegeschwindigkeit
+                        </h6>
+                        <div class="d-flex align-items-center gap-3 mb-3">
+                            <label for="speedSlider" class="form-label mb-0" style="min-width: 60px;">
+                                <span id="speedValue">1.0</span>x
+                            </label>
+                            <input type="range" class="form-range flex-grow-1" id="speedSlider"
+                                   min="0.25" max="2.0" step="0.05" value="1.0">
+                        </div>
+                        <div class="d-flex gap-2 flex-wrap">
+                            <button class="btn btn-sm btn-outline-secondary speed-preset" data-speed="0.5">0.5x</button>
+                            <button class="btn btn-sm btn-outline-secondary speed-preset" data-speed="0.75">0.75x</button>
+                            <button class="btn btn-sm btn-outline-primary speed-preset" data-speed="1">1.0x</button>
+                            <button class="btn btn-sm btn-outline-secondary speed-preset" data-speed="1.25">1.25x</button>
+                            <button class="btn btn-sm btn-outline-secondary speed-preset" data-speed="1.5">1.5x</button>
+                            <button class="btn btn-sm btn-outline-secondary speed-preset" data-speed="2">2.0x</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-success" id="audioPlayBtn">
+                    <i class="bi bi-play-fill me-1"></i>Abspielen
+                </button>
+                <a id="audioDownloadLink" href="#" download class="btn btn-primary">
+                    <i class="bi bi-download me-2"></i>Herunterladen
+                </a>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Schließen</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+window.PROBEN_CONFIG = {
+    filesUrl: '{{ path('api_dropbox_song_files') }}',
+    linkUrl:  '{{ path('api_dropbox_link') }}',
+    viewUrl:  '{{ path('api_dropbox_view') }}'
+};
+</script>
+<script src="{{ asset('js/member-proben.js') }}?v=2"></script>
+{% if is_granted('ROLE_ADMIN') %}
+<script>
+/* Admin-only: toggle a song's "Aktuell in Proben" flag, same endpoint as the
+   Admin-Lieder page. The checkbox sits outside the accordion button, so a click
+   here does not expand the panel. */
+(function () {
+    const token = '{{ csrf_token('song_patch') }}';
+    document.addEventListener('change', function (e) {
+        const cb = e.target;
+        if (!cb.classList || !cb.classList.contains('admin-proben-check')) return;
+        const id = cb.dataset.songId;
+        const wasChecked = cb.checked;
+        cb.disabled = true;
+        fetch('/admin/songs/' + id + '/patch-field', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ _token: token, field: 'isAktuelleProben', value: cb.checked ? '1' : '0' })
+        })
+        .then(function (r) { return r.json().then(function (j) {
+            if (!r.ok || j.error) throw new Error(j.error || ('HTTP ' + r.status));
+            return j;
+        }); })
+        .then(function () { cb.disabled = false; })
+        .catch(function (err) {
+            cb.checked = !wasChecked;
+            cb.disabled = false;
+            alert(err.message || 'Fehler beim Speichern');
+        });
+    });
+
+    /* Inline Etikett editing — same endpoint/field as the Admin-Lieder page. */
+    const esc = window.escapeHtml || function (s) { return s; };
+    function badgeHtml(value) {
+        if (!value) return '<span class="badge bg-light text-muted border fw-normal">＋ Etikett</span>';
+        const map = { blau: 'bg-primary text-white', gelb: 'bg-warning text-dark',
+                      rosa: 'bg-danger-subtle text-danger-emphasis border border-danger-subtle',
+                      extrabox: 'bg-secondary text-white' };
+        const cls = map[value.split(' ')[0].toLowerCase()] || 'bg-light text-dark border';
+        return '<span class="badge ' + cls + ' fw-normal">' + esc(value) + '</span>';
+    }
+    function deactivate(cell) {
+        cell.querySelector('.display-val').classList.remove('d-none');
+        cell.querySelector('.edit-input').classList.add('d-none');
+    }
+    async function commitEtikett(cell) {
+        const inp = cell.querySelector('.edit-input');
+        if (inp.classList.contains('d-none')) return;       // already closed
+        const value = inp.value.trim();
+        deactivate(cell);
+        if (value === inp.dataset.original.trim()) return;  // no change
+        try {
+            const res = await fetch('/admin/songs/' + cell.dataset.songId + '/patch-field', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ _token: token, field: 'etikett', value: value })
+            });
+            const j = await res.json();
+            if (!res.ok || j.error) throw new Error(j.error || ('HTTP ' + res.status));
+            inp.dataset.original = value; inp.value = value;
+            cell.querySelector('.display-val').innerHTML = badgeHtml(value);
+        } catch (err) {
+            inp.value = inp.dataset.original;
+            alert(err.message || 'Fehler beim Speichern');
+        }
+    }
+    document.addEventListener('click', function (e) {
+        const dv = e.target.closest('.editable-etikett .display-val');
+        if (!dv) return;
+        const cell = dv.closest('.editable-etikett');
+        const inp = cell.querySelector('.edit-input');
+        inp.dataset.original = inp.value;
+        dv.classList.add('d-none');
+        inp.classList.remove('d-none');
+        inp.focus(); inp.select();
+    });
+    document.addEventListener('keydown', function (e) {
+        if (!e.target.classList.contains('edit-input')) return;
+        const cell = e.target.closest('.editable-etikett');
+        if (!cell) return;
+        if (e.key === 'Enter') { e.preventDefault(); commitEtikett(cell); }
+        else if (e.key === 'Escape') { e.target.value = e.target.dataset.original; deactivate(cell); }
+    });
+    document.addEventListener('focusout', function (e) {
+        if (!e.target.classList.contains('edit-input')) return;
+        const cell = e.target.closest('.editable-etikett');
+        if (cell) commitEtikett(cell);
+    });
+}());
+</script>
+{% endif %}

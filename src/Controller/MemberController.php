@@ -38,12 +38,16 @@ class MemberController extends AbstractController
     #[Route('/aktuelle-proben', name: 'member_proben')]
     public function proben(SongKeywordRepository $songRepo): Response
     {
-        $aktuelleProben = $songRepo->findByFolderTopLevel('Aktuelle Proben');
-        $notenSongs     = $songRepo->findAllExcept('Aktuelle Proben');
-
         return $this->render('member/proben.html.twig', [
-            'aktuelleProben' => $aktuelleProben,
-            'notenSongs'     => $notenSongs,
+            'aktuelleProben' => $songRepo->findByFolderTopLevel('Aktuelle Proben'),
+        ]);
+    }
+
+    #[Route('/noten', name: 'member_noten')]
+    public function noten(SongKeywordRepository $songRepo): Response
+    {
+        return $this->render('member/noten.html.twig', [
+            'notenSongs' => $songRepo->findAllExcept('Aktuelle Proben'),
         ]);
     }
 

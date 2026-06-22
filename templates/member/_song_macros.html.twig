@@ -1,0 +1,48 @@
+{# Shared song-accordion macros used by both the Aktuelle-Proben and Noten pages. #}
+
+{% macro etikett_badge(etikett) %}
+    {% if etikett %}
+        {% set prefix = etikett|split(' ')|first|lower %}
+        {% set class = {
+            'blau':     'bg-primary text-white',
+            'gelb':     'bg-warning text-dark',
+            'rosa':     'bg-danger-subtle text-danger-emphasis border border-danger-subtle',
+            'extrabox': 'bg-secondary text-white'
+        }[prefix] ?? 'bg-light text-dark border' %}
+        <span class="badge {{ class }} fw-normal">{{ etikett }}</span>
+    {% else %}
+        <span class="badge bg-light border fw-normal"><span class="invisible">Rosa 155</span></span>
+    {% endif %}
+{% endmacro %}
+
+{# Admin-only switch to toggle a song's "Aktuell in Proben" flag, mirroring the
+   checkbox on the Admin-Lieder page. Rendered as a sibling of the accordion
+   toggle button so clicking it never expands/collapses the panel. #}
+{% macro admin_proben_toggle(song) %}
+    {% if is_granted('ROLE_ADMIN') %}
+        <div class="admin-proben-toggle d-flex align-items-center flex-shrink-0 gap-2 px-3" style="font-size:1rem"
+             title="{{ song.dropboxlink ? 'In „Aktuelle Proben“ aufnehmen bzw. entfernen' : 'Dropbox-Pfad erforderlich' }}">
+            <input id="proben-check-{{ song.id }}" type="checkbox"
+                   class="form-check-input mt-0 admin-proben-check"
+                   data-song-id="{{ song.id }}"
+                   {% if song.isAktuelleProben %}checked{% endif %}
+                   {% if not song.dropboxlink %}disabled{% endif %}>
+            <label for="proben-check-{{ song.id }}" class="small text-muted d-none d-lg-inline mb-0" style="cursor:pointer">Aktuelle Proben</label>
+        </div>
+    {% endif %}
+{% endmacro %}
+
+{# Admin-only inline Etikett editor. Lives outside the accordion button (valid
+   HTML + no accordion toggle on click). Click the badge to edit, Enter/blur to
+   save via the same /admin/songs/{id}/patch-field endpoint, Escape to cancel. #}
+{% macro admin_etikett_edit(song) %}
+    {% if is_granted('ROLE_ADMIN') %}
+        <div class="editable-etikett flex-shrink-0 text-end ps-1 pe-2" data-song-id="{{ song.id }}" style="font-size:1rem">
+            <span class="display-val" role="button" title="Etikett bearbeiten" style="cursor:pointer">
+                {% if song.etikett %}{{ _self.etikett_badge(song.etikett) }}{% else %}<span class="badge bg-light text-muted border fw-normal">＋ Etikett</span>{% endif %}
+            </span>
+            <input class="edit-input form-control form-control-sm d-none" type="text" maxlength="20"
+                   value="{{ song.etikett ?? '' }}" placeholder="z.B. Blau 29" style="max-width:120px">
+        </div>
+    {% endif %}
+{% endmacro %}
