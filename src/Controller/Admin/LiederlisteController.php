@@ -169,12 +169,9 @@ class LiederlisteController extends AbstractController
                 $already++;
                 continue;
             }
-            // Returns false only when the song has no Dropbox (Noten) path.
-            if ($syncService->pushSongToAktuelleProben($song)) {
-                $added++;
-            } else {
-                $skipped++;
-            }
+            // Always succeeds — the flag is set even when the song isn't on Dropbox.
+            $syncService->pushSongToAktuelleProben($song);
+            $added++;
         }
 
         if ($added === 0 && $already === 0 && $skipped === 0) {
@@ -186,7 +183,7 @@ class LiederlisteController extends AbstractController
                 $parts[] = $already . ' bereits enthalten';
             }
             if ($skipped > 0) {
-                $parts[] = $skipped . ' ohne Dropbox-Pfad übersprungen';
+                $parts[] = $skipped . ' nicht gefunden';
             }
             $this->addFlash($added > 0 ? 'success' : 'error', implode(', ', $parts) . '.');
         }

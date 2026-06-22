@@ -220,8 +220,7 @@
                         <td class="text-center d-none d-md-table-cell" data-field="isAktuelleProben">
                             <input type="checkbox" class="form-check-input"
                                    data-field="isAktuelleProben"
-                                   {% if song.isAktuelleProben %}checked{% endif %}
-                                   {% if not song.dropboxlink %}disabled title="Dropbox-Pfad erforderlich"{% endif %}>
+                                   {% if song.isAktuelleProben %}checked{% endif %}>
                         </td>
 
                         {# Aktionen #}
@@ -331,8 +330,7 @@
                             <td class="text-center d-none d-md-table-cell" data-field="isAktuelleProben">
                                 <input type="checkbox" class="form-check-input"
                                        data-field="isAktuelleProben"
-                                       {% if child.isAktuelleProben %}checked{% endif %}
-                                       {% if not child.dropboxlink %}disabled title="Dropbox-Pfad erforderlich"{% endif %}>
+                                       {% if child.isAktuelleProben %}checked{% endif %}>
                             </td>
 
                             <td class="text-end">

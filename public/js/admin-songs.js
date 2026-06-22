@@ -173,10 +173,7 @@ if (!window._adminSongsInit) {
             alert(err.message || 'Fehler beim Speichern');
         })
         .finally(() => {
-            // Re-enable checkbox unless it's supposed to be disabled
-            const hasDropbox = row.querySelector('[data-field="dropboxlink"] .display-val i.bi-folder-check') !== null;
-            if (!hasDropbox) e.target.disabled = true;
-            else e.target.disabled = false;
+            e.target.disabled = false;
         });
     });
 }());

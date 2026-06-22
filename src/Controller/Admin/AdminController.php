@@ -646,22 +646,16 @@ class AdminController extends AbstractController
                 $song->setDropboxlink($value !== '' ? $value : null);
                 break;
             case 'isAktuelleProben':
-                if (!$song->getDropboxlink()) {
-                    return new JsonResponse(['error' => 'Dropbox-Pfad erforderlich'], 422);
-                }
-
+                // The membership flag drives the member "Aktuelle Proben" page and is
+                // set regardless of Dropbox state — a song may not exist on Dropbox yet.
+                // Copying/removing the dedicated Dropbox folder is a best effort handled
+                // inside the sync service (and silently skipped when not possible).
                 $isActive = in_array($value, ['1', 'true', true], true);
 
                 if ($isActive) {
-                    // Push to Aktuelle Proben (copies the Dropbox folder)
-                    if (!$syncService->pushSongToAktuelleProben($song)) {
-                        return new JsonResponse(['error' => 'Kopieren nach „Aktuelle Proben" fehlgeschlagen. Möglicherweise fehlt der Dropbox-App das Schreibrecht (Scope „files.content.write").'], 502);
-                    }
+                    $syncService->pushSongToAktuelleProben($song);
                 } else {
-                    // Remove from Aktuelle Proben (deletes the Dropbox folder)
-                    if (!$syncService->removeSongFromAktuelleProben($song)) {
-                        return new JsonResponse(['error' => 'Entfernen aus „Aktuelle Proben" fehlgeschlagen. Möglicherweise fehlt der Dropbox-App das Schreibrecht (Scope „files.content.write").'], 502);
-                    }
+                    $syncService->removeSongFromAktuelleProben($song);
                 }
                 break;
         }

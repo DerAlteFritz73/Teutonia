@@ -37,16 +37,14 @@
             </button>
         </div>
         {% else %}
-        {% set active   = song.isAktuelleProben %}
-        {% set disabled = not song.dropboxlink %}
+        {% set active = song.isAktuelleProben %}
         <div class="admin-proben-toggle d-flex align-items-center flex-shrink-0 {{ compact ? 'px-2' : 'px-3' }}" style="font-size:1rem">
-            <span class="badge admin-proben-badge fw-normal {{ active ? 'bg-success' : 'bg-light text-secondary border' }}{{ compact ? ' lh-1 text-center' : '' }}{{ disabled ? ' opacity-50' : '' }}"
+            <span class="badge admin-proben-badge fw-normal {{ active ? 'bg-success' : 'bg-light text-secondary border' }}{{ compact ? ' lh-1 text-center' : '' }}"
                   role="button"
                   data-song-id="{{ song.id }}"
                   data-active="{{ active ? '1' : '0' }}"
-                  {% if disabled %}data-disabled="1"{% endif %}
-                  style="cursor:{{ disabled ? 'not-allowed' : 'pointer' }};{% if compact %}font-size:.6rem;white-space:normal;{% endif %}"
-                  title="{{ disabled ? 'Dropbox-Pfad erforderlich' : (active ? 'In „Aktuelle Proben“ – klicken zum Entfernen' : 'Klicken, um zu „Aktuelle Proben“ hinzuzufügen') }}">Aktuelle{% if compact %}<br>{% else %} {% endif %}Proben</span>
+                  style="cursor:pointer;{% if compact %}font-size:.6rem;white-space:normal;{% endif %}"
+                  title="{{ active ? 'In „Aktuelle Proben“ – klicken zum Entfernen' : 'Klicken, um zu „Aktuelle Proben“ hinzuzufügen' }}">Aktuelle{% if compact %}<br>{% else %} {% endif %}Proben</span>
         </div>
         {% endif %}
     {% endif %}

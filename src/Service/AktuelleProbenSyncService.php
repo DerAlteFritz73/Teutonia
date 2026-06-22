@@ -27,16 +27,14 @@ class AktuelleProbenSyncService
      */
     public function pushSongToAktuelleProben(SongKeyword $song): bool
     {
-        if (!$song->getDropboxlink()) {
-            error_log("Cannot push song {$song->getId()}: no dropboxlink");
-            return false;
-        }
-
         $song->setIsAktuelleProben(true);
 
-        // Best-effort copy (mirrors the source folder name so the "[title] #[composer]"
-        // convention is kept). Only attempt it if there is no copy yet.
-        if (!$song->getAktuelleDropboxlink()) {
+        // Best-effort copy into the dedicated "Aktuelle Proben" Dropbox folder
+        // (mirrors the source folder name so the "[title] #[composer]" convention is
+        // kept). Only possible when the song already has a Noten folder on Dropbox
+        // and hasn't been copied yet; a song that doesn't exist on Dropbox yet is
+        // still flagged, and the member page falls back to the Noten folder later.
+        if ($song->getDropboxlink() && !$song->getAktuelleDropboxlink()) {
             $sourcePath   = rtrim($song->getDropboxlink(), '/');
             $folderName   = substr($sourcePath, strrpos($sourcePath, '/') + 1);
             $targetFolder = self::AKTUELLE_PROBEN_BASE . '/' . $folderName;
