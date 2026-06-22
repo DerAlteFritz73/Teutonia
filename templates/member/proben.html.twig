@@ -37,7 +37,7 @@
    save via the same /admin/songs/{id}/patch-field endpoint, Escape to cancel. #}
 {% macro admin_etikett_edit(song) %}
     {% if is_granted('ROLE_ADMIN') %}
-        <div class="editable-etikett flex-shrink-0 ps-1 pe-2" data-song-id="{{ song.id }}" style="font-size:1rem">
+        <div class="editable-etikett flex-shrink-0 text-end ps-1 pe-2" data-song-id="{{ song.id }}" style="font-size:1rem">
             <span class="display-val" role="button" title="Etikett bearbeiten" style="cursor:pointer">
                 {% if song.etikett %}{{ _self.etikett_badge(song.etikett) }}{% else %}<span class="badge bg-light text-muted border fw-normal">＋ Etikett</span>{% endif %}
             </span>
@@ -94,7 +94,7 @@
                                     {% set probenPath = song.aktuelleDropboxlink ?? song.dropboxlink %}
                     {% if probenPath %}data-dropbox-path="{{ probenPath }}"{% endif %}>
                                 {% if not is_granted('ROLE_ADMIN') %}
-                                <span class="accordion-btn-etikett flex-shrink-0 text-start me-2">
+                                <span class="accordion-btn-etikett flex-shrink-0 text-end me-2">
                                     {{ _self.etikett_badge(song.etikett) }}
                                 </span>
                                 {% endif %}
@@ -234,7 +234,7 @@
                                     aria-expanded="false"
                                     {% if hasDropbox %}data-dropbox-path="{{ notenPath }}"{% endif %}>
                                 {% if not is_granted('ROLE_ADMIN') %}
-                                <span class="accordion-btn-etikett flex-shrink-0 text-start me-2">
+                                <span class="accordion-btn-etikett flex-shrink-0 text-end me-2">
                                     {{ _self.etikett_badge(song.etikett) }}
                                 </span>
                                 {% endif %}
