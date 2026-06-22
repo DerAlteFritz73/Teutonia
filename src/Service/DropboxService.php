@@ -16,6 +16,9 @@ class DropboxService
     private string $appSecret;
     private string $tokenCacheFile;
 
+    /** Per-request memo of the whole "/Chorgemeinschaft Teutonia" structure tree. */
+    private ?array $structureTree = null;
+
     public function __construct(
         string $dropboxAccessToken,
         string $dropboxRefreshToken,
@@ -458,12 +461,14 @@ class DropboxService
      */
     public function getRecursiveCounts(string $folderPath): array
     {
-        $basePath  = '/Chorgemeinschaft Teutonia';
-        $cacheFile = dirname($this->tokenCacheFile) . '/structure_' . md5($basePath) . '.json';
-        if (!file_exists($cacheFile)) {
-            return ['pdf' => 0, 'audio' => 0];
+        $basePath = '/Chorgemeinschaft Teutonia';
+        // Build (and cache) the whole-tree structure once per request. getFileStructure
+        // serves the on-disk cache when present and only re-fetches when it is missing
+        // or stale, so a page with many parent songs triggers at most one Dropbox call.
+        if ($this->structureTree === null) {
+            $this->structureTree = $this->getFileStructure($basePath) ?: [];
         }
-        $tree = json_decode(file_get_contents($cacheFile), true) ?: [];
+        $tree = $this->structureTree;
 
         $relative = ltrim(str_replace($basePath, '', $folderPath), '/');
         $parts    = $relative === '' ? [] : explode('/', $relative);
