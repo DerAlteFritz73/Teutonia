@@ -449,6 +449,58 @@ class DropboxService
     }
 
     /**
+     * Recursively count PDF and audio files under a folder, reading ONLY from the
+     * pre-built whole-tree cache (no Dropbox API calls — safe to call many times at
+     * render time, e.g. to show a parent song's combined count across all its Sätze).
+     * Returns ['pdf' => int, 'audio' => int]; zeros when the folder isn't cached.
+     *
+     * @return array{pdf: int, audio: int}
+     */
+    public function getRecursiveCounts(string $folderPath): array
+    {
+        $basePath  = '/Chorgemeinschaft Teutonia';
+        $cacheFile = dirname($this->tokenCacheFile) . '/structure_' . md5($basePath) . '.json';
+        if (!file_exists($cacheFile)) {
+            return ['pdf' => 0, 'audio' => 0];
+        }
+        $tree = json_decode(file_get_contents($cacheFile), true) ?: [];
+
+        $relative = ltrim(str_replace($basePath, '', $folderPath), '/');
+        $parts    = $relative === '' ? [] : explode('/', $relative);
+
+        $node = $tree;
+        foreach ($parts as $i => $part) {
+            $node = $i === 0 ? ($node[$part] ?? null) : (($node['_subfolders'] ?? [])[$part] ?? null);
+            if ($node === null) {
+                return ['pdf' => 0, 'audio' => 0];
+            }
+        }
+
+        return $this->countTreeFiles($node);
+    }
+
+    /** @return array{pdf: int, audio: int} */
+    private function countTreeFiles(array $node): array
+    {
+        $pdf = 0;
+        $audio = 0;
+        foreach ($node['_files'] ?? [] as $f) {
+            $type = $f['type'] ?? '';
+            if ($type === 'pdf') {
+                $pdf++;
+            } elseif ($type === 'audio') {
+                $audio++;
+            }
+        }
+        foreach ($node['_subfolders'] ?? [] as $sub) {
+            $c = $this->countTreeFiles($sub);
+            $pdf   += $c['pdf'];
+            $audio += $c['audio'];
+        }
+        return ['pdf' => $pdf, 'audio' => $audio];
+    }
+
+    /**
      * List a single Dropbox folder's immediate files (+ whether it has subfolders),
      * returning the same shape as the cached tree nodes used by getFilesForFolder().
      *

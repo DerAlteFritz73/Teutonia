@@ -15,6 +15,13 @@
     {% endif %}
 {% endmacro %}
 
+{# Combined PDF/audio count badges for a parent song (summed across all its Sätze).
+   Rendered server-side from the Dropbox structure cache. #}
+{% macro file_count_badges(counts) %}
+    {% if counts.pdf > 0 %}<span class="badge bg-danger" title="PDF-Dateien (alle Sätze)"><i class="bi bi-file-pdf"></i> {{ counts.pdf }}</span>{% endif %}
+    {% if counts.audio > 0 %}<span class="badge bg-success" title="Audio-Dateien (alle Sätze)"><i class="bi bi-music-note"></i> {{ counts.audio }}</span>{% endif %}
+{% endmacro %}
+
 {# Admin-only switch to toggle a song's "Aktuell in Proben" flag, mirroring the
    checkbox on the Admin-Lieder page. Rendered as a sibling of the accordion
    toggle button so clicking it never expands/collapses the panel. #}

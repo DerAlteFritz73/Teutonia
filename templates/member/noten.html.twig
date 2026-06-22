@@ -34,7 +34,7 @@
                                     data-bs-toggle="collapse"
                                     data-bs-target="#{{ allFolderId }}"
                                     aria-expanded="false"
-                                    {% if hasDropbox %}data-dropbox-path="{{ notenPath }}"{% endif %}>
+                                    {% if hasDropbox %}data-dropbox-path="{{ notenPath }}"{% endif %}{% if hasMovements and childCounts[song.id] is defined %} data-server-counts="1"{% endif %}>
                                 {% if not is_granted('ROLE_ADMIN') %}
                                 <span class="accordion-btn-etikett flex-shrink-0 text-end me-2">
                                     {{ m.etikett_badge(song.etikett) }}
@@ -63,7 +63,7 @@
                                     {% if hasMovements %}
                                         <span class="badge bg-secondary fw-normal">{{ song.children|length }} Sätze</span>
                                     {% endif %}
-                                    <span class="d-flex gap-1 file-count-badges"></span>
+                                    <span class="d-flex gap-1 file-count-badges">{% if hasMovements and childCounts[song.id] is defined %}{{ m.file_count_badges(childCounts[song.id]) }}{% endif %}</span>
                                 </span>
                             </button>
                             {{ m.admin_proben_toggle(song) }}

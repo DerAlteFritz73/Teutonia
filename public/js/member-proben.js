@@ -132,7 +132,8 @@
                 let badges = '';
                 if (pdfs)   badges += '<span class="badge bg-danger" title="PDF-Dateien"><i class="bi bi-file-pdf"></i> ' + pdfs + '</span>';
                 if (audios) badges += '<span class="badge bg-success" title="Audio-Dateien"><i class="bi bi-music-note"></i> ' + audios + '</span>';
-                if (badgeSpan) badgeSpan.innerHTML = badges;
+                // Don't overwrite a parent's server-rendered sum across its Sätze.
+                if (badgeSpan && !btn.dataset.serverCounts) badgeSpan.innerHTML = badges;
 
                 if (container && !container.dataset.loaded) {
                     container.dataset.loaded = '1';
@@ -244,7 +245,8 @@
                         let badges = '';
                         if (pdfs)   badges += `<span class="badge bg-danger" title="PDF-Dateien"><i class="bi bi-file-pdf"></i> ${pdfs}</span>`;
                         if (audios) badges += `<span class="badge bg-success" title="Audio-Dateien"><i class="bi bi-music-note"></i> ${audios}</span>`;
-                        if (badgeSpan) badgeSpan.innerHTML = badges;
+                        // Don't overwrite a parent's server-rendered sum across its Sätze.
+                if (badgeSpan && !btn.dataset.serverCounts) badgeSpan.innerHTML = badges;
                     }
 
                     attachFileHandlers(container);

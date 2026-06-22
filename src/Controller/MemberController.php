@@ -10,6 +10,7 @@ use App\Repository\PostRepository;
 use App\Repository\SongKeywordRepository;
 use App\Repository\SongSuggestionLikeRepository;
 use App\Repository\SongSuggestionRepository;
+use App\Service\DropboxService;
 use App\Service\GoogleCalendarService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -36,19 +37,49 @@ class MemberController extends AbstractController
     }
 
     #[Route('/aktuelle-proben', name: 'member_proben')]
-    public function proben(SongKeywordRepository $songRepo): Response
+    public function proben(SongKeywordRepository $songRepo, DropboxService $dropbox): Response
     {
+        $songs = $songRepo->findByFolderTopLevel('Aktuelle Proben');
+
         return $this->render('member/proben.html.twig', [
-            'aktuelleProben' => $songRepo->findByFolderTopLevel('Aktuelle Proben'),
+            'aktuelleProben' => $songs,
+            'childCounts'    => $this->parentFileCounts($songs, true, $dropbox),
         ]);
     }
 
     #[Route('/noten', name: 'member_noten')]
-    public function noten(SongKeywordRepository $songRepo): Response
+    public function noten(SongKeywordRepository $songRepo, DropboxService $dropbox): Response
     {
+        $songs = $songRepo->findAllExcept('Aktuelle Proben');
+
         return $this->render('member/noten.html.twig', [
-            'notenSongs' => $songRepo->findAllExcept('Aktuelle Proben'),
+            'notenSongs'  => $songs,
+            'childCounts' => $this->parentFileCounts($songs, false, $dropbox),
         ]);
+    }
+
+    /**
+     * Combined PDF/audio counts (recursive, across all Sätze) for each parent song
+     * that has children, keyed by song id. Reads only the Dropbox structure cache.
+     *
+     * @param SongKeyword[] $songs
+     * @return array<int, array{pdf:int,audio:int}>
+     */
+    private function parentFileCounts(array $songs, bool $probenSection, DropboxService $dropbox): array
+    {
+        $counts = [];
+        foreach ($songs as $song) {
+            if ($song->getChildren()->isEmpty()) {
+                continue;
+            }
+            $path = $probenSection
+                ? ($song->getAktuelleDropboxlink() ?? $song->getDropboxlink())
+                : ($song->getDropboxlink() ?? $song->getAktuelleDropboxlink());
+            if ($path) {
+                $counts[$song->getId()] = $dropbox->getRecursiveCounts($path);
+            }
+        }
+        return $counts;
     }
 
     #[Route('/konzerte', name: 'member_konzerte')]
