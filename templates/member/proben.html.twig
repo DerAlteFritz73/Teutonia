@@ -51,6 +51,26 @@
 
 {% block body %}
 <!-- template: templates/member/proben.html.twig -->
+<style>
+    /* Fixed-width Etikett column so song titles line up vertically (md+ only;
+       on small screens the badge keeps its natural width to save space). */
+    @media (min-width: 768px) {
+        .accordion-btn-etikett,
+        .editable-etikett {
+            width: 10.5rem;
+            min-width: 10.5rem;
+        }
+    }
+    .accordion-btn-etikett .badge,
+    .editable-etikett .display-val .badge {
+        display: inline-block;
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        vertical-align: middle;
+    }
+</style>
 <main id="main-content" data-turbo-cache="false">
     <div class="container py-5" id="page-container">
         <h1 id="page-title">Aktuelle Proben</h1>
