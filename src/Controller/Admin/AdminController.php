@@ -314,7 +314,7 @@ class AdminController extends AbstractController
         $search       = $request->query->get('q', '');
         $page         = max(1, $request->query->getInt('page', 1));
         $limit        = 25;
-        $allowedSorts = ['songName', 'etikett', 'composer', 'arrangeur', 'latestKonzert', 'dropboxlink'];
+        $allowedSorts = ['songName', 'etikett', 'composer', 'arrangeur', 'compositionYear', 'latestKonzert', 'dropboxlink'];
         $sort         = in_array($request->query->get('sort'), $allowedSorts, true)
                             ? $request->query->get('sort')
                             : 'songName';
@@ -610,7 +610,7 @@ class AdminController extends AbstractController
             return new JsonResponse(['error' => 'Invalid CSRF token'], 403);
         }
 
-        $allowed = ['songName', 'composer', 'arrangeur', 'etikett', 'dropboxlink', 'isAktuelleProben'];
+        $allowed = ['songName', 'composer', 'arrangeur', 'compositionYear', 'etikett', 'dropboxlink', 'isAktuelleProben'];
         $field   = $data['field'] ?? '';
         $value   = trim($data['value'] ?? '');
 
@@ -630,6 +630,9 @@ class AdminController extends AbstractController
                 break;
             case 'arrangeur':
                 $song->setArrangeur($value !== '' ? $value : null);
+                break;
+            case 'compositionYear':
+                $song->setCompositionYear($value !== '' ? $value : null);
                 break;
             case 'etikett':
                 $newEtikett = $value !== '' ? $value : null;

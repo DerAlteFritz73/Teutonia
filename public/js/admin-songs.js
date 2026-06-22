@@ -27,7 +27,7 @@ if (!window._adminSongsInit) {
             d.innerHTML = value
                 ? `<i class="bi bi-folder-check text-success" title="${escAttr(value)}"></i>`
                 : '<i class="bi bi-folder-x text-muted"></i>';
-        } else if (field === 'composer' || field === 'arrangeur') {
+        } else if (field === 'composer' || field === 'arrangeur' || field === 'compositionYear') {
             d.textContent = value || '—';
             d.className   = 'display-val text-muted';
         } else {

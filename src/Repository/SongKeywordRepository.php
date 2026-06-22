@@ -114,8 +114,8 @@ class SongKeywordRepository extends ServiceEntityRepository
         foreach ($words as $i => $word) {
             $p = 'q' . $i;
             $qb->andWhere("
-                s.songName LIKE :$p OR s.composer LIKE :$p OR s.arrangeur LIKE :$p OR s.etikett LIKE :$p OR st.name LIKE :$p
-                OR c.songName LIKE :$p OR c.composer LIKE :$p OR c.arrangeur LIKE :$p OR c.etikett LIKE :$p OR cst.name LIKE :$p
+                s.songName LIKE :$p OR s.composer LIKE :$p OR s.arrangeur LIKE :$p OR s.compositionYear LIKE :$p OR s.etikett LIKE :$p OR st.name LIKE :$p
+                OR c.songName LIKE :$p OR c.composer LIKE :$p OR c.arrangeur LIKE :$p OR c.compositionYear LIKE :$p OR c.etikett LIKE :$p OR cst.name LIKE :$p
             ")->setParameter($p, '%' . $word . '%');
         }
     }

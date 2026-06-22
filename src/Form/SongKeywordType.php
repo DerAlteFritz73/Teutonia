@@ -31,6 +31,11 @@ class SongKeywordType extends AbstractType
                 'required' => false,
                 'attr'     => ['class' => 'form-control'],
             ])
+            ->add('compositionYear', TextType::class, [
+                'label'    => 'Kompositionsjahr',
+                'required' => false,
+                'attr'     => ['class' => 'form-control', 'placeholder' => 'z.B. 1750 oder 16.Jh.'],
+            ])
             ->add('etikettColor', TextType::class, [
                 'label'    => 'Etikett',
                 'required' => false,

@@ -27,6 +27,9 @@ class SongKeyword
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $arrangeur = null;
 
+    #[ORM\Column(name: 'composition_year', length: 30, nullable: true)]
+    private ?string $compositionYear = null;
+
     #[ORM\Column(type: Types::JSON, nullable: true)]
     private ?array $keywords = [];
 
@@ -118,6 +121,17 @@ class SongKeyword
     public function setArrangeur(?string $arrangeur): static
     {
         $this->arrangeur = $arrangeur;
+        return $this;
+    }
+
+    public function getCompositionYear(): ?string
+    {
+        return $this->compositionYear;
+    }
+
+    public function setCompositionYear(?string $compositionYear): static
+    {
+        $this->compositionYear = $compositionYear;
         return $this;
     }
 
