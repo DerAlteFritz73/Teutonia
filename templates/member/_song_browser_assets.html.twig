@@ -142,6 +142,38 @@ window.PROBEN_CONFIG = {
         .finally(function () { delete badge.dataset.busy; badge.style.opacity = ''; });
     });
 
+    /* Aktuelle-Proben page: × button removes the song from Aktuelle Proben and
+       drops it from the list on success. */
+    document.addEventListener('click', function (e) {
+        const btn = e.target.closest('.admin-proben-remove');
+        if (!btn || btn.dataset.busy) return;
+        if (!confirm('Lied aus „Aktuelle Proben“ entfernen?')) return;
+        btn.dataset.busy = '1';
+        btn.disabled = true;
+        fetch('/admin/songs/' + btn.dataset.songId + '/patch-field', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ _token: token, field: 'isAktuelleProben', value: '0' })
+        })
+        .then(function (r) { return r.json().then(function (j) {
+            if (!r.ok || j.error) throw new Error(j.error || ('HTTP ' + r.status));
+            return j;
+        }); })
+        .then(function () {
+            const item = btn.closest('.accordion-item');
+            if (item) {
+                item.style.transition = 'opacity .3s';
+                item.style.opacity = '0';
+                setTimeout(function () { item.remove(); }, 300);
+            }
+        })
+        .catch(function (err) {
+            btn.disabled = false;
+            delete btn.dataset.busy;
+            alert(err.message || 'Fehler beim Speichern');
+        });
+    });
+
     /* Inline Etikett editing — same endpoint/field as the Admin-Lieder page. */
     const esc = window.escapeHtml || function (s) { return s; };
     function badgeHtml(value) {
