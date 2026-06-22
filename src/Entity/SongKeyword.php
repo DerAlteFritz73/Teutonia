@@ -30,8 +30,14 @@ class SongKeyword
     #[ORM\Column(type: Types::JSON, nullable: true)]
     private ?array $keywords = [];
 
-    #[ORM\Column(name: 'etikett', length: 20, nullable: true)]
+    #[ORM\Column(name: 'etikett', length: 30, nullable: true)]
     private ?string $etikett = null;
+
+    #[ORM\Column(name: 'etikett_color', length: 20, nullable: true)]
+    private ?string $etikettColor = null;
+
+    #[ORM\Column(name: 'etikett_number', length: 30, nullable: true)]
+    private ?string $etikettNumber = null;
 
     #[ORM\Column(length: 100)]
     private ?string $folder = null;
@@ -131,10 +137,71 @@ class SongKeyword
         return $this->etikett;
     }
 
+    /**
+     * The Etikett is stored both as a combined string ("Rosa 155") and split into
+     * colour ("Rosa") + number ("155"). This setter (used by inline editing) keeps
+     * the split fields in sync; setEtikettColor()/setEtikettNumber() (used by the
+     * edit form) keep the combined string in sync — so the three columns never drift.
+     */
     public function setEtikett(?string $etikett): static
     {
+        $etikett = self::blankToNull($etikett);
         $this->etikett = $etikett;
+
+        if ($etikett === null) {
+            $this->etikettColor  = null;
+            $this->etikettNumber = null;
+        } else {
+            $sp = mb_strpos($etikett, ' ');
+            if ($sp === false) {
+                $this->etikettColor  = $etikett;
+                $this->etikettNumber = null;
+            } else {
+                $this->etikettColor  = mb_substr($etikett, 0, $sp);
+                $this->etikettNumber = self::blankToNull(mb_substr($etikett, $sp + 1));
+            }
+        }
         return $this;
+    }
+
+    public function getEtikettColor(): ?string
+    {
+        return $this->etikettColor;
+    }
+
+    public function setEtikettColor(?string $etikettColor): static
+    {
+        $this->etikettColor = self::blankToNull($etikettColor);
+        $this->syncEtikett();
+        return $this;
+    }
+
+    public function getEtikettNumber(): ?string
+    {
+        return $this->etikettNumber;
+    }
+
+    public function setEtikettNumber(?string $etikettNumber): static
+    {
+        $this->etikettNumber = self::blankToNull($etikettNumber);
+        $this->syncEtikett();
+        return $this;
+    }
+
+    /** Rebuild the combined etikett string from colour + number. */
+    private function syncEtikett(): void
+    {
+        $combined = trim(($this->etikettColor ?? '') . ' ' . ($this->etikettNumber ?? ''));
+        $this->etikett = $combined === '' ? null : $combined;
+    }
+
+    private static function blankToNull(?string $value): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
+        $value = trim($value);
+        return $value === '' ? null : $value;
     }
 
     public function getFolder(): ?string

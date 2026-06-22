@@ -43,9 +43,19 @@
                 <div class="col-md-8">
                     {{ form_row(form.songName) }}
                 </div>
-                <div class="col-md-4">
-                    {{ form_row(form.etikett) }}
+                <div class="col-md-2">
+                    {{ form_row(form.etikettColor) }}
                 </div>
+                <div class="col-md-2">
+                    {{ form_row(form.etikettNumber) }}
+                </div>
+                <datalist id="etikett-colors">
+                    <option value="Rosa"></option>
+                    <option value="Blau"></option>
+                    <option value="Gelb"></option>
+                    <option value="Extrabox"></option>
+                    <option value="Büchel"></option>
+                </datalist>
                 <div class="col-md-6">
                     {{ form_row(form.composer) }}
                 </div>
