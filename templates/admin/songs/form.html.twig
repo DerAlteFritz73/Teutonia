@@ -409,5 +409,21 @@ window.PROBEN_CONFIG = {
 document.querySelectorAll('[data-tooltip]').forEach(function (el) {
     new bootstrap.Tooltip(el, { title: el.dataset.tooltip, trigger: 'hover' });
 });
+
+/* ── Suggest the next free Etikett number for the chosen colour ── */
+(function () {
+    const colorInput  = document.getElementById('song_keyword_etikettColor');
+    const numberInput = document.getElementById('song_keyword_etikettNumber');
+    if (!colorInput || !numberInput) return;
+
+    colorInput.addEventListener('change', function () {
+        const color = colorInput.value.trim();
+        if (!color || numberInput.value.trim() !== '') return;   // only when number is empty
+        fetch('{{ path('admin_songs_etikett_next_number') }}?color=' + encodeURIComponent(color))
+            .then(function (r) { return r.json(); })
+            .then(function (d) { if (d && d.next) numberInput.setAttribute('placeholder', String(d.next)); })
+            .catch(function () {});
+    });
+}());
 </script>
 {% endblock %}

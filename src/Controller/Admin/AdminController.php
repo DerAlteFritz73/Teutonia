@@ -567,6 +567,35 @@ class AdminController extends AbstractController
         return $this->json(['deleted' => $deleted]);
     }
 
+    #[Route('/songs/etikett-next-number', name: 'admin_songs_etikett_next_number', methods: ['GET'])]
+    public function etikettNextNumber(Request $request, SongKeywordRepository $repo): JsonResponse
+    {
+        $color = trim((string) $request->query->get('color', ''));
+        if ($color === '') {
+            return new JsonResponse(['next' => null]);
+        }
+
+        // Collect the purely-numeric Etikett numbers already used for this colour
+        // (colour match is case-insensitive via the column collation).
+        $rows = $repo->createQueryBuilder('s')
+            ->select('s.etikettNumber')
+            ->where('s.etikettColor = :c')->setParameter('c', $color)
+            ->andWhere('s.etikettNumber IS NOT NULL')
+            ->getQuery()
+            ->getScalarResult();
+
+        $max = 0;
+        foreach ($rows as $row) {
+            $n = (string) ($row['etikettNumber'] ?? '');
+            if ($n !== '' && ctype_digit($n)) {
+                $max = max($max, (int) $n);
+            }
+        }
+
+        // Next sequential number after the highest used for this colour.
+        return new JsonResponse(['next' => $max + 1]);
+    }
+
     #[Route('/songs/{id}/patch-field', name: 'admin_songs_patch_field', methods: ['POST'])]
     public function songsPatchField(
         SongKeyword $song,
