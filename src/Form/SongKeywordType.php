@@ -32,14 +32,15 @@ class SongKeywordType extends AbstractType
                 'attr'     => ['class' => 'form-control'],
             ])
             ->add('etikettColor', TextType::class, [
-                'label'    => 'Etikett – Farbe',
+                'label'    => 'Etikett',
                 'required' => false,
                 'attr'     => ['class' => 'form-control', 'list' => 'etikett-colors', 'placeholder' => 'z.B. Rosa'],
             ])
             ->add('etikettNumber', TextType::class, [
-                'label'    => 'Etikett – Nummer',
-                'required' => false,
-                'attr'     => ['class' => 'form-control', 'placeholder' => 'z.B. 01'],
+                'label'      => 'Nummer',
+                'label_attr' => ['class' => 'invisible'],
+                'required'   => false,
+                'attr'       => ['class' => 'form-control', 'placeholder' => 'z.B. 01'],
             ])
             ->add('isAktuelleProben', CheckboxType::class, [
                 'label'    => 'Aktuell in Proben',
