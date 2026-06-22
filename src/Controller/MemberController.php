@@ -43,7 +43,7 @@ class MemberController extends AbstractController
 
         return $this->render('member/proben.html.twig', [
             'aktuelleProben' => $songs,
-            'childCounts'    => $this->parentFileCounts($songs, true, $dropbox),
+            'childCounts'    => $this->parentFileCounts($songs, $dropbox),
         ]);
     }
 
@@ -54,30 +54,50 @@ class MemberController extends AbstractController
 
         return $this->render('member/noten.html.twig', [
             'notenSongs'  => $songs,
-            'childCounts' => $this->parentFileCounts($songs, false, $dropbox),
+            'childCounts' => $this->parentFileCounts($songs, $dropbox),
         ]);
     }
 
     /**
-     * Combined PDF/audio counts (recursive, across all Sätze) for each parent song
-     * that has children, keyed by song id. Reads only the Dropbox structure cache.
+     * Combined PDF/audio counts for each parent song that has children, keyed by
+     * song id: the parent's own files plus every child song's files. Uses each
+     * song's own (Noten-preferred) folder so the total is correct even when a
+     * parent's "Aktuelle Proben" copy is incomplete. Reads the structure cache.
      *
      * @param SongKeyword[] $songs
      * @return array<int, array{pdf:int,audio:int}>
      */
-    private function parentFileCounts(array $songs, bool $probenSection, DropboxService $dropbox): array
+    private function parentFileCounts(array $songs, DropboxService $dropbox): array
     {
         $counts = [];
         foreach ($songs as $song) {
             if ($song->getChildren()->isEmpty()) {
                 continue;
             }
-            $path = $probenSection
-                ? ($song->getAktuelleDropboxlink() ?? $song->getDropboxlink())
-                : ($song->getDropboxlink() ?? $song->getAktuelleDropboxlink());
-            if ($path) {
-                $counts[$song->getId()] = $dropbox->getRecursiveCounts($path);
+
+            $pdf = 0;
+            $audio = 0;
+
+            // Parent's own (immediate) files — its folder's direct files only;
+            // child folders are summed separately below to avoid double counting.
+            $parentPath = $song->getDropboxlink() ?? $song->getAktuelleDropboxlink();
+            if ($parentPath) {
+                $c = $dropbox->getImmediateCounts($parentPath);
+                $pdf   += $c['pdf'];
+                $audio += $c['audio'];
             }
+
+            // Each child song's files (recursive, in case a movement has subfolders).
+            foreach ($song->getChildren() as $child) {
+                $childPath = $child->getDropboxlink() ?? $child->getAktuelleDropboxlink();
+                if ($childPath) {
+                    $c = $dropbox->getRecursiveCounts($childPath);
+                    $pdf   += $c['pdf'];
+                    $audio += $c['audio'];
+                }
+            }
+
+            $counts[$song->getId()] = ['pdf' => $pdf, 'audio' => $audio];
         }
         return $counts;
     }

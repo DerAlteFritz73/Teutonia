@@ -461,27 +461,59 @@ class DropboxService
      */
     public function getRecursiveCounts(string $folderPath): array
     {
+        $node = $this->findCachedNode($folderPath);
+        return $node === null ? ['pdf' => 0, 'audio' => 0] : $this->countTreeFiles($node);
+    }
+
+    /**
+     * Count PDF/audio files directly in a folder (NOT its subfolders), from the
+     * structure cache. Used for a parent song's own files, which are then added
+     * to each child song's recursive count.
+     *
+     * @return array{pdf: int, audio: int}
+     */
+    public function getImmediateCounts(string $folderPath): array
+    {
+        $node = $this->findCachedNode($folderPath);
+        if ($node === null) {
+            return ['pdf' => 0, 'audio' => 0];
+        }
+        $pdf = 0;
+        $audio = 0;
+        foreach ($node['_files'] ?? [] as $f) {
+            $type = $f['type'] ?? '';
+            if ($type === 'pdf') {
+                $pdf++;
+            } elseif ($type === 'audio') {
+                $audio++;
+            }
+        }
+        return ['pdf' => $pdf, 'audio' => $audio];
+    }
+
+    /**
+     * Navigate the whole-tree structure cache to the node for $folderPath.
+     * Builds (and caches) the tree once per request via getFileStructure, so a
+     * page with many parent songs triggers at most one Dropbox call.
+     */
+    private function findCachedNode(string $folderPath): ?array
+    {
         $basePath = '/Chorgemeinschaft Teutonia';
-        // Build (and cache) the whole-tree structure once per request. getFileStructure
-        // serves the on-disk cache when present and only re-fetches when it is missing
-        // or stale, so a page with many parent songs triggers at most one Dropbox call.
         if ($this->structureTree === null) {
             $this->structureTree = $this->getFileStructure($basePath) ?: [];
         }
-        $tree = $this->structureTree;
 
         $relative = ltrim(str_replace($basePath, '', $folderPath), '/');
         $parts    = $relative === '' ? [] : explode('/', $relative);
 
-        $node = $tree;
+        $node = $this->structureTree;
         foreach ($parts as $i => $part) {
             $node = $i === 0 ? ($node[$part] ?? null) : (($node['_subfolders'] ?? [])[$part] ?? null);
             if ($node === null) {
-                return ['pdf' => 0, 'audio' => 0];
+                return null;
             }
         }
-
-        return $this->countTreeFiles($node);
+        return $node;
     }
 
     /** @return array{pdf: int, audio: int} */
