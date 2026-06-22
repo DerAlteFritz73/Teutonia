@@ -51,17 +51,6 @@ class SongKeywordType extends AbstractType
                 'label'    => 'Aktuell in Proben',
                 'required' => false,
             ])
-            ->add('dropboxlink', TextType::class, [
-                'label'    => 'Dropbox-Pfad (Noten)',
-                'required' => false,
-                'attr'     => ['class' => 'form-control', 'placeholder' => '/Chorgemeinschaft Teutonia/Noten/…'],
-            ])
-            ->add('aktuelleDropboxlink', TextType::class, [
-                'label'    => 'Dropbox-Pfad (Aktuelle Proben)',
-                'required' => false,
-                'attr'     => ['class' => 'form-control', 'placeholder' => '/Chorgemeinschaft Teutonia/Aktuelle Proben/…'],
-                'help'     => 'Nur ausfüllen wenn der Ordner in "Aktuelle Proben" vom Noten-Pfad abweicht.',
-            ])
             ->add('links', CollectionType::class, [
                 'label'         => false,
                 'entry_type'    => SongLinkType::class,
