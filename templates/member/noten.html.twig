@@ -66,7 +66,7 @@
                                     <span class="d-flex gap-1 file-count-badges">{% if hasMovements and childCounts[song.id] is defined %}{{ m.file_count_badges(childCounts[song.id]) }}{% endif %}</span>
                                 </span>
                             </button>
-                            {{ m.admin_proben_toggle(song) }}
+                            {{ m.admin_proben_toggle(song, true) }}
                         </h2>
                         <div id="{{ allFolderId }}" class="accordion-collapse collapse"
                              data-bs-parent="#allFilesAccordion">

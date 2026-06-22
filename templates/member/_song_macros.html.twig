@@ -25,16 +25,21 @@
 {# Admin-only switch to toggle a song's "Aktuell in Proben" flag, mirroring the
    checkbox on the Admin-Lieder page. Rendered as a sibling of the accordion
    toggle button so clicking it never expands/collapses the panel. #}
-{% macro admin_proben_toggle(song) %}
+{% macro admin_proben_toggle(song, compact = false) %}
     {% if is_granted('ROLE_ADMIN') %}
-        <div class="admin-proben-toggle d-flex align-items-center flex-shrink-0 gap-2 px-3" style="font-size:1rem"
+        <div class="admin-proben-toggle d-flex align-items-center flex-shrink-0 {{ compact ? 'gap-1 px-2' : 'gap-2 px-3' }}" style="font-size:1rem"
              title="{{ song.dropboxlink ? 'In „Aktuelle Proben“ aufnehmen bzw. entfernen' : 'Dropbox-Pfad erforderlich' }}">
             <input id="proben-check-{{ song.id }}" type="checkbox"
                    class="form-check-input mt-0 admin-proben-check"
                    data-song-id="{{ song.id }}"
                    {% if song.isAktuelleProben %}checked{% endif %}
                    {% if not song.dropboxlink %}disabled{% endif %}>
-            <label for="proben-check-{{ song.id }}" class="small text-muted d-none d-lg-inline mb-0" style="cursor:pointer">Aktuelle Proben</label>
+            {% if compact %}
+                <label for="proben-check-{{ song.id }}" class="badge bg-light text-secondary border fw-normal lh-1 text-center mb-0 d-none d-md-inline-block"
+                       style="font-size:.6rem; cursor:pointer; white-space:normal;">Aktuelle<br>Proben</label>
+            {% else %}
+                <label for="proben-check-{{ song.id }}" class="small text-muted d-none d-lg-inline mb-0" style="cursor:pointer">Aktuelle Proben</label>
+            {% endif %}
         </div>
     {% endif %}
 {% endmacro %}
