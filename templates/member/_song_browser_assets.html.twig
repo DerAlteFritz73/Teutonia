@@ -107,32 +107,39 @@ window.PROBEN_CONFIG = {
 <script src="{{ asset('js/member-proben.js') }}?v=2"></script>
 {% if is_granted('ROLE_ADMIN') %}
 <script>
-/* Admin-only: toggle a song's "Aktuell in Proben" flag, same endpoint as the
-   Admin-Lieder page. The checkbox sits outside the accordion button, so a click
-   here does not expand the panel. */
+/* Admin-only: toggle a song's "Aktuell in Proben" flag by clicking the badge
+   (same endpoint as the Admin-Lieder page). The badge sits outside the accordion
+   button, so a click here does not expand the panel. Green = in Aktuelle Proben. */
 (function () {
     const token = '{{ csrf_token('song_patch') }}';
-    document.addEventListener('change', function (e) {
-        const cb = e.target;
-        if (!cb.classList || !cb.classList.contains('admin-proben-check')) return;
-        const id = cb.dataset.songId;
-        const wasChecked = cb.checked;
-        cb.disabled = true;
+    document.addEventListener('click', function (e) {
+        const badge = e.target.closest('.admin-proben-badge');
+        if (!badge || badge.dataset.disabled || badge.dataset.busy) return;
+        const id        = badge.dataset.songId;
+        const newActive = badge.dataset.active !== '1';
+        badge.dataset.busy = '1';
+        badge.style.opacity = '.5';
         fetch('/admin/songs/' + id + '/patch-field', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ _token: token, field: 'isAktuelleProben', value: cb.checked ? '1' : '0' })
+            body: JSON.stringify({ _token: token, field: 'isAktuelleProben', value: newActive ? '1' : '0' })
         })
         .then(function (r) { return r.json().then(function (j) {
             if (!r.ok || j.error) throw new Error(j.error || ('HTTP ' + r.status));
             return j;
         }); })
-        .then(function () { cb.disabled = false; })
-        .catch(function (err) {
-            cb.checked = !wasChecked;
-            cb.disabled = false;
-            alert(err.message || 'Fehler beim Speichern');
-        });
+        .then(function () {
+            badge.dataset.active = newActive ? '1' : '0';
+            badge.classList.toggle('bg-success', newActive);
+            badge.classList.toggle('bg-light', !newActive);
+            badge.classList.toggle('text-secondary', !newActive);
+            badge.classList.toggle('border', !newActive);
+            badge.title = newActive
+                ? 'In „Aktuelle Proben“ – klicken zum Entfernen'
+                : 'Klicken, um zu „Aktuelle Proben“ hinzuzufügen';
+        })
+        .catch(function (err) { alert(err.message || 'Fehler beim Speichern'); })
+        .finally(function () { delete badge.dataset.busy; badge.style.opacity = ''; });
     });
 
     /* Inline Etikett editing — same endpoint/field as the Admin-Lieder page. */
