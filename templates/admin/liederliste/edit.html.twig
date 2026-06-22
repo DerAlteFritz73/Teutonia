@@ -275,12 +275,13 @@
     text-align: center; display: flex; align-items: center;
     justify-content: center; gap: 4px;
 }
-.btn-del-item, .btn-edit-item {
+.btn-del-item, .btn-edit-item, .btn-recalc-item {
     background: none; border: none; padding: 0;
     color: #adb5bd; line-height: 1; cursor: pointer; font-size: .85rem;
 }
-.btn-del-item:hover  { color: #dc3545; }
-.btn-edit-item:hover { color: #0d6efd; }
+.btn-del-item:hover    { color: #dc3545; }
+.btn-edit-item:hover   { color: #0d6efd; }
+.btn-recalc-item:hover { color: #0d6efd; }
 
 .custom-add-panel.editing { background: #e8f4ff; border-color: #86b7fe; }
 .custom-add-panel.editing .custom-add-label { color: #0d6efd; }
@@ -465,6 +466,19 @@ window.FETCH_URL    = '{{ path('admin_liederlisten_fetch_duration') }}';
                 del.appendChild(editBtn);
             }
 
+            if (!isCustom && item.songId != null) {
+                const song = songById.get(item.songId);
+                if (song && (song.hasDropbox || song.hasLinks)) {
+                    const recalcBtn = document.createElement('button');
+                    recalcBtn.type = 'button';
+                    recalcBtn.className = 'btn-recalc-item';
+                    recalcBtn.title = 'Dauer neu berechnen';
+                    recalcBtn.innerHTML = '<i class="bi bi-arrow-clockwise"></i>';
+                    recalcBtn.addEventListener('click', e => { e.stopPropagation(); fetchDuration(item, true); });
+                    del.appendChild(recalcBtn);
+                }
+            }
+
             const delBtn = document.createElement('button');
             delBtn.type = 'button';
             delBtn.className = 'btn-del-item';
@@ -589,7 +603,7 @@ window.FETCH_URL    = '{{ path('admin_liederlisten_fetch_duration') }}';
 
     function handleClick(listEl, e) {
         const row = e.target.closest('.ll-row');
-        if (!row || e.target.closest('.btn-del-item, .btn-edit-item')) return;
+        if (!row || e.target.closest('.btn-del-item, .btn-edit-item, .btn-recalc-item')) return;
 
         const rows    = Array.from(listEl.querySelectorAll('.ll-row'));
         const lastSel = listEl === leftListEl ? lastLeft : lastRight;
@@ -612,7 +626,7 @@ window.FETCH_URL    = '{{ path('admin_liederlisten_fetch_duration') }}';
     rightListEl.addEventListener('click', e => handleClick(rightListEl, e));
 
     // ── Auto-fetch duration when a song is added ───────────────────────────
-    function fetchDuration(item) {
+    function fetchDuration(item, force) {
         const song = item.songId ? songById.get(item.songId) : null;
         if (!song || (!song.hasDropbox && !song.hasLinks)) return;
 
@@ -624,7 +638,7 @@ window.FETCH_URL    = '{{ path('admin_liederlisten_fetch_duration') }}';
             if (sp) sp.classList.remove('d-none');
         }
 
-        fetch(window.FETCH_URL + '?songId=' + song.id)
+        fetch(window.FETCH_URL + '?songId=' + song.id + (force ? '&force=1' : ''))
             .then(r => r.json())
             .then(data => {
                 if (!data.duration) return;
@@ -632,7 +646,8 @@ window.FETCH_URL    = '{{ path('admin_liederlisten_fetch_duration') }}';
                 const r = getRow();
                 if (r) {
                     const inp = r.querySelector('.llc-dur input');
-                    if (inp && !inp.value) inp.value = data.duration;
+                    // On a forced recalc, overwrite even an existing value.
+                    if (inp && (force || !inp.value)) inp.value = data.duration;
                 }
             })
             .catch(() => {})
@@ -701,7 +716,7 @@ window.FETCH_URL    = '{{ path('admin_liederlisten_fetch_duration') }}';
     rightListEl.addEventListener('dblclick', e => {
         if (READ_ONLY) return;
         const row = e.target.closest('.ll-row');
-        if (!row || e.target.closest('.btn-del-item, .btn-edit-item, input')) return;
+        if (!row || e.target.closest('.btn-del-item, .btn-edit-item, .btn-recalc-item, input')) return;
         rightListEl.querySelectorAll('.ll-row').forEach(r => r.classList.remove('selected'));
         row.classList.add('selected');
         document.getElementById('btn-remove').click();

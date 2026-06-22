@@ -30,6 +30,10 @@ class SongKeyword
     #[ORM\Column(name: 'composition_year', length: 30, nullable: true)]
     private ?string $compositionYear = null;
 
+    /** Cached playing time as "M:SS"; computed once from Dropbox audio or a YouTube link. */
+    #[ORM\Column(length: 20, nullable: true)]
+    private ?string $duration = null;
+
     #[ORM\Column(type: Types::JSON, nullable: true)]
     private ?array $keywords = [];
 
@@ -132,6 +136,17 @@ class SongKeyword
     public function setCompositionYear(?string $compositionYear): static
     {
         $this->compositionYear = $compositionYear;
+        return $this;
+    }
+
+    public function getDuration(): ?string
+    {
+        return $this->duration;
+    }
+
+    public function setDuration(?string $duration): static
+    {
+        $this->duration = $duration;
         return $this;
     }
 

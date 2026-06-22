@@ -367,6 +367,7 @@ class LiederlisteController extends AbstractController
         Request $request,
         SongKeywordRepository $songRepo,
         DropboxService $dropboxService,
+        EntityManagerInterface $em,
     ): JsonResponse {
         $songId = (int) $request->query->get('songId', 0);
         if ($songId <= 0) {
@@ -378,11 +379,20 @@ class LiederlisteController extends AbstractController
             return $this->json(['error' => 'Song nicht gefunden'], 404);
         }
 
+        // Use the cached value; computing it (Dropbox audio download / YouTube
+        // scrape) is expensive, so only do it once per song — unless the caller
+        // explicitly asks to recompute ("neu berechnen").
+        if (!$request->query->getBoolean('force') && !empty($song->getDuration())) {
+            return $this->json(['duration' => $song->getDuration()]);
+        }
+
         // Try Dropbox first
         $folderPath = $song->getAktuelleDropboxlink() ?? $song->getDropboxlink();
         if ($folderPath !== null) {
             $duration = $dropboxService->getFirstAudioDuration($folderPath);
             if ($duration !== null) {
+                $song->setDuration($duration);
+                $em->flush();
                 return $this->json(['duration' => $duration]);
             }
         }
@@ -391,6 +401,8 @@ class LiederlisteController extends AbstractController
         foreach ($song->getLinks() as $link) {
             $duration = $this->getYoutubeDuration($link->getUrl());
             if ($duration !== null) {
+                $song->setDuration($duration);
+                $em->flush();
                 return $this->json(['duration' => $duration]);
             }
         }
