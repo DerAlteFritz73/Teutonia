@@ -42,3 +42,6 @@ compose.override.yaml
 # Database dumps/backups (contain credentials & personal data)
 /db_backups/
 *.sql
+
+# Generated export files
+/public/songs_export.xlsx
