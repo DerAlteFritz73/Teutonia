@@ -84,7 +84,8 @@
                     if (fileType === 'pdf') {
                         document.getElementById('pdfFileName').textContent   = fileName;
                         document.getElementById('pdfViewerFrame').src        = cfg.viewUrl + '?path=' + encodeURIComponent(filePath);
-                        document.getElementById('pdfDownloadLink').href      = data.link;
+                        // Download through the proxy too, so the saved/printed copy carries the Etikett stamp.
+                        document.getElementById('pdfDownloadLink').href      = cfg.viewUrl + '?path=' + encodeURIComponent(filePath) + '&dl=1';
                         document.getElementById('pdfDownloadLink').download  = fileName;
                         bootstrap.Modal.getOrCreateInstance(document.getElementById('pdfViewerModal')).show();
                     } else if (fileType === 'audio') {

@@ -7,6 +7,7 @@ use App\Repository\PostRepository;
 use App\Repository\SongKeywordRepository;
 use App\Repository\StyleRepository;
 use App\Service\DropboxService;
+use App\Service\PdfEtikettStamper;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -153,8 +154,12 @@ class PageController extends AbstractController
 
     #[Route('/api/dropbox/view', name: 'api_dropbox_view', methods: ['GET'])]
     #[IsGranted('ROLE_USER')]
-    public function viewDropboxFile(Request $request, DropboxService $dropboxService): Response
-    {
+    public function viewDropboxFile(
+        Request $request,
+        DropboxService $dropboxService,
+        SongKeywordRepository $songRepo,
+        PdfEtikettStamper $stamper,
+    ): Response {
         $path = $request->query->get('path');
 
         if (!$path) {
@@ -187,13 +192,33 @@ class PageController extends AbstractController
             default => 'application/octet-stream'
         };
 
+        // Overlay the song's Etikett on page 1 of Noten PDFs — unless the scan
+        // already shows it. The original in Dropbox is never modified.
+        if ($extension === 'pdf') {
+            $song = $songRepo->findOneByFolder(\dirname($path));
+            if ($song && !$song->isEtikettInPdf()) {
+                // Movements (child songs) usually carry no Etikett of their own —
+                // fall back to the parent's, just like the rest of the app does.
+                $etikett = trim((string) $song->getEtikett());
+                $colour  = $song->getEtikettColor();
+                if ($etikett === '' && $song->getParent() !== null) {
+                    $etikett = trim((string) $song->getParent()->getEtikett());
+                    $colour  = $song->getParent()->getEtikettColor();
+                }
+                if ($etikett !== '') {
+                    $fileContent = $stamper->stamp($fileContent, $etikett, $colour);
+                }
+            }
+        }
+
         // Create response with inline content disposition for PDFs
         $response = new Response($fileContent);
         $response->headers->set('Content-Type', $contentType);
 
         if ($extension === 'pdf') {
-            // For PDFs, use inline disposition to show in browser
-            $response->headers->set('Content-Disposition', 'inline; filename="' . basename($path) . '"');
+            // inline to view in the browser; attachment (?dl=1) to download a stamped copy
+            $disposition = $request->query->getBoolean('dl') ? 'attachment' : 'inline';
+            $response->headers->set('Content-Disposition', $disposition . '; filename="' . basename($path) . '"');
         } else {
             // For other files, allow default behavior
             $response->headers->set('Content-Disposition', 'inline; filename="' . basename($path) . '"');

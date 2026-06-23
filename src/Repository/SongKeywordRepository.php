@@ -17,6 +17,17 @@ class SongKeywordRepository extends ServiceEntityRepository
         parent::__construct($registry, SongKeyword::class);
     }
 
+    /** Find the song whose Noten or Aktuelle-Proben folder is exactly $folder. */
+    public function findOneByFolder(string $folder): ?SongKeyword
+    {
+        return $this->createQueryBuilder('s')
+            ->where('s.dropboxlink = :f OR s.aktuelleDropboxlink = :f')
+            ->setParameter('f', $folder)
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult();
+    }
+
     public function findByStylePaginated(Style $style, int $page, int $limit): array
     {
         return $this->createQueryBuilder('s')

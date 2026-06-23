@@ -3,6 +3,7 @@ FROM php:8.2-fpm-alpine AS base
 # Install system dependencies
 RUN apk add --no-cache \
     ghostscript \
+    qpdf \
     imagemagick \
     imagemagick-dev \
     icu-dev \
