@@ -1,0 +1,20 @@
+{# Shared YouTube search dialog for the link picker (public/js/yt-link-picker.js). #}
+<div class="modal fade" id="ytSearchModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-youtube text-danger me-2"></i>Auf YouTube suchen</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" title="Schließen"></button>
+            </div>
+            <div class="modal-body">
+                <div class="input-group mb-3">
+                    <input type="text" id="yt-search-input" class="form-control" placeholder="Suchbegriff…" autocomplete="off">
+                    <button type="button" id="yt-search-btn" class="btn btn-primary"><i class="bi bi-search me-1"></i>Suchen</button>
+                    <a id="yt-open-external" href="#" target="_blank" rel="noopener" class="btn btn-outline-secondary"
+                       title="Direkt auf YouTube öffnen"><i class="bi bi-box-arrow-up-right"></i></a>
+                </div>
+                <div id="yt-results"></div>
+            </div>
+        </div>
+    </div>
+</div>

@@ -31,7 +31,10 @@
             <i class="bi bi-youtube text-danger me-2"></i>Links auf Youtube
         </div>
         <div class="card-body">
-            <div id="song-links-container" data-index="{{ form.links|length }}">
+            <div id="song-links-container" data-index="{{ form.links|length }}"
+                 data-search-url="{{ path('admin_songs_youtube_search') }}"
+                 data-links-name="{{ form.links.vars.full_name }}"
+                 data-default-query="{{ ((song.songName ?? '') ~ ' ' ~ (song.composer ?? ''))|trim }}">
                 {% for linkForm in form.links %}
                     {% set lurl   = linkForm.url.vars.value %}
                     {% set llabel = linkForm.label.vars.value %}
@@ -58,168 +61,7 @@
     {{ form_end(form) }}
 </div>
 
-<!-- YouTube Search Modal -->
-<div class="modal fade" id="ytSearchModal" tabindex="-1">
-    <div class="modal-dialog modal-lg modal-dialog-scrollable">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title"><i class="bi bi-youtube text-danger me-2"></i>Auf YouTube suchen</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" title="Schließen"></button>
-            </div>
-            <div class="modal-body">
-                <div class="input-group mb-3">
-                    <input type="text" id="yt-search-input" class="form-control" placeholder="Suchbegriff…" autocomplete="off">
-                    <button type="button" id="yt-search-btn" class="btn btn-primary"><i class="bi bi-search me-1"></i>Suchen</button>
-                    <a id="yt-open-external" href="#" target="_blank" rel="noopener" class="btn btn-outline-secondary"
-                       title="Direkt auf YouTube öffnen"><i class="bi bi-box-arrow-up-right"></i></a>
-                </div>
-                <div id="yt-results"></div>
-            </div>
-        </div>
-    </div>
-</div>
+{% include 'admin/songs/_yt_link_search_modal.html.twig' %}
 
-<script>
-/* ── Song links: pick from a YouTube search instead of pasting a URL ── */
-(function () {
-    const container = document.getElementById('song-links-container');
-    const addBtn    = document.getElementById('add-link-btn');
-    if (!container || !addBtn) return;
-
-    const SEARCH_URL    = '{{ path('admin_songs_youtube_search') }}';
-    const LINKS_NAME    = {{ form.links.vars.full_name|json_encode|raw }};
-    const DEFAULT_QUERY = {{ (song.songName ~ ' ' ~ (song.composer ?? ''))|trim|json_encode|raw }};
-    const modalEl       = document.getElementById('ytSearchModal');
-    const modal         = modalEl ? new bootstrap.Modal(modalEl) : null;
-    const searchInput   = document.getElementById('yt-search-input');
-    const searchBtn     = document.getElementById('yt-search-btn');
-    const resultsEl     = document.getElementById('yt-results');
-    const externalA     = document.getElementById('yt-open-external');
-
-    function attachRemove(row) {
-        row.querySelector('.remove-link').addEventListener('click', function () {
-            row.remove();
-            if (window.markFormDirty) window.markFormDirty();
-        });
-    }
-    container.querySelectorAll('.link-row').forEach(attachRemove);
-
-    function addLink(url, label) {
-        const idx = parseInt(container.dataset.index, 10);
-        const row = document.createElement('div');
-        row.className = 'link-row d-flex align-items-center gap-2 mb-2';
-        row.innerHTML =
-            '<i class="bi bi-youtube text-danger fs-5 flex-shrink-0"></i>' +
-            '<a target="_blank" rel="noopener" class="flex-grow-1 text-truncate" style="min-width:0"></a>' +
-            '<input type="hidden" name="' + LINKS_NAME + '[' + idx + '][url]">' +
-            '<input type="hidden" name="' + LINKS_NAME + '[' + idx + '][label]">' +
-            '<button type="button" class="btn btn-outline-danger btn-sm remove-link flex-shrink-0" title="Entfernen"><i class="bi bi-trash"></i></button>';
-        const a = row.querySelector('a');
-        a.href = url;
-        a.textContent = label || url;
-        row.querySelector('input[name$="[url]"]').value   = url;
-        row.querySelector('input[name$="[label]"]').value = (label || '').slice(0, 250);
-        attachRemove(row);
-        container.appendChild(row);
-        container.dataset.index = idx + 1;
-        if (window.markFormDirty) window.markFormDirty();
-    }
-
-    function escapeText(el, text) { el.textContent = text || ''; }
-
-    function runSearch() {
-        const q = searchInput.value.trim();
-        if (!q) return;
-        externalA.href = 'https://www.youtube.com/results?search_query=' + encodeURIComponent(q);
-        resultsEl.innerHTML = '<div class="text-center text-muted py-4"><span class="spinner-border spinner-border-sm me-2"></span>Suche…</div>';
-        fetch(SEARCH_URL + '?q=' + encodeURIComponent(q))
-            .then(function (r) { return r.json(); })
-            .then(function (data) {
-                const results = (data && data.results) || [];
-                resultsEl.innerHTML = '';
-                if (!results.length) {
-                    resultsEl.innerHTML = '<p class="text-muted text-center py-4 mb-0">Keine Ergebnisse – versuche es direkt auf YouTube.</p>';
-                    return;
-                }
-                results.forEach(function (v) {
-                    const videoId = (v.url.match(/[?&]v=([^&]+)/) || [])[1] || '';
-
-                    const item = document.createElement('div');
-                    item.className = 'border rounded mb-2 overflow-hidden';
-
-                    const row = document.createElement('div');
-                    row.className = 'd-flex gap-2 align-items-center p-2';
-
-                    const img = document.createElement('img');
-                    img.src = v.thumbnail; img.alt = ''; img.loading = 'lazy';
-                    img.title = 'Vorschau abspielen';
-                    img.style.cssText = 'width:120px;height:67px;object-fit:cover;border-radius:4px;flex:0 0 auto;cursor:pointer;';
-
-                    const info = document.createElement('div');
-                    info.className = 'flex-grow-1'; info.style.minWidth = '0';
-                    const title = document.createElement('div');
-                    title.className = 'fw-semibold text-truncate'; escapeText(title, v.title);
-                    const meta = document.createElement('small');
-                    meta.className = 'text-muted'; escapeText(meta, (v.channel || '') + (v.duration ? ' · ' + v.duration : ''));
-                    info.append(title, meta);
-
-                    const playBtn = document.createElement('button');
-                    playBtn.type = 'button';
-                    playBtn.className = 'btn btn-sm btn-outline-secondary flex-shrink-0';
-                    playBtn.title = 'Vorschau abspielen';
-                    playBtn.innerHTML = '<i class="bi bi-play-fill"></i>';
-
-                    const addBtn2 = document.createElement('button');
-                    addBtn2.type = 'button';
-                    addBtn2.className = 'btn btn-sm btn-primary flex-shrink-0';
-                    addBtn2.innerHTML = '<i class="bi bi-plus-lg me-1"></i>Übernehmen';
-
-                    const player = document.createElement('div');
-                    player.className = 'yt-player ratio ratio-16x9 d-none';
-
-                    function togglePlay() {
-                        const open = !player.classList.contains('d-none');
-                        resultsEl.querySelectorAll('.yt-player').forEach(function (p) {
-                            if (p !== player) { p.classList.add('d-none'); p.innerHTML = ''; }
-                        });
-                        if (open || !videoId) {
-                            player.classList.add('d-none'); player.innerHTML = '';
-                            playBtn.innerHTML = '<i class="bi bi-play-fill"></i>';
-                        } else {
-                            player.innerHTML = '<iframe src="https://www.youtube.com/embed/' + videoId + '?autoplay=1&rel=0" allow="autoplay; encrypted-media; fullscreen" allowfullscreen></iframe>';
-                            player.classList.remove('d-none');
-                            playBtn.innerHTML = '<i class="bi bi-pause-fill"></i>';
-                        }
-                    }
-
-                    playBtn.addEventListener('click', togglePlay);
-                    img.addEventListener('click', togglePlay);
-                    addBtn2.addEventListener('click', function () { addLink(v.url, v.title); if (modal) modal.hide(); });
-
-                    row.append(img, info, playBtn, addBtn2);
-                    item.append(row, player);
-                    resultsEl.appendChild(item);
-                });
-            })
-            .catch(function () { resultsEl.innerHTML = '<p class="text-danger text-center py-4 mb-0">Fehler bei der Suche.</p>'; });
-    }
-
-    addBtn.addEventListener('click', function () {
-        if (!modal) return;
-        searchInput.value = DEFAULT_QUERY;
-        resultsEl.innerHTML = '';
-        modal.show();
-        setTimeout(function () { searchInput.focus(); runSearch(); }, 250);
-    });
-    searchBtn.addEventListener('click', runSearch);
-    searchInput.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); runSearch(); } });
-
-    // Stop any preview that's still playing when the dialog is closed.
-    if (modalEl) {
-        modalEl.addEventListener('hidden.bs.modal', function () {
-            resultsEl.querySelectorAll('.yt-player').forEach(function (p) { p.classList.add('d-none'); p.innerHTML = ''; });
-        });
-    }
-}());
-</script>
+<script src="{{ asset('js/yt-link-picker.js') }}"></script>
 {% endblock %}
