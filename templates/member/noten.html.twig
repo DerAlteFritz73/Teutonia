@@ -1,14 +1,14 @@
 {% extends 'base.html.twig' %}
 {% import 'member/_song_macros.html.twig' as m %}
 
-{% block title %}Noten - {{ parent() }}{% endblock %}
+{% block title %}Liederverzeichnis - {{ parent() }}{% endblock %}
 
 {% block body %}
 <!-- template: templates/member/noten.html.twig -->
 <main id="main-content" data-turbo-cache="false">
     <div class="container py-5" id="page-container">
         <h1 id="page-title">
-            <i class="bi bi-folder-fill me-2"></i>Noten und Aufnahmen
+            <i class="bi bi-folder-fill me-2"></i>Liederverzeichnis
         </h1>
         <p class="lead text-muted">
             Hier findet Ihr unsere Noten (PDF) und Aufnahmen (MP3).
@@ -66,6 +66,13 @@
                                     <span class="d-flex gap-1 file-count-badges">{% if hasMovements and childCounts[song.id] is defined %}{{ m.file_count_badges(childCounts[song.id]) }}{% endif %}</span>
                                 </span>
                             </button>
+                            {% if is_granted('ROLE_ADMIN') %}
+                                <a href="{{ path('admin_songs_edit', {id: song.id}) }}" target="_blank" rel="noopener"
+                                   class="btn btn-sm btn-outline-secondary flex-shrink-0 ms-2"
+                                   title="Im Admin-Bereich bearbeiten">
+                                    <i class="bi bi-pencil-square"></i>
+                                </a>
+                            {% endif %}
                             {{ m.admin_proben_toggle(song, true) }}
                         </h2>
                         <div id="{{ allFolderId }}" class="accordion-collapse collapse"

@@ -146,7 +146,7 @@
                                 <div class="btn-expand-movements d-flex align-items-center gap-1 mb-1"
                                      data-parent="{{ song.id }}" role="button"
                                      title="{{ song.children|length }} Satz/Sätze ein-/ausblenden">
-                                    <i class="bi {{ search|trim != '' ? 'bi-chevron-down text-primary' : 'bi-chevron-right text-muted' }}" id="chev-{{ song.id }}"></i>
+                                    <i class="bi bi-chevron-right text-muted" id="chev-{{ song.id }}"></i>
                                     <span class="badge bg-secondary rounded-pill" style="font-size:.6rem">{{ song.children|length }}</span>
                                 </div>
                             {% endif %}
@@ -251,7 +251,7 @@
                         <tr data-id="{{ child.id }}"
                             class="movement-row movement-parent-{{ song.id }}"
                             data-parent-id="{{ song.id }}"
-                            style="background:#f0f3ff;{% if search|trim == '' %} display:none;{% endif %}"
+                            style="background:#f0f3ff;display:none;"
                             draggable="true">
 
                             {# First cell spans the checkbox + Etikett columns so the remaining
