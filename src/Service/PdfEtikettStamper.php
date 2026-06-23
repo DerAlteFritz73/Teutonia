@@ -111,7 +111,7 @@ class PdfEtikettStamper
             /boxh 30 def
             /boxw label stringwidth pop pad 2 mul add def
             /margin 14 def
-            /bx {$w} margin sub boxw sub def
+            /bx margin def
             /by {$h} margin sub boxh sub def
             {$bg} setrgbcolor
             bx by boxw boxh rectfill
