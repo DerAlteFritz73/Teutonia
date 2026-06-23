@@ -123,6 +123,7 @@
                  data-links-name="{{ form.links.vars.full_name }}"
                  data-query-title-sel="#song_keyword_songName"
                  data-query-composer-sel="#song_keyword_composer"
+                 data-duration-input="#song_keyword_duration"
                  data-default-query="{{ ((song.songName ?? '') ~ ' ' ~ (song.composer ?? ''))|trim }}">
                 {% for linkForm in form.links %}
                     {% set lurl   = linkForm.url.vars.value %}

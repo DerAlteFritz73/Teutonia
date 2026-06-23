@@ -17,8 +17,9 @@
     const addBtn    = document.getElementById('add-link-btn');
     if (!container || !addBtn) return;
 
-    const SEARCH_URL = container.dataset.searchUrl;
-    const LINKS_NAME = container.dataset.linksName;
+    const SEARCH_URL   = container.dataset.searchUrl;
+    const LINKS_NAME   = container.dataset.linksName;
+    const DURATION_SEL = container.dataset.durationInput; // optional: fill duration on pick
     if (!SEARCH_URL || !LINKS_NAME) return;
 
     const modalEl     = document.getElementById('ytSearchModal');
@@ -138,7 +139,18 @@
 
                     playBtn.addEventListener('click', togglePlay);
                     img.addEventListener('click', togglePlay);
-                    addResultBtn.addEventListener('click', function () { addLink(v.url, v.title); if (modal) modal.hide(); });
+                    addResultBtn.addEventListener('click', function () {
+                        addLink(v.url, v.title);
+                        // Fill the song's duration from the picked video, only if still empty.
+                        if (DURATION_SEL && v.duration) {
+                            const di = document.querySelector(DURATION_SEL);
+                            if (di && !di.value.trim()) {
+                                di.value = v.duration;
+                                if (window.markFormDirty) window.markFormDirty();
+                            }
+                        }
+                        if (modal) modal.hide();
+                    });
 
                     row.append(img, info, playBtn, addResultBtn);
                     item.append(row, player);
