@@ -36,6 +36,11 @@ class SongKeywordType extends AbstractType
                 'required' => false,
                 'attr'     => ['class' => 'form-control', 'placeholder' => 'z.B. 1750 oder 16.Jh.'],
             ])
+            ->add('duration', TextType::class, [
+                'label'    => 'Dauer',
+                'required' => false,
+                'attr'     => ['class' => 'form-control', 'placeholder' => 'M:SS'],
+            ])
             ->add('etikettColor', TextType::class, [
                 'label'    => 'Etikett',
                 'required' => false,

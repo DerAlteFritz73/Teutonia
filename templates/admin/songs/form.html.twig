@@ -62,8 +62,22 @@
                 <div class="col-md-6">
                     {{ form_row(form.arrangeur) }}
                 </div>
-                <div class="col-md-6">
+                <div class="col-md-3">
                     {{ form_row(form.compositionYear) }}
+                </div>
+                <div class="col-md-3">
+                    {{ form_label(form.duration) }}
+                    <div class="input-group">
+                        {{ form_widget(form.duration) }}
+                        {% if not isNew and (song.dropboxlink or song.aktuelleDropboxlink or song.links|length > 0) %}
+                        <button type="button" id="btn-recalc-duration" class="btn btn-outline-secondary"
+                                data-song-id="{{ song.id }}"
+                                data-tooltip="Dauer aus Dropbox/YouTube neu berechnen">
+                            <i class="bi bi-arrow-clockwise"></i>
+                        </button>
+                        {% endif %}
+                    </div>
+                    {{ form_errors(form.duration) }}
                 </div>
                 <div class="col-md-6">
                     {{ form_label(form.parent) }}
@@ -97,26 +111,28 @@
     <div class="card mb-4">
         <div class="card-header fw-semibold">Links auf Youtube</div>
         <div class="card-body">
-            <div id="song-links-container"
-                 data-prototype="{{ form_widget(form.links.vars.prototype)|e('html_attr') }}"
-                 data-index="{{ form.links|length }}">
+            <div id="song-links-container" data-index="{{ form.links|length }}">
                 {% for linkForm in form.links %}
-                    <div class="link-row input-group mb-2">
-                        {{ form_widget(linkForm.url,   {attr: {class: 'form-control', placeholder: 'https://…'}}) }}
-                        {{ form_widget(linkForm.label, {attr: {class: 'form-control', placeholder: 'Bezeichnung (optional)'}}) }}
-                        <button type="button" class="btn btn-outline-danger remove-link"
+                    {% set lurl   = linkForm.url.vars.value %}
+                    {% set llabel = linkForm.label.vars.value %}
+                    <div class="link-row d-flex align-items-center gap-2 mb-2">
+                        <i class="bi bi-youtube text-danger fs-5 flex-shrink-0"></i>
+                        <a href="{{ lurl }}" target="_blank" rel="noopener"
+                           class="flex-grow-1 text-truncate" style="min-width:0">{{ llabel ?: lurl }}</a>
+                        <input type="hidden" name="song_keyword[links][{{ loop.index0 }}][url]"   value="{{ lurl }}">
+                        <input type="hidden" name="song_keyword[links][{{ loop.index0 }}][label]" value="{{ llabel }}">
+                        <button type="button" class="btn btn-outline-danger btn-sm remove-link flex-shrink-0"
                                 data-tooltip="Link entfernen">
                             <i class="bi bi-trash"></i>
                         </button>
                     </div>
-                    {% for error in linkForm.url.vars.errors %}
-                        <div class="text-danger small mb-1">{{ error.message }}</div>
-                    {% endfor %}
                 {% endfor %}
             </div>
+            {# Rows are rendered manually above (hidden inputs); tell the form not to re-render the collection in form_end(). #}
+            {% do form.links.setRendered %}
             <button type="button" class="btn btn-outline-secondary btn-sm mt-1" id="add-link-btn"
-                    data-tooltip="Neuen YouTube-Link hinzufügen">
-                <i class="bi bi-plus-lg me-1"></i>Link hinzufügen
+                    data-tooltip="Auf YouTube suchen und Link hinzufügen">
+                <i class="bi bi-youtube me-1 text-danger"></i>Link auf YouTube suchen
             </button>
         </div>
     </div>
@@ -237,6 +253,27 @@
 
 </div>
 
+<!-- YouTube Search Modal -->
+<div class="modal fade" id="ytSearchModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-youtube text-danger me-2"></i>Auf YouTube suchen</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" data-tooltip="Schließen"></button>
+            </div>
+            <div class="modal-body">
+                <div class="input-group mb-3">
+                    <input type="text" id="yt-search-input" class="form-control" placeholder="Suchbegriff…" autocomplete="off">
+                    <button type="button" id="yt-search-btn" class="btn btn-primary"><i class="bi bi-search me-1"></i>Suchen</button>
+                    <a id="yt-open-external" href="#" target="_blank" rel="noopener" class="btn btn-outline-secondary"
+                       data-tooltip="Direkt auf YouTube öffnen"><i class="bi bi-box-arrow-up-right"></i></a>
+                </div>
+                <div id="yt-results"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- PDF Viewer Modal -->
 <div class="modal fade" id="pdfViewerModal" tabindex="-1">
     <div class="modal-dialog modal-xl modal-fullscreen-lg-down">
@@ -310,11 +347,19 @@ window.PROBEN_CONFIG = {
 <script src="{{ asset('js/member-proben.js') }}"></script>
 
 <script>
-/* ── Song links collection ── */
+/* ── Song links: pick from a YouTube search instead of pasting a URL ── */
 (function () {
     const container = document.getElementById('song-links-container');
     const addBtn    = document.getElementById('add-link-btn');
     if (!container || !addBtn) return;
+
+    const SEARCH_URL  = '{{ path('admin_songs_youtube_search') }}';
+    const modalEl     = document.getElementById('ytSearchModal');
+    const modal       = modalEl ? new bootstrap.Modal(modalEl) : null;
+    const searchInput = document.getElementById('yt-search-input');
+    const searchBtn   = document.getElementById('yt-search-btn');
+    const resultsEl   = document.getElementById('yt-results');
+    const externalA   = document.getElementById('yt-open-external');
 
     function attachRemove(row) {
         row.querySelector('.remove-link').addEventListener('click', function () {
@@ -322,22 +367,85 @@ window.PROBEN_CONFIG = {
             if (window.markFormDirty) window.markFormDirty();
         });
     }
-
     container.querySelectorAll('.link-row').forEach(attachRemove);
 
-    addBtn.addEventListener('click', function () {
-        const index     = parseInt(container.dataset.index, 10);
-        const prototype = container.dataset.prototype;
-        const html      = prototype.replace(/__name__/g, index);
-        const div       = document.createElement('div');
-        div.innerHTML   = `<div class="link-row input-group mb-2">${html}<button type="button" class="btn btn-outline-danger remove-link" data-tooltip="Link entfernen"><i class="bi bi-trash"></i></button></div>`;
-        const row       = div.firstElementChild;
+    function defaultQuery() {
+        const t = (document.getElementById('song_keyword_songName') || {}).value || '';
+        const c = (document.getElementById('song_keyword_composer') || {}).value || '';
+        return (t + ' ' + c).trim();
+    }
+
+    function addLink(url, label) {
+        const idx = parseInt(container.dataset.index, 10);
+        const row = document.createElement('div');
+        row.className = 'link-row d-flex align-items-center gap-2 mb-2';
+        row.innerHTML =
+            '<i class="bi bi-youtube text-danger fs-5 flex-shrink-0"></i>' +
+            '<a target="_blank" rel="noopener" class="flex-grow-1 text-truncate" style="min-width:0"></a>' +
+            '<input type="hidden" name="song_keyword[links][' + idx + '][url]">' +
+            '<input type="hidden" name="song_keyword[links][' + idx + '][label]">' +
+            '<button type="button" class="btn btn-outline-danger btn-sm remove-link flex-shrink-0" data-tooltip="Link entfernen"><i class="bi bi-trash"></i></button>';
+        const a = row.querySelector('a');
+        a.href = url;
+        a.textContent = label || url;
+        row.querySelector('input[name$="[url]"]').value   = url;
+        row.querySelector('input[name$="[label]"]').value = (label || '').slice(0, 250);
         attachRemove(row);
         container.appendChild(row);
-        container.dataset.index = index + 1;
-        row.querySelector('[data-tooltip]') && new bootstrap.Tooltip(row.querySelector('[data-tooltip]'), { title: row.querySelector('[data-tooltip]').dataset.tooltip, trigger: 'hover' });
-        row.querySelector('input[type="text"], input[type="url"]').focus();
+        container.dataset.index = idx + 1;
+        const tip = row.querySelector('[data-tooltip]');
+        if (tip && window.bootstrap) new bootstrap.Tooltip(tip, { title: tip.dataset.tooltip, trigger: 'hover' });
+        if (window.markFormDirty) window.markFormDirty();
+    }
+
+    function escapeText(el, text) { el.textContent = text || ''; }
+
+    function runSearch() {
+        const q = searchInput.value.trim();
+        if (!q) return;
+        externalA.href = 'https://www.youtube.com/results?search_query=' + encodeURIComponent(q);
+        resultsEl.innerHTML = '<div class="text-center text-muted py-4"><span class="spinner-border spinner-border-sm me-2"></span>Suche…</div>';
+        fetch(SEARCH_URL + '?q=' + encodeURIComponent(q))
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                const results = (data && data.results) || [];
+                resultsEl.innerHTML = '';
+                if (!results.length) {
+                    resultsEl.innerHTML = '<p class="text-muted text-center py-4 mb-0">Keine Ergebnisse – versuche es direkt auf YouTube.</p>';
+                    return;
+                }
+                results.forEach(function (v) {
+                    const card = document.createElement('button');
+                    card.type = 'button';
+                    card.className = 'btn btn-light w-100 text-start d-flex gap-3 align-items-center mb-2 border p-2';
+                    const img = document.createElement('img');
+                    img.src = v.thumbnail; img.alt = '';
+                    img.style.cssText = 'width:120px;height:67px;object-fit:cover;border-radius:4px;flex:0 0 auto;';
+                    img.loading = 'lazy';
+                    const info = document.createElement('span');
+                    info.className = 'flex-grow-1'; info.style.minWidth = '0';
+                    const title = document.createElement('span');
+                    title.className = 'd-block fw-semibold text-truncate'; escapeText(title, v.title);
+                    const meta = document.createElement('small');
+                    meta.className = 'text-muted'; escapeText(meta, (v.channel || '') + (v.duration ? ' · ' + v.duration : ''));
+                    info.append(title, meta);
+                    card.append(img, info);
+                    card.addEventListener('click', function () { addLink(v.url, v.title); if (modal) modal.hide(); });
+                    resultsEl.appendChild(card);
+                });
+            })
+            .catch(function () { resultsEl.innerHTML = '<p class="text-danger text-center py-4 mb-0">Fehler bei der Suche.</p>'; });
+    }
+
+    addBtn.addEventListener('click', function () {
+        if (!modal) return;
+        searchInput.value = defaultQuery();
+        resultsEl.innerHTML = '';
+        modal.show();
+        setTimeout(function () { searchInput.focus(); runSearch(); }, 250);
     });
+    searchBtn.addEventListener('click', runSearch);
+    searchInput.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); runSearch(); } });
 }());
 
 /* ── Parent search + auto-fill ── */
@@ -419,6 +527,34 @@ document.querySelectorAll('[data-tooltip]').forEach(function (el) {
             .then(function (r) { return r.json(); })
             .then(function (d) { if (d && d.next) numberInput.setAttribute('placeholder', String(d.next)); })
             .catch(function () {});
+    });
+}());
+
+/* ── Recalculate duration ("neu berechnen") ── */
+(function () {
+    const btn   = document.getElementById('btn-recalc-duration');
+    const input = document.getElementById('song_keyword_duration');
+    if (!btn || !input) return;
+
+    btn.addEventListener('click', function () {
+        const original = btn.innerHTML;
+        btn.disabled  = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span>';
+        fetch('{{ path('admin_liederlisten_fetch_duration') }}?songId=' + btn.dataset.songId + '&force=1')
+            .then(function (r) { return r.json(); })
+            .then(function (d) {
+                if (d.duration) {
+                    input.value = d.duration;
+                    if (window.markFormDirty) window.markFormDirty();
+                } else {
+                    alert(d.error || 'Dauer nicht ermittelbar');
+                }
+            })
+            .catch(function () { alert('Fehler beim Berechnen der Dauer'); })
+            .finally(function () {
+                btn.disabled  = false;
+                btn.innerHTML = original;
+            });
     });
 }());
 </script>
