@@ -33,6 +33,7 @@ use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Contracts\Cache\CacheInterface;
+use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 #[Route('/admin')]
 class AdminController extends AbstractController
@@ -663,6 +664,200 @@ class AdminController extends AbstractController
         $em->flush();
 
         return new JsonResponse(['success' => true]);
+    }
+
+    /**
+     * Search YouTube for a query and return the top video results so the user can
+     * pick one instead of pasting a URL. Prefers the official YouTube Data API
+     * (needs YOUTUBE_API_KEY) and falls back to scraping the public results page.
+     */
+    #[Route('/songs/youtube-search', name: 'admin_songs_youtube_search', methods: ['GET'])]
+    public function youtubeSearch(
+        Request $request,
+        HttpClientInterface $http,
+        #[Autowire('%env(YOUTUBE_API_KEY)%')] string $youtubeApiKey,
+    ): JsonResponse {
+        $q = trim((string) $request->query->get('q', ''));
+        if ($q === '') {
+            return new JsonResponse(['error' => 'Suchbegriff fehlt'], 400);
+        }
+
+        if ($youtubeApiKey !== '') {
+            $results = $this->youtubeApiSearch($http, $youtubeApiKey, $q);
+            if ($results !== null) {
+                return new JsonResponse(['results' => $results]);
+            }
+        }
+
+        return new JsonResponse(['results' => $this->youtubeScrapeSearch($q)]);
+    }
+
+    /**
+     * Official YouTube Data API search (+ a cheap follow-up call for durations).
+     * Returns null on any failure so the caller can fall back to scraping.
+     */
+    private function youtubeApiSearch(HttpClientInterface $http, string $key, string $q): ?array
+    {
+        try {
+            $search = $http->request('GET', 'https://www.googleapis.com/youtube/v3/search', [
+                'query'   => ['part' => 'snippet', 'type' => 'video', 'maxResults' => 12, 'q' => $q, 'key' => $key],
+                'timeout' => 8,
+            ])->toArray(false);
+        } catch (\Throwable) {
+            return null;
+        }
+        if (isset($search['error'])) {
+            return null;
+        }
+
+        $items = $search['items'] ?? [];
+        $ids   = [];
+        foreach ($items as $it) {
+            if (!empty($it['id']['videoId'])) {
+                $ids[] = $it['id']['videoId'];
+            }
+        }
+        if (!$ids) {
+            return [];
+        }
+
+        // One extra call (1 quota unit) to attach durations.
+        $durations = [];
+        try {
+            $videos = $http->request('GET', 'https://www.googleapis.com/youtube/v3/videos', [
+                'query'   => ['part' => 'contentDetails', 'id' => implode(',', $ids), 'key' => $key],
+                'timeout' => 8,
+            ])->toArray(false);
+            foreach ($videos['items'] ?? [] as $v) {
+                $durations[$v['id']] = $this->iso8601ToClock($v['contentDetails']['duration'] ?? '');
+            }
+        } catch (\Throwable) {
+            // Durations are optional.
+        }
+
+        $results = [];
+        foreach ($items as $it) {
+            $videoId = $it['id']['videoId'] ?? null;
+            if (!$videoId) {
+                continue;
+            }
+            $sn = $it['snippet'] ?? [];
+            $results[] = [
+                'url'       => 'https://www.youtube.com/watch?v=' . $videoId,
+                'title'     => mb_substr(html_entity_decode((string) ($sn['title'] ?? ''), ENT_QUOTES | ENT_HTML5), 0, 250),
+                'channel'   => $sn['channelTitle'] ?? '',
+                'duration'  => $durations[$videoId] ?? null,
+                'thumbnail' => $sn['thumbnails']['medium']['url'] ?? ('https://i.ytimg.com/vi/' . $videoId . '/mqdefault.jpg'),
+            ];
+        }
+
+        return $results;
+    }
+
+    /** Convert an ISO-8601 duration (e.g. PT3M23S) to "M:SS" / "H:MM:SS". */
+    private function iso8601ToClock(string $iso): ?string
+    {
+        if (!preg_match('/^PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?$/', $iso, $m)) {
+            return null;
+        }
+        $h = (int) ($m[1] ?? 0);
+        $i = (int) ($m[2] ?? 0);
+        $s = (int) ($m[3] ?? 0);
+        if ($h + $i + $s === 0) {
+            return null;
+        }
+        return $h > 0 ? sprintf('%d:%02d:%02d', $h, $i, $s) : sprintf('%d:%02d', $i, $s);
+    }
+
+    /** Fallback: scrape the public YouTube results page (no API key required). */
+    private function youtubeScrapeSearch(string $q): array
+    {
+        $url = 'https://www.youtube.com/results?search_query=' . rawurlencode($q) . '&hl=de&gl=DE';
+        $ctx = stream_context_create(['http' => [
+            'timeout' => 8,
+            'header'  => "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36\r\n"
+                       . "Accept-Language: de\r\n"
+                       . "Cookie: CONSENT=YES+1\r\n",
+        ]]);
+
+        $html = @file_get_contents($url, false, $ctx);
+        if ($html === false) {
+            return [];
+        }
+
+        $data = $this->extractYtInitialData($html);
+        if ($data === null) {
+            return [];
+        }
+
+        $sections = $data['contents']['twoColumnSearchResultsRenderer']['primaryContents']['sectionListRenderer']['contents'] ?? [];
+        $results  = [];
+        foreach ($sections as $section) {
+            foreach ($section['itemSectionRenderer']['contents'] ?? [] as $item) {
+                $vr = $item['videoRenderer'] ?? null;
+                if ($vr === null || empty($vr['videoId'])) {
+                    continue;
+                }
+                $videoId = $vr['videoId'];
+                $title   = $vr['title']['runs'][0]['text']
+                    ?? ($vr['title']['accessibility']['accessibilityData']['label'] ?? '');
+                $channel = $vr['ownerText']['runs'][0]['text']
+                    ?? ($vr['longBylineText']['runs'][0]['text'] ?? '');
+
+                $results[] = [
+                    'url'       => 'https://www.youtube.com/watch?v=' . $videoId,
+                    'title'     => mb_substr($title, 0, 250),
+                    'channel'   => $channel,
+                    'duration'  => $vr['lengthText']['simpleText'] ?? null,
+                    'thumbnail' => 'https://i.ytimg.com/vi/' . $videoId . '/mqdefault.jpg',
+                ];
+                if (count($results) >= 12) {
+                    return $results;
+                }
+            }
+        }
+
+        return $results;
+    }
+
+    /** Pull the `ytInitialData` JSON blob out of a YouTube HTML page (balanced-brace scan). */
+    private function extractYtInitialData(string $html): ?array
+    {
+        $pos = strpos($html, 'ytInitialData = ');
+        if ($pos === false) {
+            $pos = strpos($html, 'ytInitialData"] = ');
+        }
+        if ($pos === false) {
+            return null;
+        }
+
+        $start = strpos($html, '{', $pos);
+        if ($start === false) {
+            return null;
+        }
+
+        $depth = 0;
+        $inStr = false;
+        $esc   = false;
+        $len   = strlen($html);
+        for ($i = $start; $i < $len; $i++) {
+            $ch = $html[$i];
+            if ($inStr) {
+                if ($esc)              { $esc = false; }
+                elseif ($ch === '\\')  { $esc = true; }
+                elseif ($ch === '"')   { $inStr = false; }
+                continue;
+            }
+            if ($ch === '"')      { $inStr = true; }
+            elseif ($ch === '{')  { $depth++; }
+            elseif ($ch === '}')  {
+                if (--$depth === 0) {
+                    return json_decode(substr($html, $start, $i - $start + 1), true) ?: null;
+                }
+            }
+        }
+
+        return null;
     }
 
     #[Route('/songs/{id}/reorder-children', name: 'admin_songs_reorder_children', methods: ['POST'], requirements: ['id' => '\d+'])]
