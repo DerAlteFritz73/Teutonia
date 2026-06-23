@@ -18,7 +18,7 @@ use Symfony\Component\Process\Process;
  */
 class PdfEtikettStamper
 {
-    /** Background colour per Etikett colour name; anything else falls back to light grey. */
+    /** Outline colour per Etikett colour name; anything else falls back to light grey. */
     private const COLOURS = [
         'rosa'   => '1 0.70 0.80',
         'blau'   => '0.70 0.85 1',
@@ -28,8 +28,8 @@ class PdfEtikettStamper
         'grun'   => '0.70 0.90 0.70',
         'orange' => '1 0.80 0.45',
         'rot'    => '1 0.65 0.65',
-        'weiß'   => '1 1 1',
-        'weiss'  => '1 1 1',
+        'weiß'   => '0.70 0.70 0.70',
+        'weiss'  => '0.70 0.70 0.70',
     ];
 
     public function stamp(string $pdfBytes, string $label, ?string $colour): string
@@ -99,26 +99,24 @@ class PdfEtikettStamper
 
     private function overlayPostScript(float $w, float $h, string $label, ?string $colour): string
     {
-        $bg  = self::COLOURS[mb_strtolower(trim((string) $colour))] ?? '0.90 0.90 0.90';
+        $stroke = self::COLOURS[mb_strtolower(trim((string) $colour))] ?? '0.90 0.90 0.90';
         $esc = strtr($label, ['\\' => '\\\\', '(' => '\\(', ')' => '\\)']);
 
         return <<<PS
             %!PS
             << /PageSize [{$w} {$h}] >> setpagedevice
             /label ({$esc}) def
-            /Helvetica-Bold findfont 16 scalefont setfont
-            /pad 12 def
-            /boxh 30 def
+            /Helvetica-Bold findfont 11 scalefont setfont
+            /pad 7 def
+            /boxh 19 def
             /boxw label stringwidth pop pad 2 mul add def
             /margin 14 def
             /bx margin def
             /by {$h} margin sub boxh sub def
-            {$bg} setrgbcolor
-            bx by boxw boxh rectfill
-            0 setgray 1 setlinewidth
+            {$stroke} setrgbcolor 1 setlinewidth
             bx by boxw boxh rectstroke
             0 setgray
-            bx pad add by 10 add moveto label show
+            bx pad add by 6 add moveto label show
             showpage
             PS;
     }
