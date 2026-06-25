@@ -46,10 +46,6 @@ class SongKeyword
     #[ORM\Column(name: 'etikett_number', length: 30, nullable: true)]
     private ?string $etikettNumber = null;
 
-    /** When true, the scanned PDF already shows the Etikett, so it isn't stamped on again. */
-    #[ORM\Column(name: 'etikett_in_pdf', options: ['default' => false])]
-    private bool $etikettInPdf = false;
-
     #[ORM\Column(length: 100)]
     private ?string $folder = null;
 
@@ -206,17 +202,6 @@ class SongKeyword
     {
         $this->etikettColor = self::blankToNull($etikettColor);
         $this->syncEtikett();
-        return $this;
-    }
-
-    public function isEtikettInPdf(): bool
-    {
-        return $this->etikettInPdf;
-    }
-
-    public function setEtikettInPdf(bool $etikettInPdf): static
-    {
-        $this->etikettInPdf = $etikettInPdf;
         return $this;
     }
 

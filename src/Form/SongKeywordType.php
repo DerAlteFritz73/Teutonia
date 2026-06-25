@@ -52,10 +52,6 @@ class SongKeywordType extends AbstractType
                 'required'   => false,
                 'attr'       => ['class' => 'form-control', 'placeholder' => 'z.B. 01'],
             ])
-            ->add('etikettInPdf', CheckboxType::class, [
-                'label'    => 'Etikett ist bereits im PDF vorhanden',
-                'required' => false,
-            ])
             ->add('isAktuelleProben', CheckboxType::class, [
                 'label'    => 'Aktuell in Proben',
                 'required' => false,

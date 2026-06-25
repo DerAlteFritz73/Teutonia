@@ -56,13 +56,6 @@
                     <option value="Extrabox"></option>
                     <option value="Büchel"></option>
                 </datalist>
-                <div class="col-12">
-                    <div class="form-check">
-                        {{ form_widget(form.etikettInPdf, {attr: {class: 'form-check-input'}}) }}
-                        {{ form_label(form.etikettInPdf, null, {label_attr: {class: 'form-check-label'}}) }}
-                        <div class="form-text">Aktivieren, wenn das gescannte PDF das Etikett schon zeigt – dann wird es beim Anzeigen nicht zusätzlich aufgestempelt.</div>
-                    </div>
-                </div>
                 <div class="col-md-6">
                     {{ form_row(form.composer) }}
                 </div>

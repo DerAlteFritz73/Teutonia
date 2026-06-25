@@ -192,11 +192,11 @@ class PageController extends AbstractController
             default => 'application/octet-stream'
         };
 
-        // Overlay the song's Etikett on page 1 of Noten PDFs — unless the scan
-        // already shows it. The original in Dropbox is never modified.
+        // Overlay the song's Etikett on page 1 of Noten PDFs.
+        // The original in Dropbox is never modified.
         if ($extension === 'pdf') {
             $song = $songRepo->findOneByFolder(\dirname($path));
-            if ($song && !$song->isEtikettInPdf()) {
+            if ($song) {
                 // Movements (child songs) usually carry no Etikett of their own —
                 // fall back to the parent's, just like the rest of the app does.
                 $etikett = trim((string) $song->getEtikett());
