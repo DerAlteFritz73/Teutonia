@@ -417,9 +417,17 @@ document.querySelectorAll('[data-tooltip]').forEach(function (el) {
     colorInput.addEventListener('change', function () {
         const color = colorInput.value.trim();
         if (!color || numberInput.value.trim() !== '') return;   // only when number is empty
-        fetch('{{ path('admin_songs_etikett_next_number') }}?color=' + encodeURIComponent(color))
+        fetch('{{ path('admin_songs_etikett_next_number') }}?color=' + encodeURIComponent(color), { cache: 'no-store' })
             .then(function (r) { return r.json(); })
-            .then(function (d) { if (d && d.next) numberInput.setAttribute('placeholder', String(d.next)); })
+            .then(function (d) {
+                // Fill the actual value (not just the placeholder) so the suggested
+                // number is submitted and persisted — otherwise consecutive new songs
+                // keep getting suggested the same number.
+                if (d && d.next) {
+                    numberInput.value = String(d.next);
+                    if (window.markFormDirty) window.markFormDirty();
+                }
+            })
             .catch(function () {});
     });
 }());
