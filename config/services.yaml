@@ -33,3 +33,9 @@ services:
             $dropboxAppKey: '%env(DROPBOX_APP_KEY)%'
             $dropboxAppSecret: '%env(DROPBOX_APP_SECRET)%'
             $projectDir: '%kernel.project_dir%'
+
+    App\Service\AktuelleProbenSyncService:
+        arguments:
+            # Only prod may write to Dropbox: dev (the Pi) shares the same Dropbox
+            # account as prod, so a copy/delete there would collide with prod.
+            $appEnv: '%kernel.environment%'

@@ -12,6 +12,7 @@ class AktuelleProbenSyncService
     public function __construct(
         private DropboxService $dropboxService,
         private EntityManagerInterface $entityManager,
+        private string $appEnv,
     ) {
     }
 
@@ -34,7 +35,11 @@ class AktuelleProbenSyncService
         // kept). Only possible when the song already has a Noten folder on Dropbox
         // and hasn't been copied yet; a song that doesn't exist on Dropbox yet is
         // still flagged, and the member page falls back to the Noten folder later.
-        if ($song->getDropboxlink() && !$song->getAktuelleDropboxlink()) {
+        //
+        // Writes are prod-only: dev (the Pi) shares the same Dropbox account as prod,
+        // so copying here would collide with prod. On dev the flag is still set and
+        // the member page falls back to the Noten folder.
+        if ($this->appEnv === 'prod' && $song->getDropboxlink() && !$song->getAktuelleDropboxlink()) {
             $sourcePath   = rtrim($song->getDropboxlink(), '/');
             $folderName   = substr($sourcePath, strrpos($sourcePath, '/') + 1);
             $targetFolder = self::AKTUELLE_PROBEN_BASE . '/' . $folderName;
@@ -62,8 +67,10 @@ class AktuelleProbenSyncService
     {
         $song->setIsAktuelleProben(false);
 
+        // Deletes are prod-only for the same reason as the copy above — dev shares
+        // prod's Dropbox, so a delete here would remove the folder prod relies on.
         $folderPath = $song->getAktuelleDropboxlink();
-        if ($folderPath && $this->dropboxService->deleteFile($folderPath)) {
+        if ($this->appEnv === 'prod' && $folderPath && $this->dropboxService->deleteFile($folderPath)) {
             $song->setAktuelleDropboxlink(null);
         }
 
