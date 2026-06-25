@@ -200,13 +200,11 @@ class PageController extends AbstractController
                 // Movements (child songs) usually carry no Etikett of their own —
                 // fall back to the parent's, just like the rest of the app does.
                 $etikett = trim((string) $song->getEtikett());
-                $colour  = $song->getEtikettColor();
                 if ($etikett === '' && $song->getParent() !== null) {
                     $etikett = trim((string) $song->getParent()->getEtikett());
-                    $colour  = $song->getParent()->getEtikettColor();
                 }
                 if ($etikett !== '') {
-                    $fileContent = $stamper->stamp($fileContent, $etikett, $colour);
+                    $fileContent = $stamper->stamp($fileContent, $etikett);
                 }
             }
         }

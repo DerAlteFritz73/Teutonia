@@ -18,21 +18,7 @@ use Symfony\Component\Process\Process;
  */
 class PdfEtikettStamper
 {
-    /** Outline colour per Etikett colour name; anything else falls back to light grey. */
-    private const COLOURS = [
-        'rosa'   => '1 0.70 0.80',
-        'blau'   => '0.70 0.85 1',
-        'gelb'   => '1 0.92 0.45',
-        'grün'   => '0.70 0.90 0.70',
-        'gruen'  => '0.70 0.90 0.70',
-        'grun'   => '0.70 0.90 0.70',
-        'orange' => '1 0.80 0.45',
-        'rot'    => '1 0.65 0.65',
-        'weiß'   => '0.70 0.70 0.70',
-        'weiss'  => '0.70 0.70 0.70',
-    ];
-
-    public function stamp(string $pdfBytes, string $label, ?string $colour): string
+    public function stamp(string $pdfBytes, string $label): string
     {
         $label = trim($label);
         if ($label === '' || $pdfBytes === '') {
@@ -55,7 +41,7 @@ class PdfEtikettStamper
                 return $pdfBytes;
             }
 
-            file_put_contents($ps, $this->overlayPostScript($w, $h, $label, $colour));
+            file_put_contents($ps, $this->overlayPostScript($w, $h, $label));
 
             // PostScript overlay -> one-page PDF
             $gs = new Process(['gs', '-q', '-dBATCH', '-dNOPAUSE', '-dSAFER', '-sDEVICE=pdfwrite', '-o', $ovl, $ps]);
@@ -97,9 +83,8 @@ class PdfEtikettStamper
         return ($w > 1 && $h > 1) ? [$w, $h] : [null, null];
     }
 
-    private function overlayPostScript(float $w, float $h, string $label, ?string $colour): string
+    private function overlayPostScript(float $w, float $h, string $label): string
     {
-        $stroke = self::COLOURS[mb_strtolower(trim((string) $colour))] ?? '0.90 0.90 0.90';
         $esc = strtr($label, ['\\' => '\\\\', '(' => '\\(', ')' => '\\)']);
 
         return <<<PS
@@ -113,9 +98,8 @@ class PdfEtikettStamper
             /margin 14 def
             /bx margin def
             /by {$h} margin sub boxh sub def
-            {$stroke} setrgbcolor 1 setlinewidth
+            0 setgray 1 setlinewidth
             bx by boxw boxh rectstroke
-            0 setgray
             bx pad add by 6 add moveto label show
             showpage
             PS;
