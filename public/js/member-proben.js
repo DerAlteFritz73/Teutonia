@@ -319,7 +319,9 @@
 
         items.forEach(function (item) {
             const btn  = item.querySelector('.accordion-button');
-            const name = btn ? btn.textContent.trim().toLowerCase() : '';
+            // Include the Etikett explicitly: for admins it is rendered outside the
+            // accordion button (inline editor), so it isn't part of btn.textContent.
+            const name = ((btn ? btn.textContent : '') + ' ' + (item.dataset.etikett || '')).trim().toLowerCase();
             const show = terms.length === 0 || terms.every(function (t) { return name.includes(t); });
             item.style.display = show ? '' : 'none';
             if (show) visible++;

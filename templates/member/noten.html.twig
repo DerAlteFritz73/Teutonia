@@ -26,7 +26,7 @@
                     {% set notenPath = song.dropboxlink ?? song.aktuelleDropboxlink %}
                     {% set hasDropbox = notenPath is not null and notenPath != '' %}
                     {% set hasMovements = song.children|length > 0 %}
-                    <div class="accordion-item">
+                    <div class="accordion-item" data-etikett="{{ song.etikett ?? '' }}">
                         <h2 class="accordion-header d-flex align-items-center">
                             {{ m.admin_etikett_edit(song) }}
                             <button class="accordion-button collapsed accordion-btn-files"

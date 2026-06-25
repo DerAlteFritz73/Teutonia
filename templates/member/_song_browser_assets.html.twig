@@ -204,6 +204,9 @@ window.PROBEN_CONFIG = {
             if (!res.ok || j.error) throw new Error(j.error || ('HTTP ' + res.status));
             inp.dataset.original = value; inp.value = value;
             cell.querySelector('.display-val').innerHTML = badgeHtml(value);
+            // Keep the Noten search filter (which reads data-etikett) in sync.
+            const item = cell.closest('.accordion-item');
+            if (item) item.dataset.etikett = value;
         } catch (err) {
             inp.value = inp.dataset.original;
             alert(err.message || 'Fehler beim Speichern');
