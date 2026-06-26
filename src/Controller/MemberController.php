@@ -31,7 +31,25 @@ class MemberController extends AbstractController
     #[Route('/partitur-poc', name: 'member_partitur_poc')]
     public function partiturPoc(): Response
     {
-        return $this->render('member/partitur_poc.html.twig');
+        // Map any voice MP3s dropped into public/poc/ to their voice code.
+        // Filenames begin with the voice marker: 1-S / 1S (Sopran), 2-A / 2A
+        // (Alt), 3-T / 3T (Tenor), 4-B / 4B (Bass).
+        $audioByVoice = [];
+        $tuttiUrl = null;
+        foreach (glob($this->getParameter('kernel.project_dir') . '/public/poc/*.mp3') ?: [] as $path) {
+            $name = basename($path);
+            if (preg_match('/^\s*[1-4]\s*-?\s*([SATB])/i', $name, $m)) {
+                $audioByVoice[strtoupper($m[1])] = '/poc/' . rawurlencode($name);
+            } elseif (preg_match('/^\s*tutti/i', $name)) {
+                // Full-ensemble mix (no matching score staff).
+                $tuttiUrl = '/poc/' . rawurlencode($name);
+            }
+        }
+
+        return $this->render('member/partitur_poc.html.twig', [
+            'audioByVoice' => $audioByVoice,
+            'tuttiUrl' => $tuttiUrl,
+        ]);
     }
 
     #[Route('/archiv', name: 'member_archiv')]

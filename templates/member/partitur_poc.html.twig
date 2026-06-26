@@ -11,7 +11,9 @@
             um sie farbig hervorzuheben.
         </p>
 
-        <div data-controller="osmd" data-osmd-url-value="{{ asset('poc/score.mxl') }}">
+        <div data-controller="osmd" data-osmd-url-value="{{ asset('poc/score.mxl') }}"
+             data-osmd-audio-by-voice-value="{{ (audioByVoice ?? {})|json_encode|e('html_attr') }}"
+             data-osmd-tutti-url-value="{{ tuttiUrl ?? '' }}">
             <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
                 <button type="button" class="btn btn-sm btn-primary" disabled
                         data-osmd-target="playBtn" data-action="osmd#togglePlay">
@@ -21,13 +23,23 @@
                         data-osmd-target="stopBtn" data-action="osmd#stop">
                     <i class="bi bi-stop-fill"></i> Stop
                 </button>
+                <label class="text-muted small mb-0"><i class="bi bi-speedometer2"></i> Tempo</label>
+                <input type="range" class="form-range" style="width:120px" min="0.5" max="1.5" step="0.05" value="1"
+                       data-osmd-target="speed" data-action="input->osmd#changeSpeed">
+                <span class="small text-muted" style="min-width:8em" data-osmd-target="speedLabel">1,00×</span>
                 <span class="vr d-none d-sm-inline"></span>
                 <span class="text-muted small">Stimme hervorheben:</span>
                 <span class="d-flex flex-wrap gap-2" data-osmd-target="controls"></span>
             </div>
             <div class="alert alert-warning small d-none" data-osmd-target="status"></div>
-            <div class="border rounded bg-white p-2" style="overflow:auto;max-height:60vh;white-space:nowrap;">
-                <div data-osmd-target="container"></div>
+            <div class="position-relative">
+                <div class="border rounded bg-white p-2" style="overflow:auto;max-height:60vh;white-space:nowrap;">
+                    <div data-osmd-target="container"></div>
+                </div>
+                {# fixed playhead overlay marking the exact note being played #}
+                {# translucent highlight box over the note currently being sung #}
+                <div data-osmd-target="playhead" class="position-absolute top-0 d-none"
+                     style="background:rgba(232,89,12,0.30);border-radius:3px;pointer-events:none;z-index:5;"></div>
             </div>
         </div>
     </div>

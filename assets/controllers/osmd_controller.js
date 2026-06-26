@@ -17,12 +17,20 @@ import { Controller } from '@hotwired/stimulus';
  *   </div>
  */
 export default class extends Controller {
-    static targets = ['container', 'controls', 'status', 'playBtn', 'stopBtn'];
-    static values = { url: String, playback: { type: Boolean, default: true } };
+    static targets = ['container', 'controls', 'status', 'playBtn', 'stopBtn', 'playhead', 'speed', 'speedLabel'];
+    static values = {
+        url: String,
+        audioByVoice: { type: Object, default: {} },
+        tuttiUrl: String,
+        // Highlight the whole current measure instead of just the current note.
+        // Set data-osmd-measure-highlight-value="true" to switch.
+        measureHighlight: { type: Boolean, default: false },
+    };
 
     async connect() {
         this.colors = ['#d6336c', '#1c7ed6', '#2f9e44', '#e8590c', '#7048e8', '#0ca678'];
         this.activeStaff = null;
+        this.tuttiActive = false;
         this.playing = false;
 
         try {
@@ -39,27 +47,32 @@ export default class extends Controller {
                 // centred; OSMD's built-in followCursor only snaps it to the
                 // container edge, which fights with smooth centring.
                 followCursor: false,
-                // A clearly visible highlight box marking the current position.
-                cursorsOptions: [{ type: 0, color: '#1c7ed6', alpha: 0.45, follow: false }],
+                // Keep OSMD's own cursor invisible (alpha 0) — it spans the whole
+                // system; we draw our own highlight box limited to the selected
+                // voice's staff (see updatePlayhead). The element still provides
+                // the current note's position.
+                cursorsOptions: [{ type: 0, color: '#1c7ed6', alpha: 0, follow: false }],
             });
 
             this.setStatus('Lade Partitur…');
             await this.osmd.load(this.urlValue);
             this.osmd.render();
             this.buildStaffButtons();
+            this.readTempo();
 
-            // Score-driven playback: synthesise audio from the notes themselves.
-            if (this.playbackValue) {
-                this.setStatus('Lade Klänge…');
-                const { default: AudioPlayer } = await import('osmd-audio-player');
-                this.audioPlayer = new AudioPlayer();
-                await this.audioPlayer.loadScore(this.osmd);
-                // play() resolves as soon as the scheduler starts (not when
-                // playback ends), so we track real play/pause/stop transitions
-                // via the player's state-change events instead.
-                this.audioPlayer.on('state-change', (state) => this.onPlaybackState(state));
-                this.enablePlayback();
-            }
+            // Playback uses the real per-voice MP3 recordings (and the Tutti
+            // full mix). The selected voice's recording is played and the cursor
+            // is driven from its playback time (see syncCursorToAudio).
+            this.playbackRate = 1;
+            this.audioEl = new Audio();
+            this.audioEl.preload = 'auto';
+            this.audioEl.preservesPitch = true; // keep pitch when changing speed
+            this.audioEl.addEventListener('ended', () => this.onAudioEnded());
+            // Default to the Tutti mix so the play button works without a
+            // voice selected.
+            if (this.tuttiUrlValue) this.toggleTutti(this.tuttiBtn);
+            this.enablePlayback();
+            this.updateSpeedLabel();
             this.setStatus('');
         } catch (e) {
             this.setStatus('Fehler beim Laden der Partitur: ' + e.message);
@@ -70,7 +83,7 @@ export default class extends Controller {
     disconnect() {
         this.stopAutoScroll();
         try {
-            this.audioPlayer?.stop();
+            this.audioEl?.pause();
         } catch (e) { /* ignore */ }
         if (this.osmd) {
             this.osmd.clear();
@@ -91,30 +104,125 @@ export default class extends Controller {
         if (this.hasStopBtnTarget) this.stopBtnTarget.disabled = false;
     }
 
+    // True once an MP3 (a voice or the Tutti mix) is selected.
+    get mp3Mode() {
+        return !!this.currentAudioUrl;
+    }
+
     async togglePlay() {
-        if (!this.audioPlayer) return;
-        if (this.playing) {
-            await this.audioPlayer.pause();
-        } else {
-            await this.audioPlayer.play();
-        }
-        // play/pause label and auto-scroll are driven by onPlaybackState().
+        if (!this.currentAudioUrl) return; // nothing selected and no Tutti mix
+        await this.toggleMp3();
     }
 
-    async stop() {
-        if (!this.audioPlayer) return;
-        await this.audioPlayer.stop();
+    stop() {
+        if (!this.audioEl) return;
+        this.audioEl.pause();
+        this.audioEl.currentTime = 0;
+        this.onMp3Stopped();
     }
 
-    // Reacts to the audio player's PLAYING / PAUSED / STOPPED transitions.
-    onPlaybackState(state) {
-        this.playing = state === 'PLAYING';
-        if (this.playing) {
+    // ---- MP3 (per-voice recording) playback -----------------------------
+
+    async toggleMp3() {
+        if (this.audioEl.paused) {
+            this.osmd.cursor.show();
+            try { await this.audioEl.play(); } catch (e) { return; }
+            this.playing = true;
+            this.showPlayhead(true);
             this.startAutoScroll();
         } else {
+            this.audioEl.pause();
+            this.playing = false;
             this.stopAutoScroll();
         }
         this.setPlayLabel();
+    }
+
+    onAudioEnded() {
+        this.audioEl.currentTime = 0;
+        this.onMp3Stopped();
+    }
+
+    onMp3Stopped() {
+        this.playing = false;
+        this.stopAutoScroll();
+        this.showPlayhead(false);
+        this.osmd.cursor.reset();
+        this.setPlayLabel();
+    }
+
+    // Point the audio element at the given recording URL (or clear it).
+    selectAudio(url) {
+        url = url || null;
+        if (url === this.currentAudioUrl) return;
+        // Switching source: stop whatever is currently playing.
+        if (this.playing) this.stop();
+        this.currentAudioUrl = url;
+        if (this.audioEl) {
+            this.audioEl.src = url || '';
+            this.audioEl.playbackRate = this.playbackRate; // re-apply across sources
+        }
+    }
+
+    // Change playback speed (the cursor follows automatically — it's driven by
+    // the audio's currentTime, which advances at the playback rate).
+    changeSpeed() {
+        this.playbackRate = parseFloat(this.speedTarget.value) || 1;
+        if (this.audioEl) this.audioEl.playbackRate = this.playbackRate;
+        this.updateSpeedLabel();
+    }
+
+    // "1,00× · 120 BPM" — the multiplier and the resulting tempo.
+    updateSpeedLabel() {
+        if (!this.hasSpeedLabelTarget) return;
+        const pct = this.playbackRate.toFixed(2).replace('.', ',');
+        const bpm = Math.round((this.bpm || 0) * this.playbackRate);
+        this.speedLabelTarget.textContent = `${pct}× · ${bpm} BPM`;
+    }
+
+    audioForStaff(staffIndex) {
+        return staffIndex === null ? null : this.audioByVoiceValue[this.voiceCode(staffIndex)];
+    }
+
+    // Map a staff to its SATB voice code, preferring the staff label's initial
+    // (Sopran/Alt/Tenor/Bass → S/A/T/B), falling back to stacking order.
+    voiceCode(staffIndex) {
+        const initial = (this.staffLabels()[staffIndex] || '').trim()[0]?.toUpperCase();
+        if (['S', 'A', 'T', 'B'].includes(initial)) return initial;
+        return ['S', 'A', 'T', 'B'][staffIndex];
+    }
+
+    // Score tempo in BPM (quarter notes / minute). The MP3s are rendered from
+    // the MusicXML at this tempo, so the cursor is driven by elapsed audio time
+    // × tempo — the same scheduling the synth used. (Driving off audioEl.duration
+    // instead is unreliable: browsers misreport MP3 duration, which made the
+    // cursor lag.)
+    readTempo() {
+        const sheet = this.osmd?.Sheet;
+        const bpm = sheet && sheet.HasBPMInfo ? sheet.DefaultStartTempoInBpm : null;
+        this.bpm = bpm && bpm > 0 ? bpm : 120;
+    }
+
+    // Advance/rewind the cursor to match the audio position. A whole note lasts
+    // 240/bpm seconds, so the playback position (whole notes) at time t is
+    // t·bpm/240. We compare against the ENROLLED timestamp — the unrolled
+    // playback position that follows repeats/voltas — not the source timestamp,
+    // which jumps backwards at a repeat and would desync the cursor.
+    syncCursorToAudio() {
+        const a = this.audioEl;
+        if (!a || !this.bpm) return;
+        const target = a.currentTime * this.bpm / 240;
+        const cur = this.osmd.cursor;
+        if (!cur.Iterator.EndReached && cur.Iterator.CurrentEnrolledTimestamp.RealValue > target + 1e-6) {
+            cur.reset(); // playback moved backwards (e.g. user seek)
+        }
+        while (!cur.Iterator.EndReached && cur.Iterator.CurrentEnrolledTimestamp.RealValue < target - 1e-9) {
+            cur.next();
+        }
+    }
+
+    showPlayhead(visible) {
+        if (this.hasPlayheadTarget) this.playheadTarget.classList.toggle('d-none', !visible);
     }
 
     // ---- Auto-scroll (keep the playback cursor centred horizontally) ----
@@ -137,7 +245,9 @@ export default class extends Controller {
         if (!scrollEl || this.autoScrollRaf) return;
         const step = () => {
             if (!this.playing) { this.autoScrollRaf = null; return; }
-            this.centerCursor(scrollEl);
+            if (this.mp3Mode) this.syncCursorToAudio();
+            this.followByThreshold(scrollEl);
+            this.updatePlayhead(scrollEl);
             this.autoScrollRaf = requestAnimationFrame(step);
         };
         this.autoScrollRaf = requestAnimationFrame(step);
@@ -150,20 +260,76 @@ export default class extends Controller {
         }
     }
 
-    // Ease the scroll position so the cursor sits in the horizontal middle.
-    centerCursor(scrollEl) {
+    // Let the staff stay still (readable) while the cursor moves right across
+    // it. Re-position the scroll so the cursor sits at 25% whenever it either
+    // passes 75% (normal forward drift) or jumps left of 10% (a repeat/volta
+    // jumping back to an earlier measure) — otherwise the repeated bars stay
+    // off-screen and the cursor pins to the left edge.
+    followByThreshold(scrollEl) {
         const cursorEl = this.osmd?.cursor?.cursorElement;
         if (!cursorEl || cursorEl.offsetParent === null) return;
-        const cursorRect = cursorEl.getBoundingClientRect();
-        const viewRect = scrollEl.getBoundingClientRect();
-        const cursorMid = (cursorRect.left - viewRect.left) + scrollEl.scrollLeft + cursorRect.width / 2;
-        const target = cursorMid - scrollEl.clientWidth / 2;
+        const cursorX = cursorEl.getBoundingClientRect().left - scrollEl.getBoundingClientRect().left;
+        if (cursorX > scrollEl.clientWidth * 0.1 && cursorX <= scrollEl.clientWidth * 0.75) return;
+        const target = scrollEl.scrollLeft + (cursorX - scrollEl.clientWidth * 0.25);
         const max = scrollEl.scrollWidth - scrollEl.clientWidth;
-        const clamped = Math.max(0, Math.min(target, max));
-        // Ease toward the target to smooth out the cursor's discrete jumps.
-        const delta = clamped - scrollEl.scrollLeft;
-        if (Math.abs(delta) < 0.5) return;
-        scrollEl.scrollLeft += delta * 0.15;
+        scrollEl.scrollLeft = Math.max(0, Math.min(target, max));
+    }
+
+    // Draw the highlight box (full viewport height) over the current note, or
+    // over the whole current measure when measureHighlight is enabled. Falls
+    // back to the note width if measure geometry isn't available.
+    updatePlayhead(scrollEl) {
+        if (!this.hasPlayheadTarget) return;
+        const cursorEl = this.osmd?.cursor?.cursorElement;
+        if (!cursorEl || cursorEl.offsetParent === null) return;
+        const viewRect = scrollEl.getBoundingClientRect();
+        const ph = this.playheadTarget;
+
+        const measureBand = this.measureHighlightValue ? this.measureXBand(scrollEl, viewRect) : null;
+        const band = measureBand || (() => {
+            const r = cursorEl.getBoundingClientRect();
+            return { left: r.left - viewRect.left, width: Math.max(r.width, 8) };
+        })();
+        // Clamp to the visible viewport.
+        const left = Math.max(0, band.left);
+        const right = Math.min(scrollEl.clientWidth, band.left + band.width);
+        ph.style.left = left + 'px';
+        ph.style.width = Math.max(0, right - left) + 'px';
+        ph.style.top = '0px';
+        ph.style.height = '100%';
+    }
+
+    // The current measure's horizontal extent (left, width) in viewport pixels,
+    // from its graphical PositionAndShape. CurrentMeasureIndex is the written
+    // measure (correct even mid-repeat, since the same bars are replayed).
+    measureXBand(scrollEl, viewRect) {
+        const mi = this.osmd?.cursor?.Iterator?.CurrentMeasureIndex;
+        const svg = this.containerTarget.querySelector('svg');
+        const page = this.osmd?.GraphicSheet?.MusicPages?.[0];
+        const gm = this.osmd?.GraphicSheet?.MeasureList?.[mi]?.[0];
+        const pageW = page?.PositionAndShape?.Size?.width;
+        if (typeof mi !== 'number' || !svg || !gm || !pageW) return null;
+        const svgRect = svg.getBoundingClientRect();
+        const k = svgRect.width / pageW;
+        const ps = gm.PositionAndShape;
+        return {
+            left: (svgRect.left - viewRect.left) + ps.AbsolutePosition.x * k,
+            width: ps.Size.width * k,
+        };
+    }
+
+    // A staff's vertical range in rendered SVG pixels (relative to the SVG top),
+    // taken from its StaffLine. The unit→pixel factor is derived from the SVG's
+    // own rendered height vs the page height in OSMD units, so it stays correct
+    // regardless of zoom/autoResize (a fixed unitInPixels would drift per staff).
+    staffSvgRange(staffIndex, svgRect) {
+        const page = this.osmd?.GraphicSheet?.MusicPages?.[0];
+        const staffLine = page?.MusicSystems?.[0]?.StaffLines?.[staffIndex];
+        const pageH = page?.PositionAndShape?.Size?.height;
+        if (!staffLine || !pageH) return null;
+        const k = svgRect.height / pageH; // px per OSMD unit
+        const ps = staffLine.PositionAndShape;
+        return { y: ps.AbsolutePosition.y * k, h: ps.Size.height * k };
     }
 
     setPlayLabel() {
@@ -210,6 +376,18 @@ export default class extends Controller {
             this.controlsTarget.appendChild(btn);
         });
 
+        // Tutti = the full-ensemble mix; it has no matching score staff, so it
+        // only swaps the audio (no colouring, full-height playhead).
+        if (this.tuttiUrlValue) {
+            const tutti = document.createElement('button');
+            tutti.type = 'button';
+            tutti.className = 'btn btn-sm btn-outline-dark';
+            tutti.textContent = 'Tutti';
+            tutti.addEventListener('click', () => this.toggleTutti(tutti));
+            this.controlsTarget.appendChild(tutti);
+            this.tuttiBtn = tutti;
+        }
+
         const reset = document.createElement('button');
         reset.type = 'button';
         reset.className = 'btn btn-sm btn-link';
@@ -255,8 +433,10 @@ export default class extends Controller {
         } else {
             this.activeStaff = null;
         }
+        this.tuttiActive = false;
+        this.selectAudio(this.audioForStaff(this.activeStaff));
 
-        this.rerender();
+        this.osmd.render();
         this.controlsTarget.querySelectorAll('button').forEach((b) => b.classList.remove('active'));
         if (turningOn) {
             btn.classList.add('active');
@@ -264,40 +444,32 @@ export default class extends Controller {
         }
     }
 
-    // Re-render the score, then re-point the audio player at the freshly
-    // created cursor. OSMD's render() replaces the cursor object every time,
-    // so without this the audio player keeps advancing the old (detached)
-    // cursor after a part is selected — which silently breaks the moving
-    // highlight and the playback auto-scroll.
-    rerender() {
-        this.osmd.render();
-        if (this.audioPlayer && this.osmd.cursor) {
-            this.audioPlayer.cursor = this.osmd.cursor;
-        }
+    // Tutti: play the full-ensemble mix with no staff colouring/centring.
+    toggleTutti(btn) {
+        const turningOn = !this.tuttiActive;
+        const hadColour = this.activeStaff !== null;
+        this.resetColorsInternal();
+        this.activeStaff = null;
+        this.tuttiActive = turningOn;
+        if (hadColour) this.osmd.render(); // clear previous staff colouring
+        this.selectAudio(turningOn ? this.tuttiUrlValue : null);
+        this.controlsTarget.querySelectorAll('button').forEach((b) => b.classList.remove('active'));
+        if (turningOn) btn.classList.add('active');
     }
 
     // Vertically centre the given staff in the scroll viewport. All parts are
     // stacked in one horizontal staff line, so a staff's Y is constant across
-    // the piece; we read it from the first measure and convert OSMD units to
-    // pixels (unitInPixels = 10, scaled by zoom).
+    // the piece; we read it from the staff's StaffLine (see staffSvgRange).
     scrollStaffIntoCenter(staffIndex) {
         const scrollEl = this.scrollContainer();
         const svg = this.containerTarget.querySelector('svg');
-        const gm = this.osmd?.GraphicSheet?.MeasureList?.[0]?.[staffIndex];
-        if (!scrollEl || !svg || !gm) return;
-
-        const unit = 10 * (this.osmd.zoom || 1);
-        const ps = gm.PositionAndShape;
-        const centerInSvg = (ps.AbsolutePosition.y + ps.Size.height / 2) * unit;
-
-        // Map the intrinsic SVG coordinate to on-screen pixels (handles any
-        // CSS/viewBox scaling), then to scroll-content coordinates.
+        if (!scrollEl || !svg) return;
         const svgRect = svg.getBoundingClientRect();
-        const intrinsicH = svg.height?.baseVal?.value || svgRect.height;
-        const scale = svgRect.height / intrinsicH;
-        const viewRect = scrollEl.getBoundingClientRect();
-        const centerContentY = (svgRect.top - viewRect.top) + centerInSvg * scale + scrollEl.scrollTop;
+        const r = this.staffSvgRange(staffIndex, svgRect);
+        if (!r) return;
 
+        const viewRect = scrollEl.getBoundingClientRect();
+        const centerContentY = (svgRect.top - viewRect.top) + (r.y + r.h / 2) + scrollEl.scrollTop;
         const target = centerContentY - scrollEl.clientHeight / 2;
         const max = scrollEl.scrollHeight - scrollEl.clientHeight;
         scrollEl.scrollTo({ top: Math.max(0, Math.min(target, max)), behavior: 'smooth' });
@@ -306,7 +478,9 @@ export default class extends Controller {
     resetColors() {
         this.resetColorsInternal();
         this.activeStaff = null;
-        this.rerender();
+        this.tuttiActive = false;
+        this.selectAudio(null);
+        this.osmd.render();
         this.controlsTarget.querySelectorAll('button').forEach((b) => b.classList.remove('active'));
     }
 }

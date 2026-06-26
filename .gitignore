@@ -45,3 +45,6 @@ compose.override.yaml
 
 # Generated export files
 /public/songs_export.xlsx
+
+# Partitur POC voice recordings (large binaries, kept out of git)
+/public/poc/*.mp3
