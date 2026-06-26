@@ -34,6 +34,10 @@ class SongKeyword
     #[ORM\Column(length: 20, nullable: true)]
     private ?string $duration = null;
 
+    /** Free-text background information about the song (history, context, composer notes…). */
+    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    private ?string $background = null;
+
     #[ORM\Column(type: Types::JSON, nullable: true)]
     private ?array $keywords = [];
 
@@ -147,6 +151,17 @@ class SongKeyword
     public function setDuration(?string $duration): static
     {
         $this->duration = $duration;
+        return $this;
+    }
+
+    public function getBackground(): ?string
+    {
+        return $this->background;
+    }
+
+    public function setBackground(?string $background): static
+    {
+        $this->background = self::blankToNull($background);
         return $this;
     }
 
