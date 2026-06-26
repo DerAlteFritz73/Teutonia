@@ -4,6 +4,7 @@ namespace App\Controller;
 
 use App\Repository\KonzertRepository;
 use App\Repository\PostRepository;
+use App\Repository\ScoreSyncAnchorsRepository;
 use App\Repository\SongKeywordRepository;
 use App\Repository\StyleRepository;
 use App\Service\DropboxService;
@@ -223,6 +224,22 @@ class PageController extends AbstractController
         }
 
         return $response;
+    }
+
+    #[Route('/api/sync-anchors', name: 'api_sync_anchors', methods: ['GET'])]
+    #[IsGranted('ROLE_USER')]
+    public function getSyncAnchors(Request $request, ScoreSyncAnchorsRepository $repo): JsonResponse
+    {
+        $pdfPath   = (string) $request->query->get('pdf', '');
+        $audioPath = (string) $request->query->get('audio', '');
+
+        if ($pdfPath === '' || $audioPath === '') {
+            return new JsonResponse(['error' => 'pdf and audio params required'], 400);
+        }
+
+        $record = $repo->findByPaths($pdfPath, $audioPath);
+
+        return new JsonResponse(['anchors' => $record ? $record->getAnchors() : null]);
     }
 
     #[Route('/api/wordcloud', name: 'api_wordcloud', methods: ['GET'])]

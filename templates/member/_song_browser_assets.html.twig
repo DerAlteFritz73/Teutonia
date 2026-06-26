@@ -88,6 +88,9 @@
                 <button type="button" class="btn btn-success" id="audioPlayBtn">
                     <i class="bi bi-play-fill me-1"></i>Abspielen
                 </button>
+                <button type="button" class="btn btn-outline-success" id="audioMitlesenBtn">
+                    <i class="bi bi-music-note-list me-1"></i>Mitlesen
+                </button>
                 <a id="audioDownloadLink" href="#" download class="btn btn-primary">
                     <i class="bi bi-download me-2"></i>Herunterladen
                 </a>
@@ -97,14 +100,76 @@
     </div>
 </div>
 
+<!-- Sync Viewer Modal -->
+<div class="modal fade" id="syncViewerModal" tabindex="-1" aria-labelledby="syncViewerModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-fullscreen-lg-down modal-xl">
+        <div class="modal-content">
+            <div class="modal-header py-2">
+                <h5 class="modal-title" id="syncViewerModalLabel">
+                    <i class="bi bi-music-note-list text-success me-2"></i>
+                    <span id="syncViewerTitle"></span>
+                </h5>
+                <div class="d-flex align-items-center gap-2 ms-3">
+                    <button id="syncPrevPage" class="btn btn-sm btn-outline-secondary" title="Vorherige Seite">
+                        <i class="bi bi-chevron-left"></i>
+                    </button>
+                    <span id="syncPageInfo" class="small text-muted" style="min-width:5rem;text-align:center">Seite 1 / ?</span>
+                    <button id="syncNextPage" class="btn btn-sm btn-outline-secondary" title="Nächste Seite">
+                        <i class="bi bi-chevron-right"></i>
+                    </button>
+                </div>
+                {% if is_granted('ROLE_ADMIN') %}
+                <button id="syncEditToggle" class="btn btn-sm btn-outline-warning ms-2" title="Anker bearbeiten">
+                    <i class="bi bi-pencil-square me-1"></i>Anker bearbeiten
+                </button>
+                {% endif %}
+                <button type="button" class="btn-close ms-auto" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-0 d-flex flex-column" style="min-height:0;overflow:hidden">
+                <!-- Score canvas area -->
+                <div id="scoreCanvasWrapper" style="position:relative;flex:1 1 auto;overflow-y:auto;overflow-x:auto;background:#888;min-height:0">
+                    <canvas id="scoreCanvas" style="display:block;margin:0 auto"></canvas>
+                    <canvas id="cursorCanvas" style="position:absolute;top:0;left:50%;transform:translateX(-50%);pointer-events:none"></canvas>
+                </div>
+                <!-- Audio bar -->
+                <div class="border-top p-2 bg-light flex-shrink-0">
+                    <audio id="syncAudioPlayer" controls class="w-100" style="outline:none;height:2.5rem"></audio>
+                </div>
+                {% if is_granted('ROLE_ADMIN') %}
+                <!-- Admin anchor editor (hidden by default) -->
+                <div id="syncAnchorEditor" class="border-top p-3 bg-warning-subtle d-none flex-shrink-0" style="max-height:220px;overflow-y:auto">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <strong><i class="bi bi-pin-map me-1"></i>Anker (<span id="anchorCount">0</span>)</strong>
+                        <div class="d-flex gap-2">
+                            <button id="syncSaveAnchors" class="btn btn-sm btn-success">
+                                <i class="bi bi-floppy me-1"></i>Speichern
+                            </button>
+                            <button id="syncDeleteAllAnchors" class="btn btn-sm btn-outline-danger">
+                                <i class="bi bi-trash me-1"></i>Alle löschen
+                            </button>
+                        </div>
+                    </div>
+                    <p class="text-muted small mb-2">Klicke auf den Notentext, um einen Anker bei der aktuellen Audioposition zu setzen.</p>
+                    <div id="anchorList" class="d-flex flex-wrap gap-1"></div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
 window.PROBEN_CONFIG = {
-    filesUrl: '{{ path('api_dropbox_song_files') }}',
-    linkUrl:  '{{ path('api_dropbox_link') }}',
-    viewUrl:  '{{ path('api_dropbox_view') }}'
+    filesUrl:    '{{ path('api_dropbox_song_files') }}',
+    linkUrl:     '{{ path('api_dropbox_link') }}',
+    viewUrl:     '{{ path('api_dropbox_view') }}',
+    syncUrl:     '{{ path('api_sync_anchors') }}',
+    isAdmin:     {{ is_granted('ROLE_ADMIN') ? 'true' : 'false' }},
+    syncCsrfToken: '{{ csrf_token('sync_anchors') }}'
 };
 </script>
 <script src="{{ asset('js/member-proben.js') }}?v=2"></script>
+<script src="{{ asset('js/score-sync.js') }}?v=1"></script>
 {% if is_granted('ROLE_ADMIN') %}
 <script>
 /* Admin-only: toggle a song's "Aktuell in Proben" flag by clicking the badge

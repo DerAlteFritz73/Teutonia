@@ -18,6 +18,8 @@ use App\Repository\BlacklistedIpRepository;
 use App\Repository\KonzertRepository;
 use App\Repository\PostRepository;
 use App\Repository\SongKeywordRepository;
+use App\Repository\ScoreSyncAnchorsRepository;
+use App\Entity\ScoreSyncAnchors;
 use App\Repository\StyleRepository;
 use App\Repository\UserRepository;
 use App\Service\DropboxService;
@@ -858,6 +860,71 @@ class AdminController extends AbstractController
         }
 
         return null;
+    }
+
+    #[Route('/songs/{id}/sync-anchors', name: 'admin_songs_sync_anchors_save', methods: ['POST'], requirements: ['id' => '\d+'])]
+    public function saveSyncAnchors(
+        SongKeyword $song,
+        Request $request,
+        EntityManagerInterface $em,
+        ScoreSyncAnchorsRepository $repo,
+    ): JsonResponse {
+        $data = json_decode($request->getContent(), true) ?? [];
+
+        if (!$this->isCsrfTokenValid('sync_anchors', $data['_token'] ?? '')) {
+            return new JsonResponse(['error' => 'Invalid CSRF token'], 403);
+        }
+
+        $pdfPath   = trim((string) ($data['pdf'] ?? ''));
+        $audioPath = trim((string) ($data['audio'] ?? ''));
+        $anchors   = $data['anchors'] ?? [];
+
+        if ($pdfPath === '' || $audioPath === '') {
+            return new JsonResponse(['error' => 'pdf and audio required'], 400);
+        }
+
+        if (!is_array($anchors)) {
+            return new JsonResponse(['error' => 'anchors must be an array'], 400);
+        }
+
+        $record = $repo->findOneByPaths($song->getId(), $pdfPath, $audioPath);
+        if (!$record) {
+            $record = (new ScoreSyncAnchors())
+                ->setSong($song)
+                ->setPdfPath($pdfPath)
+                ->setAudioPath($audioPath);
+            $em->persist($record);
+        }
+
+        $record->setAnchors(array_values($anchors));
+        $em->flush();
+
+        return new JsonResponse(['success' => true]);
+    }
+
+    #[Route('/songs/{id}/sync-anchors', name: 'admin_songs_sync_anchors_delete', methods: ['DELETE'], requirements: ['id' => '\d+'])]
+    public function deleteSyncAnchors(
+        SongKeyword $song,
+        Request $request,
+        EntityManagerInterface $em,
+        ScoreSyncAnchorsRepository $repo,
+    ): JsonResponse {
+        $data = json_decode($request->getContent(), true) ?? [];
+
+        if (!$this->isCsrfTokenValid('sync_anchors', $data['_token'] ?? '')) {
+            return new JsonResponse(['error' => 'Invalid CSRF token'], 403);
+        }
+
+        $pdfPath   = trim((string) ($data['pdf'] ?? ''));
+        $audioPath = trim((string) ($data['audio'] ?? ''));
+
+        $record = $repo->findOneByPaths($song->getId(), $pdfPath, $audioPath);
+        if ($record) {
+            $em->remove($record);
+            $em->flush();
+        }
+
+        return new JsonResponse(['success' => true]);
     }
 
     #[Route('/songs/{id}/reorder-children', name: 'admin_songs_reorder_children', methods: ['POST'], requirements: ['id' => '\d+'])]

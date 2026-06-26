@@ -1,6 +1,14 @@
 (function () {
     'use strict';
 
+    /* ── Module-level state shared with score-sync.js ─────────────────── */
+    window.PROBEN_STATE = {
+        currentSongId:    null,
+        currentAudioPath: null,
+        currentAudioSrc:  null,
+        currentFilesBySongId: {},   // songId → files array (cache from last prefetch/load)
+    };
+
     /* ── Helpers ──────────────────────────────────────────────────────── */
     function formatBytes(bytes) {
         const units = ['B', 'KB', 'MB', 'GB'];
@@ -67,6 +75,11 @@
                 const fileName = this.dataset.fileName;
                 const fileType = this.dataset.fileType;
                 const spinner  = this.querySelector('.spinner-border');
+
+                // Identify the parent song-files-container to grab songId
+                const container = this.closest('.song-files-container');
+                const songId    = container ? (container.dataset.songId || null) : null;
+
                 if (spinner) spinner.classList.remove('d-none');
 
                 fetch(cfg.linkUrl, {
@@ -99,6 +112,12 @@
                         speedSlider.value        = 1.0;
                         audioPlayer.playbackRate = 1.0;
                         speedValue.textContent   = '1.0';
+
+                        // Store context for the Mitlesen button in score-sync.js
+                        const state = window.PROBEN_STATE;
+                        state.currentSongId    = songId;
+                        state.currentAudioPath = filePath;
+                        state.currentAudioSrc  = data.link;
                         updateSpeedPresets(1.0);
                         bootstrap.Modal.getOrCreateInstance(document.getElementById('audioPlayerModal')).show();
                     } else {
@@ -148,6 +167,9 @@
                             container.innerHTML = '<p class="text-muted p-3">Keine Dateien gefunden.</p>';
                         }
                     } else {
+                        // Cache files so score-sync.js can find the PDF path
+                        const songId = container.dataset.songId;
+                        if (songId) (window.PROBEN_STATE || {}).currentFilesBySongId && (window.PROBEN_STATE.currentFilesBySongId[songId] = files);
                         container.innerHTML = files.map(fileItemHtml).join('');
                         attachFileHandlers(container);
                     }
@@ -236,6 +258,10 @@
                     }
 
                     container.innerHTML = files.map(fileItemHtml).join('');
+
+                    // Cache files for score-sync.js
+                    const songId = container.dataset.songId;
+                    if (songId && window.PROBEN_STATE) window.PROBEN_STATE.currentFilesBySongId[songId] = files;
 
                     const header   = panel.previousElementSibling;
                     const btn      = header && header.querySelector('[data-dropbox-path]');

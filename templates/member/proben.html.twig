@@ -85,7 +85,7 @@
                                     </div>
                                 {% endif %}
                                 {% if probenPath %}
-                                    <div class="list-group song-files-container mb-3" data-dropbox-path="{{ probenPath }}"{% if hasMovements %} data-has-movements="true"{% endif %}>
+                                    <div class="list-group song-files-container mb-3" data-dropbox-path="{{ probenPath }}" data-song-id="{{ song.id }}"{% if hasMovements %} data-has-movements="true"{% endif %}>
                                         <div class="text-center text-muted py-3 file-loading-spinner">
                                             <span class="spinner-border spinner-border-sm me-2" role="status"></span>
                                             Lade Dateien…
@@ -113,7 +113,7 @@
                                                 <div id="{{ movId }}" class="accordion-collapse collapse">
                                                     <div class="accordion-body py-2">
                                                         {% if movement.dropboxlink %}
-                                                            <div class="list-group song-files-container" data-dropbox-path="{{ movement.dropboxlink }}">
+                                                            <div class="list-group song-files-container" data-dropbox-path="{{ movement.dropboxlink }}" data-song-id="{{ movement.id }}">
                                                                 <div class="text-center text-muted py-3 file-loading-spinner">
                                                                     <span class="spinner-border spinner-border-sm me-2" role="status"></span>
                                                                     Lade Dateien…
