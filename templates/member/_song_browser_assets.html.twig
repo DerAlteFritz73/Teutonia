@@ -134,6 +134,13 @@
                 <!-- Audio bar -->
                 <div class="border-top p-2 bg-light flex-shrink-0">
                     <audio id="syncAudioPlayer" controls class="w-100" style="outline:none;height:2.5rem"></audio>
+                    <div class="d-flex align-items-center gap-2 mt-1">
+                        <small class="text-muted">Tempo:</small>
+                        <button class="btn btn-xs btn-outline-secondary sync-speed-btn py-0 px-2" style="font-size:.75rem" data-speed="0.5">0.5×</button>
+                        <button class="btn btn-xs btn-outline-secondary sync-speed-btn py-0 px-2" style="font-size:.75rem" data-speed="0.75">0.75×</button>
+                        <button class="btn btn-xs btn-outline-primary   sync-speed-btn py-0 px-2" style="font-size:.75rem" data-speed="1">1×</button>
+                        <button class="btn btn-xs btn-outline-secondary sync-speed-btn py-0 px-2" style="font-size:.75rem" data-speed="1.25">1.25×</button>
+                    </div>
                 </div>
                 {% if is_granted('ROLE_ADMIN') %}
                 <!-- Admin anchor editor (hidden by default) -->

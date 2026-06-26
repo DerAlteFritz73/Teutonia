@@ -272,6 +272,20 @@
         if (editToggle) setEditMode(false);
     });
 
+    /* ── Sync viewer speed controls ───────────────────────────────────── */
+    document.querySelectorAll('.sync-speed-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            const speed = parseFloat(this.dataset.speed);
+            syncAudio.playbackRate = speed;
+            document.querySelectorAll('.sync-speed-btn').forEach(function (b) {
+                const match = Math.abs(parseFloat(b.dataset.speed) - speed) < 0.01;
+                b.classList.toggle('btn-primary',         match);
+                b.classList.toggle('btn-outline-primary', !match && parseFloat(b.dataset.speed) === 1);
+                b.classList.toggle('btn-outline-secondary', !match && parseFloat(b.dataset.speed) !== 1);
+            });
+        });
+    });
+
     /* ── Admin: edit mode ──────────────────────────────────────────────── */
     function updateAdminUI() {
         if (!anchorEditor) return;
