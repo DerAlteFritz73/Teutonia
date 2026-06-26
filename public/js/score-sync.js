@@ -111,6 +111,10 @@
         ctx.lineTo(0, y + 6);
         ctx.fill();
         ctx.restore();
+
+        // Keep cursor vertically centred in the visible wrapper area
+        const target = y - wrapper.clientHeight / 2;
+        wrapper.scrollTop = Math.max(0, target);
     }
 
     /* ── Anchor binary search + interpolation ───────────────────────────  */
