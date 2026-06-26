@@ -28,6 +28,12 @@ class MemberController extends AbstractController
         return $this->render('member/dashboard.html.twig');
     }
 
+    #[Route('/partitur-poc', name: 'member_partitur_poc')]
+    public function partiturPoc(): Response
+    {
+        return $this->render('member/partitur_poc.html.twig');
+    }
+
     #[Route('/archiv', name: 'member_archiv')]
     public function archiv(PostRepository $postRepository): Response
     {

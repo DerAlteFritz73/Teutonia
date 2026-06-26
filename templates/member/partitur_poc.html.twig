@@ -1,0 +1,35 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Partitur (POC) - {{ parent() }}{% endblock %}
+
+{% block body %}
+<main id="main-content" data-turbo-cache="false">
+    <div class="container py-5">
+        <h1><i class="bi bi-music-note-list me-2"></i>Partitur-Ansicht <span class="badge bg-secondary align-middle">POC</span></h1>
+        <p class="lead text-muted">
+            Scrollbare Notendarstellung aus einer MusicXML-Datei. Klick auf eine Stimme,
+            um sie farbig hervorzuheben.
+        </p>
+
+        <div data-controller="osmd" data-osmd-url-value="{{ asset('poc/score.mxl') }}">
+            <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+                <button type="button" class="btn btn-sm btn-primary" disabled
+                        data-osmd-target="playBtn" data-action="osmd#togglePlay">
+                    <i class="bi bi-play-fill"></i> Abspielen
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-secondary" disabled
+                        data-osmd-target="stopBtn" data-action="osmd#stop">
+                    <i class="bi bi-stop-fill"></i> Stop
+                </button>
+                <span class="vr d-none d-sm-inline"></span>
+                <span class="text-muted small">Stimme hervorheben:</span>
+                <span class="d-flex flex-wrap gap-2" data-osmd-target="controls"></span>
+            </div>
+            <div class="alert alert-warning small d-none" data-osmd-target="status"></div>
+            <div class="border rounded bg-white p-2" style="overflow:auto;max-height:60vh;white-space:nowrap;">
+                <div data-osmd-target="container"></div>
+            </div>
+        </div>
+    </div>
+</main>
+{% endblock %}
