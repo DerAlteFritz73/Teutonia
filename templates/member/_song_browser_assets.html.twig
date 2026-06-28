@@ -149,6 +149,21 @@
     </div>
 </div>
 
+<!-- Partitur Modal: scrolling MusicXML score with per-voice MP3 playback (OSMD) -->
+<div class="modal fade" id="partiturModal" tabindex="-1" aria-labelledby="partiturTitle" aria-hidden="true">
+    <div class="modal-dialog modal-fullscreen-lg-down modal-xl">
+        <div class="modal-content">
+            <div class="modal-header py-2">
+                <h5 class="modal-title">
+                    <i class="bi bi-music-note-list text-primary me-2"></i><span id="partiturTitle">Partitur</span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Schließen"></button>
+            </div>
+            <div class="modal-body" id="partiturBody"></div>
+        </div>
+    </div>
+</div>
+
 <script>
 window.PROBEN_CONFIG = {
     filesUrl:    '{{ path('api_dropbox_song_files') }}',
@@ -159,7 +174,7 @@ window.PROBEN_CONFIG = {
     syncCsrfToken: '{{ csrf_token('sync_anchors') }}'
 };
 </script>
-<script src="{{ asset('js/member-proben.js') }}?v=2"></script>
+<script src="{{ asset('js/member-proben.js') }}?v=4"></script>
 <script src="{{ asset('js/score-sync.js') }}?v=1"></script>
 {% if is_granted('ROLE_ADMIN') %}
 <script>

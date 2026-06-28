@@ -15,6 +15,10 @@ body { overflow-x: clip; }
 img, canvas, video, iframe, svg { max-width: 100%; }
 img { height: auto !important; }
 
+/* …except the OSMD Partitur score, which is one very wide SVG that must scroll
+   horizontally (renderSingleHorizontalStaffline). Exempt it from the guard above. */
+[data-osmd-target="container"] svg { max-width: none; }
+
 /* Constrain inline-block wrappers (used for rotated post images) */
 div[style*="inline-block"] { max-width: 100%; }
 

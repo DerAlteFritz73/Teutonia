@@ -52,6 +52,144 @@
         </a>`;
     }
 
+    /* ── Partitur (scrolling score playback) ─────────────────────────────
+       When a song folder contains a MusicXML score (type 'score'), the
+       per-voice MP3s feed a scrolling OSMD view instead of being offered as
+       individual recordings. Files are cached by folder path so the button
+       can resolve the score + voice recordings on click.                   */
+    const PARTITUR_CACHE = {};
+
+    function buildFilesHtml(files, dropboxPath) {
+        const score = files.find(function (f) { return f.type === 'score'; });
+        if (!score) {
+            return files.map(fileItemHtml).join('');
+        }
+        PARTITUR_CACHE[dropboxPath] = files;
+        // The voice/Tutti MP3s drive the Partitur — don't also offer them (or
+        // the score file itself) as individual rows. Keep PDFs and anything else.
+        const rest = files.filter(function (f) { return f.type !== 'score' && f.type !== 'audio'; });
+        const btn =
+            '<div class="list-group-item d-flex flex-wrap align-items-center gap-2">' +
+                '<button type="button" class="btn btn-primary btn-sm open-partitur" data-dropbox-path="' + escHtml(dropboxPath) + '">' +
+                    '<i class="bi bi-music-note-list me-1"></i>Partitur abspielen' +
+                '</button>' +
+                '<small class="text-muted">Scrollende Noten mit Stimmen-Wiedergabe zum Mitsingen</small>' +
+            '</div>';
+        return btn + rest.map(fileItemHtml).join('');
+    }
+
+    function dropboxLink(path) {
+        const cfg = window.PROBEN_CONFIG || {};
+        return fetch(cfg.linkUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ path: path })
+        }).then(function (r) { return r.json(); }).then(function (d) { return d.link || null; });
+    }
+
+    function openPartitur(e) {
+        e.preventDefault();
+        const btn   = e.currentTarget;
+        const cfg   = window.PROBEN_CONFIG || {};
+        const files = PARTITUR_CACHE[btn.dataset.dropboxPath];
+        if (!files) return;
+        const score = files.find(function (f) { return f.type === 'score'; });
+        if (!score) return;
+
+        // Map voice recordings: filenames start with 1-S / 2-A / 3-T / 4-B; a
+        // "Tutti …" file is the full-ensemble mix (no matching score staff).
+        const voicePath = {};
+        let tuttiPath = null;
+        files.filter(function (f) { return f.type === 'audio'; }).forEach(function (f) {
+            const m = f.name.match(/^\s*[1-4]\s*-?\s*([SATB])/i);
+            if (m) { voicePath[m[1].toUpperCase()] = f.path; }
+            else if (/^\s*tutti/i.test(f.name)) { tuttiPath = f.path; }
+        });
+
+        const item      = btn.closest('.accordion-item');
+        const titleSpan = item && item.querySelector('.accordion-btn-files .flex-grow-1');
+        // The song name is the first text node of the title span (the <small>
+        // composer follows). Fall back to the full span text if needed.
+        const rawTitle  = titleSpan
+            ? ((titleSpan.childNodes[0] && titleSpan.childNodes[0].textContent) || titleSpan.textContent)
+            : 'Partitur';
+        const title = rawTitle.trim().replace(/\s+/g, ' ') || 'Partitur';
+
+        btn.disabled = true;
+        Promise.all(
+            Object.keys(voicePath).map(function (c) {
+                return dropboxLink(voicePath[c]).then(function (l) { return [c, l]; });
+            }).concat(tuttiPath ? [dropboxLink(tuttiPath).then(function (l) { return ['__tutti', l]; })] : [])
+        ).then(function (pairs) {
+            const audioByVoice = {};
+            let tuttiUrl = '';
+            pairs.forEach(function (p) {
+                if (!p || !p[1]) return;
+                if (p[0] === '__tutti') tuttiUrl = p[1];
+                else audioByVoice[p[0]] = p[1];
+            });
+            const scoreUrl = cfg.viewUrl + '?path=' + encodeURIComponent(score.path);
+            showPartitur(scoreUrl, audioByVoice, tuttiUrl, title);
+        }).catch(function () {
+            alert('Partitur konnte nicht geladen werden.');
+        }).finally(function () {
+            btn.disabled = false;
+        });
+    }
+
+    function osmdScaffold(scoreUrl, audioByVoice, tuttiUrl) {
+        const wrap = document.createElement('div');
+        wrap.setAttribute('data-controller', 'osmd');
+        wrap.setAttribute('data-osmd-url-value', scoreUrl);
+        wrap.setAttribute('data-osmd-audio-by-voice-value', JSON.stringify(audioByVoice || {}));
+        wrap.setAttribute('data-osmd-tutti-url-value', tuttiUrl || '');
+        wrap.innerHTML =
+            '<div class="d-flex flex-wrap align-items-center gap-2 mb-3">' +
+                '<button type="button" class="btn btn-sm btn-primary" disabled data-osmd-target="playBtn" data-action="osmd#togglePlay"><i class="bi bi-play-fill"></i> Abspielen</button>' +
+                '<button type="button" class="btn btn-sm btn-outline-secondary" disabled data-osmd-target="stopBtn" data-action="osmd#stop"><i class="bi bi-stop-fill"></i> Stop</button>' +
+                '<label class="text-muted small mb-0"><i class="bi bi-speedometer2"></i> Tempo</label>' +
+                '<input type="range" class="form-range" style="width:120px" min="0.5" max="1.5" step="0.05" value="1" data-osmd-target="speed" data-action="input->osmd#changeSpeed">' +
+                '<span class="small text-muted" style="min-width:9em" data-osmd-target="speedLabel">1,00×</span>' +
+                '<span class="text-muted small d-none d-sm-inline">Stimme:</span>' +
+                '<span class="d-flex flex-wrap gap-2" data-osmd-target="controls"></span>' +
+            '</div>' +
+            '<div class="alert alert-warning small d-none" data-osmd-target="status"></div>' +
+            '<div class="position-relative">' +
+                '<div class="border rounded bg-white p-2" style="overflow:auto;max-height:62vh;white-space:nowrap;"><div data-osmd-target="container"></div></div>' +
+                '<div data-osmd-target="playhead" class="position-absolute top-0 d-none" style="background:rgba(232,89,12,0.30);border-radius:3px;pointer-events:none;z-index:5;"></div>' +
+            '</div>';
+        return wrap;
+    }
+
+    function showPartitur(scoreUrl, audioByVoice, tuttiUrl, title) {
+        const modalEl = document.getElementById('partiturModal');
+        if (!modalEl) return;
+        const titleEl = document.getElementById('partiturTitle');
+        if (titleEl) titleEl.textContent = title || 'Partitur';
+        const body = document.getElementById('partiturBody');
+        // Build the OSMD view only once the modal is visible, so the score
+        // renders at the correct width (autoResize reads the container size).
+        modalEl.addEventListener('shown.bs.modal', function build() {
+            modalEl.removeEventListener('shown.bs.modal', build);
+            body.innerHTML = '';
+            body.appendChild(osmdScaffold(scoreUrl, audioByVoice, tuttiUrl));
+        });
+        bootstrap.Modal.getOrCreateInstance(modalEl).show();
+    }
+
+    // Clear the OSMD controller (Stimulus disconnect → stops audio, frees the
+    // render) whenever the Partitur modal is closed.
+    (function () {
+        const modalEl = document.getElementById('partiturModal');
+        if (modalEl && !modalEl.dataset.bound) {
+            modalEl.dataset.bound = '1';
+            modalEl.addEventListener('hidden.bs.modal', function () {
+                const body = document.getElementById('partiturBody');
+                if (body) body.innerHTML = '';
+            });
+        }
+    }());
+
     function updateSpeedPresets(speed) {
         document.querySelectorAll('.speed-preset').forEach(function (btn) {
             const s = parseFloat(btn.dataset.speed);
@@ -67,6 +205,9 @@
     }
 
     function attachFileHandlers(root) {
+        root.querySelectorAll('.open-partitur').forEach(function (btn) {
+            btn.addEventListener('click', openPartitur);
+        });
         root.querySelectorAll('.dropbox-file-link').forEach(function (link) {
             link.addEventListener('click', function (e) {
                 e.preventDefault();
@@ -170,7 +311,7 @@
                         // Cache files so score-sync.js can find the PDF path
                         const songId = container.dataset.songId;
                         if (songId) (window.PROBEN_STATE || {}).currentFilesBySongId && (window.PROBEN_STATE.currentFilesBySongId[songId] = files);
-                        container.innerHTML = files.map(fileItemHtml).join('');
+                        container.innerHTML = buildFilesHtml(files, dropboxPath);
                         attachFileHandlers(container);
                     }
                 }
@@ -257,7 +398,7 @@
                         return;
                     }
 
-                    container.innerHTML = files.map(fileItemHtml).join('');
+                    container.innerHTML = buildFilesHtml(files, dropboxPath);
 
                     // Cache files for score-sync.js
                     const songId = container.dataset.songId;

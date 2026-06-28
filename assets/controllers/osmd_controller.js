@@ -55,7 +55,7 @@ export default class extends Controller {
             });
 
             this.setStatus('Lade Partitur…');
-            await this.osmd.load(this.urlValue);
+            await this.osmd.load(await this.fetchScore(this.urlValue));
             this.osmd.render();
             this.buildStaffButtons();
             this.readTempo();
@@ -78,6 +78,23 @@ export default class extends Controller {
             this.setStatus('Fehler beim Laden der Partitur: ' + e.message);
             console.error('[osmd]', e);
         }
+    }
+
+    // Fetch the score and hand OSMD the right kind of content. We fetch the
+    // bytes ourselves (instead of letting OSMD fetch the URL) because the real
+    // Dropbox proxy URL (/api/dropbox/view?path=…) carries no .mxl/.musicxml
+    // extension for OSMD to sniff. We detect a compressed MXL by its zip magic
+    // ("PK") and pass it as a binary string; otherwise decoded MusicXML text.
+    async fetchScore(url) {
+        const resp = await fetch(url);
+        if (!resp.ok) throw new Error('HTTP ' + resp.status);
+        const bytes = new Uint8Array(await resp.arrayBuffer());
+        if (bytes[0] === 0x50 && bytes[1] === 0x4B) {
+            let bin = '';
+            for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+            return bin;
+        }
+        return new TextDecoder('utf-8').decode(bytes);
     }
 
     disconnect() {

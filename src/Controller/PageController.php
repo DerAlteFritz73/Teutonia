@@ -190,6 +190,8 @@ class PageController extends AbstractController
             'wav' => 'audio/wav',
             'ogg' => 'audio/ogg',
             'webm' => 'video/webm',
+            'mxl' => 'application/vnd.recordare.musicxml',
+            'musicxml' => 'application/vnd.recordare.musicxml+xml',
             default => 'application/octet-stream'
         };
 

@@ -8,7 +8,7 @@ use Spatie\Dropbox\Exceptions\BadRequest;
 class DropboxService
 {
     private Client $client;
-    private const ALLOWED_EXTENSIONS = ['pdf', 'mp3', 'mp4', 'wav', 'ogg', 'flac', 'm4a', 'aac', 'wma', 'webm', 'avi', 'mov', 'mkv'];
+    private const ALLOWED_EXTENSIONS = ['pdf', 'mp3', 'mp4', 'wav', 'ogg', 'flac', 'm4a', 'aac', 'wma', 'webm', 'avi', 'mov', 'mkv', 'mxl', 'musicxml'];
     private const EXCLUDED_FOLDERS = ['-= Scans - Originale =-'];
 
     private string $refreshToken;
@@ -387,6 +387,11 @@ class DropboxService
         $audioExtensions = ['mp3', 'wav', 'ogg', 'flac', 'm4a', 'aac', 'wma'];
         if (in_array($extension, $audioExtensions)) {
             return 'audio';
+        }
+
+        // MusicXML score — drives the scrolling Partitur playback view.
+        if (in_array($extension, ['mxl', 'musicxml'])) {
+            return 'score';
         }
 
         return 'video';
