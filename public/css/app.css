@@ -3,17 +3,33 @@ body { display: flex; flex-direction: column; min-height: 100vh; }
 main { flex: 1 0 auto; padding-top: 1rem; }
 footer { flex-shrink: 0; }
 
-/* ── Global responsive ───────────────────────────────────────────────── */
-/* Prevent any element from overflowing the viewport width */
+/* ── Global responsive foundation (mobile-first) ─────────────────────────
+   Goal: no page ever needs a horizontal scrollbar. We fix the ROOT causes
+   (wide flex rows, full-width buttons next to siblings, fixed-width media)
+   rather than clipping. A single `overflow-x: clip` on <body> remains as a
+   last-resort guardrail only — the layout is built not to rely on it. */
 *, *::before, *::after { box-sizing: border-box; }
-html { overflow-x: hidden; }
-body { max-width: 100vw; overflow-x: hidden; }
+body { overflow-x: clip; }
 
-/* Images always shrink to fit their container */
-img { max-width: 100% !important; height: auto !important; }
+/* All replaced/embedded media shrinks to fit its container */
+img, canvas, video, iframe, svg { max-width: 100%; }
+img { height: auto !important; }
 
 /* Constrain inline-block wrappers (used for rotated post images) */
 div[style*="inline-block"] { max-width: 100%; }
+
+/* Long words / URLs in content must wrap instead of forcing width. break-word
+   wraps at spaces first and only splits a word when it alone is too wide — far
+   tidier than `anywhere`, which breaks greedily mid-word inside narrow cells. */
+.post-paragraph, .card-text, .ksl-title, .accordion-button,
+td, th, .breadcrumb-item, .form-check-label { overflow-wrap: break-word; }
+
+/* Flex children default to min-width:auto and refuse to shrink below their
+   content, which is the #1 cause of horizontal overflow. This utility lets a
+   flex item shrink past its content width (pair with text-truncate where wanted). */
+.minw-0 { min-width: 0 !important; }
+
+/* Song-browser row layout (Noten / Aktuelle Proben) is defined below — see ".song-row". */
 
 /* Hide empty paragraphs from Quill editor output (outside the editor and post content) */
 /* Rules are split so p:empty works even in browsers without :has() (Safari < 15.4) */
@@ -58,23 +74,102 @@ p:has(br:only-child) { display: none; }
 
 /* Pin the expand chevron to the right edge so it stays vertically aligned
    across rows regardless of genre/file-badge width (esp. on mobile). */
-.accordion-btn-files { position: relative; padding-right: 3rem; }
+.accordion-btn-files { position: relative; padding-right: 3rem; text-align: left; }
 .accordion-btn-files::after {
     position: absolute;
     right: 1.25rem;
     top: 50%;
     margin: -0.625rem 0 0 0; /* vertical centering without touching transform (Bootstrap rotates ::after) */
 }
-/* Reserve at least half the width for the title so it stays readable. */
-.accordion-btn-files > .flex-grow-1 { min-width: 50%; }
-/* Let the genre/Etikett badges wrap onto multiple lines instead of pushing
-   the layout; keep them right-aligned next to the chevron. */
-.accordion-btn-badges { flex-wrap: wrap; justify-content: flex-end; min-width: 0; }
-/* Etikett rendered as a fixed-width first column so song titles line up.
-   min/max-width pin the size regardless of badge text; long Etiketts wrap. */
-.accordion-btn-etikett {
-    flex: 0 0 90px;
-    min-width: 90px;
-    max-width: 90px;
+
+/* ── Song-browser rows (Noten / Aktuelle Proben) ─────────────────────────────
+   Each accordion header is a grid with FIXED side tracks so every row aligns
+   the same way no matter how long the Etikett is or how many genres a song has:
+       [ Etikett | toggle (icon · title · genres) | admin controls ]
+   The toggle is itself a 3-track grid, so the genre badges form their own
+   aligned column on the right and the title takes the flexible middle space. */
+/* Desktop: a single row — Etikett | toggle | admin controls (beside the chevron). */
+.song-row {
+    display: grid;
+    grid-template-columns:
+        [etikett] var(--song-etikett-w, 8rem)
+        [main]    minmax(0, 1fr)
+        [ctrl]    auto;
+    grid-template-areas: "etikett main ctrl";
+    align-items: center;
+    column-gap: .25rem;
 }
-.accordion-btn-etikett .badge { white-space: normal; text-align: left; }
+.song-row > .editable-etikett,
+.song-row > .song-etikett-col {
+    grid-area: etikett;
+    align-self: center;
+    min-width: 0;
+    text-align: right;
+}
+/* Long Etiketts wrap (at spaces/hyphens first) inside the fixed column
+   instead of widening it or breaking mid-word. */
+.song-row > .song-etikett-col .badge,
+.song-row > .editable-etikett .display-val .badge {
+    white-space: normal;
+    overflow-wrap: break-word;
+    text-align: left;
+}
+.song-row > .song-ctrl {
+    grid-area: ctrl;
+    display: flex;
+    align-items: center;
+    gap: .25rem;
+}
+
+/* Toggle button: icon | title | genres (chevron is pinned right, above). */
+.song-row > .accordion-btn-files {
+    grid-area: main;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) var(--song-genres-w, 12rem);
+    align-items: center;
+    column-gap: .5rem;
+}
+.song-row > .accordion-btn-files > .accordion-btn-badges {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    min-width: 0;
+    margin: 0 !important;   /* the grid gap handles spacing; drop ps-3/me-3 */
+    padding: 0 !important;
+}
+/* The PDF/audio count badges are a nested flex unit; on a narrow genres column
+   (phones) the pair is wider than the column and would spill left over the title.
+   Cap it to the column and let the two counts wrap/stack so they stay aligned. */
+.song-row > .accordion-btn-files > .accordion-btn-badges .file-count-badges {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    max-width: 100%;
+}
+
+/* Narrow phones: drop to two rows so the admin controls tuck UNDER the chevron
+   (freeing the full width for the title), and tighten the side columns. */
+@media (max-width: 575.98px) {
+    .song-row {
+        grid-template-columns: [etikett] var(--song-etikett-w) [main] minmax(0, 1fr);
+        grid-template-areas:
+            "etikett main"
+            "etikett ctrl";
+        align-items: start;
+        row-gap: .1rem;
+        --song-etikett-w: 4.5rem;
+        column-gap: .1rem;
+    }
+    .song-row > .accordion-btn-files {
+        --song-genres-w: 3.75rem;
+        grid-template-columns: auto minmax(5rem, 1fr) var(--song-genres-w);
+        padding-right: 1.9rem;
+        column-gap: .2rem;
+    }
+    .song-row > .accordion-btn-files::after { right: .55rem; }
+    .song-row > .song-ctrl {
+        justify-self: end;          /* under the chevron */
+        padding-right: .5rem;
+        padding-bottom: .35rem;
+    }
+    /* Folder icon hugs the title on phones to save horizontal space. */
+    .song-row > .accordion-btn-files > .bi { margin-right: .3rem !important; }
+}

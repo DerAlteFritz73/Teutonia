@@ -18,8 +18,12 @@
                     {% set folderId = 'proben-' ~ loop.index %}
                     {% set hasMovements = song.children|length > 0 %}
                     <div class="accordion-item">
-                        <h2 class="accordion-header d-flex align-items-center">
-                            {{ m.admin_etikett_edit(song) }}
+                        <h2 class="accordion-header song-row">
+                            {% if is_granted('ROLE_ADMIN') %}
+                                {{ m.admin_etikett_edit(song) }}
+                            {% else %}
+                                <div class="song-etikett-col">{{ m.etikett_badge(song.etikett) }}</div>
+                            {% endif %}
                             <button class="accordion-button collapsed accordion-btn-files"
                                     type="button"
                                     data-bs-toggle="collapse"
@@ -27,11 +31,6 @@
                                     aria-expanded="false"
                                     {% set probenPath = song.aktuelleDropboxlink ?? song.dropboxlink %}
                     {% if probenPath %}data-dropbox-path="{{ probenPath }}"{% endif %}{% if hasMovements and childCounts[song.id] is defined %} data-server-counts="1"{% endif %}>
-                                {% if not is_granted('ROLE_ADMIN') %}
-                                <span class="accordion-btn-etikett flex-shrink-0 text-end me-2">
-                                    {{ m.etikett_badge(song.etikett) }}
-                                </span>
-                                {% endif %}
                                 <i class="bi bi-folder2-open me-2"></i>
                                 <span class="d-flex flex-column lh-sm flex-grow-1">
                                     {{ song.songName }}
@@ -52,7 +51,9 @@
                                     <span class="d-flex gap-1 file-count-badges">{% if hasMovements and childCounts[song.id] is defined %}{{ m.file_count_badges(childCounts[song.id]) }}{% endif %}</span>
                                 </span>
                             </button>
-                            {{ m.admin_proben_toggle(song, false, true) }}
+                            {% if is_granted('ROLE_ADMIN') %}
+                            <div class="song-ctrl">{{ m.admin_proben_toggle(song, false, true) }}</div>
+                            {% endif %}
                         </h2>
                         <div id="{{ folderId }}" class="accordion-collapse collapse"
                              data-bs-parent="#probenAccordion">

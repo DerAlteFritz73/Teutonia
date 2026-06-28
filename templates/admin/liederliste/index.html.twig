@@ -33,13 +33,13 @@
         </div>
     {% else %}
         <div class="table-responsive">
-            <table class="table table-hover align-middle">
+            <table class="table table-hover table-sm align-middle">
                 <thead class="table-dark">
                     <tr>
                         <th>Name</th>
-                        <th style="width:80px" class="text-center">Lieder</th>
-                        <th style="width:90px" class="text-center">Dauer</th>
-                        <th style="width:130px">Zuletzt bearbeitet</th>
+                        <th style="width:80px" class="text-center d-none d-sm-table-cell">Lieder</th>
+                        <th style="width:90px" class="text-center d-none d-md-table-cell">Dauer</th>
+                        <th style="width:130px" class="d-none d-md-table-cell">Zuletzt bearbeitet</th>
                         <th style="width:210px" class="text-end">Aktionen</th>
                     </tr>
                 </thead>
@@ -52,10 +52,10 @@
                                 <div class="text-muted small">{{ liste.title }}</div>
                             {% endif %}
                         </td>
-                        <td class="text-center"><span class="badge bg-secondary">{{ liste.items|length }}</span></td>
-                        <td class="text-center text-muted small">{{ liste.totalDuration }}</td>
-                        <td class="text-muted small">{{ liste.updatedAt|date('d.m.Y H:i') }}</td>
-                        <td class="text-end text-nowrap">
+                        <td class="text-center d-none d-sm-table-cell"><span class="badge bg-secondary">{{ liste.items|length }}</span></td>
+                        <td class="text-center text-muted small d-none d-md-table-cell">{{ liste.totalDuration }}</td>
+                        <td class="text-muted small d-none d-md-table-cell">{{ liste.updatedAt|date('d.m.Y H:i') }}</td>
+                        <td class="text-end">
                             {% if is_granted('ROLE_ADMIN') %}
                             <a href="{{ path('admin_liederlisten_edit', {id: liste.id}) }}"
                                class="btn btn-sm btn-outline-primary"

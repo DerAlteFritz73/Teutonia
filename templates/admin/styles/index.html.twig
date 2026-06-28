@@ -24,9 +24,9 @@
             <thead class="table-dark">
                 <tr>
                     <th>Name</th>
-                    <th style="width:140px">Farbe</th>
-                    <th style="width:80px">Bild</th>
-                    <th style="width:80px">Lieder</th>
+                    <th style="width:140px" class="d-none d-md-table-cell">Farbe</th>
+                    <th style="width:80px" class="d-none d-md-table-cell">Bild</th>
+                    <th style="width:80px" class="d-none d-sm-table-cell">Lieder</th>
                     <th class="text-end" style="width:80px">Aktionen</th>
                 </tr>
             </thead>
@@ -34,13 +34,13 @@
                 {% for style in styles %}
                 <tr>
                     <td class="fw-semibold">{{ style.name }}</td>
-                    <td>
+                    <td class="d-none d-md-table-cell">
                         {% set c1 = style.color ?? '#adb5bd' %}
                         {% set c2 = style.color2 ?? style.color ?? '#6c757d' %}
                         <span class="d-inline-block rounded-pill"
                               style="width:120px;height:30px;background:linear-gradient(135deg,{{ c1 }},{{ c2 }});border:1px solid rgba(0,0,0,.1)"></span>
                     </td>
-                    <td>
+                    <td class="d-none d-md-table-cell">
                         {% if style.image %}
                             <img src="{{ asset('images/styles/' ~ style.image) }}"
                                  style="width:40px;height:40px;border-radius:50%;object-fit:cover;border:2px solid #dee2e6" alt="">
@@ -48,7 +48,7 @@
                             <span class="text-muted">—</span>
                         {% endif %}
                     </td>
-                    <td>
+                    <td class="d-none d-sm-table-cell">
                         <a href="{{ path('admin_songs', {q: style.name}) }}"
                            class="badge bg-secondary text-decoration-none">{{ style.songKeywords|length }}</a>
                     </td>

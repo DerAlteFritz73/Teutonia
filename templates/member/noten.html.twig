@@ -27,19 +27,18 @@
                     {% set hasDropbox = notenPath is not null and notenPath != '' %}
                     {% set hasMovements = song.children|length > 0 %}
                     <div class="accordion-item" data-etikett="{{ song.etikett ?? '' }}">
-                        <h2 class="accordion-header d-flex align-items-center">
-                            {{ m.admin_etikett_edit(song) }}
+                        <h2 class="accordion-header song-row">
+                            {% if is_granted('ROLE_ADMIN') %}
+                                {{ m.admin_etikett_edit(song) }}
+                            {% else %}
+                                <div class="song-etikett-col">{{ m.etikett_badge(song.etikett) }}</div>
+                            {% endif %}
                             <button class="accordion-button collapsed accordion-btn-files"
                                     type="button"
                                     data-bs-toggle="collapse"
                                     data-bs-target="#{{ allFolderId }}"
                                     aria-expanded="false"
                                     {% if hasDropbox %}data-dropbox-path="{{ notenPath }}"{% endif %}{% if hasMovements and childCounts[song.id] is defined %} data-server-counts="1"{% endif %}>
-                                {% if not is_granted('ROLE_ADMIN') %}
-                                <span class="accordion-btn-etikett flex-shrink-0 text-end me-2">
-                                    {{ m.etikett_badge(song.etikett) }}
-                                </span>
-                                {% endif %}
                                 {% if hasMovements %}
                                     <i class="bi bi-folder2-open me-2"></i>
                                 {% elseif hasDropbox %}
@@ -67,13 +66,15 @@
                                 </span>
                             </button>
                             {% if is_granted('ROLE_ADMIN') %}
+                            <div class="song-ctrl">
                                 <a href="{{ path('admin_songs_edit', {id: song.id}) }}"
-                                   class="btn btn-sm btn-outline-secondary flex-shrink-0 ms-2"
+                                   class="btn btn-sm btn-outline-secondary"
                                    title="Im Admin-Bereich bearbeiten">
                                     <i class="bi bi-pencil-square"></i>
                                 </a>
+                                {{ m.admin_proben_toggle(song, true) }}
+                            </div>
                             {% endif %}
-                            {{ m.admin_proben_toggle(song, true) }}
                         </h2>
                         <div id="{{ allFolderId }}" class="accordion-collapse collapse"
                              data-bs-parent="#allFilesAccordion">

@@ -24,7 +24,7 @@
 <link rel="stylesheet" href="{{ asset('css/admin-songs.css') }}">
 
 <div class="container-fluid py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
         <div>
             <h1 class="d-inline-block">Lieder
                 <span class="badge bg-secondary fs-6">{{ search|trim != '' ? total : totalAll }}</span>
@@ -34,7 +34,7 @@
                 <i class="bi bi-trash me-1"></i><span id="delete-count">0</span> löschen
             </button>
         </div>
-        <div class="d-flex gap-2">
+        <div class="d-flex gap-2 flex-wrap">
             <button id="btn-sync-dropbox" class="btn btn-outline-primary" title="Dropbox-Ordner abgleichen und fehlende Verknüpfungen automatisch setzen">
                 <i class="bi bi-cloud-arrow-down me-1"></i>Dropbox synchronisieren
             </button>

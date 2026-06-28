@@ -31,13 +31,16 @@
     {% else %}
     <div class="table-responsive">
         <table class="table table-sm table-hover align-middle" style="font-size:0.82rem">
+            {# Timestamp stays on one line on wide screens; wraps to two lines on phones
+               so the message column keeps enough room and the table never scrolls. #}
+            <style>.log-ts{white-space:nowrap}@media(max-width:575.98px){.log-ts{white-space:normal;word-break:break-word}.log-msg{word-break:break-word}}</style>
             <thead class="table-dark sticky-top">
                 <tr>
                     <th style="width:140px">Zeitstempel</th>
-                    <th style="width:80px">Kanal</th>
-                    <th style="width:80px">Level</th>
+                    <th style="width:80px" class="d-none d-md-table-cell">Kanal</th>
+                    <th style="width:80px" class="d-none d-sm-table-cell">Level</th>
                     <th>Meldung</th>
-                    <th style="width:120px">Aktion</th>
+                    <th style="width:120px" class="d-none d-md-table-cell">Aktion</th>
                 </tr>
             </thead>
             <tbody>
@@ -59,16 +62,16 @@
                     {% set badgeClass = 'bg-primary' %}
                 {% endif %}
                 <tr class="{{ rowClass }}" data-log-message="{{ entry.message }} {{ entry.context|default('') }}">
-                    <td class="text-nowrap font-monospace small">{{ entry.timestamp|date('d.m.Y H:i:s') }}</td>
-                    <td><span class="badge bg-secondary">{{ entry.channel }}</span></td>
-                    <td><span class="badge {{ badgeClass }}">{{ entry.level }}</span></td>
+                    <td class="font-monospace small log-ts">{{ entry.timestamp|date('d.m.Y H:i:s') }}</td>
+                    <td class="d-none d-md-table-cell"><span class="badge bg-secondary">{{ entry.channel }}</span></td>
+                    <td class="d-none d-sm-table-cell"><span class="badge {{ badgeClass }}">{{ entry.level }}</span></td>
                     <td>
-                        <div class="font-monospace">{{ entry.message }}</div>
+                        <div class="font-monospace log-msg">{{ entry.message }}</div>
                         {% if entry.context %}
                         <div class="text-muted small mt-1" style="white-space:pre-wrap;word-break:break-all">{{ entry.context }}</div>
                         {% endif %}
                     </td>
-                    <td class="text-nowrap">
+                    <td class="text-nowrap d-none d-md-table-cell">
                         {% if entry.level in ['WARNING', 'ERROR', 'CRITICAL'] and entry.channel == 'security' %}
                             <button class="btn btn-sm btn-outline-danger blacklist-btn"
                                     data-log-row-index="{{ loop.index }}"

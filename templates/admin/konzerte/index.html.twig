@@ -27,17 +27,17 @@
     {% endfor %}
 
     <div class="table-responsive">
-        <table class="table table-hover align-middle">
+        <table class="table table-hover table-sm align-middle">
             <thead class="table-dark">
                 <tr>
-                    <th style="width:60px"></th>
+                    <th class="d-none d-sm-table-cell" style="width:60px"></th>
                     <th>Datum</th>
                     <th>Name</th>
-                    <th>Ort</th>
-                    <th style="width:80px">Lieder</th>
-                    <th style="width:60px" title="Programm aussen">Progr. A</th>
-                    <th style="width:60px" title="Programm innen">Progr. I</th>
-                    <th style="width:60px" title="Kritik / Pressespiegel">Kritik</th>
+                    <th class="d-none d-md-table-cell">Ort</th>
+                    <th class="d-none d-sm-table-cell" style="width:80px">Lieder</th>
+                    <th class="d-none d-md-table-cell" style="width:60px" title="Programm aussen">Progr. A</th>
+                    <th class="d-none d-md-table-cell" style="width:60px" title="Programm innen">Progr. I</th>
+                    <th class="d-none d-md-table-cell" style="width:60px" title="Kritik / Pressespiegel">Kritik</th>
                     {% if showAdminActions is defined and showAdminActions %}<th class="text-end" style="width:120px">Aktionen</th>{% endif %}
                 </tr>
             </thead>
@@ -49,7 +49,7 @@
                     data-bs-target="#songs-{{ konzert.id }}"
                     aria-expanded="false"
                     aria-controls="songs-{{ konzert.id }}">
-                    <td class="p-1" style="width:60px" onclick="event.stopPropagation()">
+                    <td class="p-1 d-none d-sm-table-cell" style="width:60px" onclick="event.stopPropagation()">
                         {% if konzert.plakatPath %}
                             <img src="{{ asset(konzert.plakatPath) }}"
                                  alt="Plakat"
@@ -67,11 +67,11 @@
                     <td>
                         {{ konzert.name }}
                     </td>
-                    <td class="text-muted">{{ konzert.location ?? '—' }}</td>
-                    <td>
+                    <td class="text-muted d-none d-md-table-cell">{{ konzert.location ?? '—' }}</td>
+                    <td class="d-none d-sm-table-cell">
                         <span class="badge bg-secondary">{{ konzert.songs|length + konzert.customSongs|length }}</span>
                     </td>
-                    <td class="p-1" style="width:60px" onclick="event.stopPropagation()">
+                    <td class="p-1 d-none d-md-table-cell" style="width:60px" onclick="event.stopPropagation()">
                         {% if konzert.programmVorderseite %}
                             <img src="{{ asset(konzert.programmVorderseite) }}"
                                  alt="Programm aussen"
@@ -85,7 +85,7 @@
                             </div>
                         {% endif %}
                     </td>
-                    <td class="p-1" style="width:60px" onclick="event.stopPropagation()">
+                    <td class="p-1 d-none d-md-table-cell" style="width:60px" onclick="event.stopPropagation()">
                         {% if konzert.programmRueckseite %}
                             <img src="{{ asset(konzert.programmRueckseite) }}"
                                  alt="Programm innen"
@@ -99,7 +99,7 @@
                             </div>
                         {% endif %}
                     </td>
-                    <td class="p-1" style="width:60px" onclick="event.stopPropagation()">
+                    <td class="p-1 d-none d-md-table-cell" style="width:60px" onclick="event.stopPropagation()">
                         {% if konzert.kritikPath %}
                             <img src="{{ asset(konzert.kritikPath) }}"
                                  alt="Kritik"

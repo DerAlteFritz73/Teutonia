@@ -29,9 +29,9 @@
             <thead>
                 <tr>
                     <th>Name</th>
-                    <th>E-Mail</th>
-                    <th>Rollen</th>
-                    <th>Letzter Login</th>
+                    <th class="d-none d-md-table-cell">E-Mail</th>
+                    <th class="d-none d-sm-table-cell">Rollen</th>
+                    <th class="d-none d-md-table-cell">Letzter Login</th>
                     <th>Aktionen</th>
                 </tr>
             </thead>
@@ -39,8 +39,8 @@
                 {% for user in users %}
                     <tr>
                         <td>{{ user.fullName }}</td>
-                        <td>{{ user.email }}</td>
-                        <td>
+                        <td class="d-none d-md-table-cell">{{ user.email }}</td>
+                        <td class="d-none d-sm-table-cell">
                             {% for role in user.rawRoles|sort %}
                                 {% if role == 'ROLE_ADMIN' %}
                                     <span class="badge bg-danger">Admin</span>
@@ -53,7 +53,7 @@
                                 {% endif %}
                             {% endfor %}
                         </td>
-                        <td>
+                        <td class="d-none d-md-table-cell">
                             {% if user.lastLoginAt %}
                                 {{ user.lastLoginAt|date('d.m.Y H:i') }}
                             {% else %}

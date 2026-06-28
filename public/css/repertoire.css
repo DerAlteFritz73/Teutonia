@@ -2,20 +2,26 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-width: 210px;
+    /* Fluid width so the ellipse never forces horizontal scroll on phones.
+       Caps at 210px on wide screens, shrinks with the viewport on narrow ones. */
+    width: min(210px, 72vw);
+    min-width: 0;
+    max-width: 100%;
     min-height: 88px;
     border-radius: 50%;
-    padding: 22px 52px;
+    padding: 22px clamp(18px, 6vw, 52px);
     position: relative;
     color: #fff;
-    font-size: 1.15rem;
+    font-size: clamp(1rem, 3.5vw, 1.15rem);
     font-weight: 700;
+    text-align: center;
     text-shadow: 0 1px 4px rgba(0,0,0,.35);
     box-shadow: 0 4px 20px rgba(0,0,0,.18);
 }
 .ellipse-wrapper {
-    padding: 44px;
+    padding: clamp(16px, 5vw, 44px);
     display: inline-block;
+    max-width: 100%;
 }
 .style-img {
     position: absolute;

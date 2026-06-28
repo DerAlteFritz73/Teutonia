@@ -14,9 +14,9 @@
 
     {{ form_start(form, {attr: {novalidate: 'novalidate', 'data-unsaved-check': ''}}) }}
 
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1 class="mb-0">{{ isNew ? 'Neues Lied' : song.songName }}</h1>
-        <div class="d-flex gap-2 align-items-center">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+        <h1 class="mb-0 minw-0 text-break">{{ isNew ? 'Neues Lied' : song.songName }}</h1>
+        <div class="d-flex gap-2 align-items-center flex-wrap">
             {% if not isNew %}
             <button type="button" class="btn btn-outline-danger"
                     data-tooltip="Lied unwiderruflich löschen"
@@ -149,7 +149,7 @@
     <div class="card mb-4">
         <div class="card-header fw-semibold">Stile</div>
         <div class="card-body">
-            <div class="row row-cols-2 row-cols-md-3 g-2">
+            <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-2">
                 {% for child in form.styles %}
                     <div class="col">
                         <div class="form-check">

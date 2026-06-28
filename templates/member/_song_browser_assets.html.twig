@@ -1,24 +1,8 @@
 {# Shared styles, modals and scripts for the song-browser pages
    (Aktuelle Proben + Noten). Included once per page after the accordion markup. #}
 <style>
-    /* Fixed-width Etikett column so song titles line up vertically (md+ only;
-       on small screens the badge keeps its natural width to save space). */
-    @media (min-width: 768px) {
-        .accordion-btn-etikett,
-        .editable-etikett {
-            width: 8rem;
-            min-width: 8rem;
-        }
-    }
-    .accordion-btn-etikett .badge,
-    .editable-etikett .display-val .badge {
-        display: inline-block;
-        max-width: 100%;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-        vertical-align: middle;
-    }
+    /* The Etikett / title / genres column layout for these accordion rows lives
+       in public/css/app.css (see ".song-row"). */
 </style>
 
 <!-- PDF Viewer Modal -->
