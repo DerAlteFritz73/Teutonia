@@ -96,15 +96,26 @@
         const score = files.find(function (f) { return f.type === 'score'; });
         if (!score) return;
 
-        // Map voice recordings: filenames start with 1-S / 2-A / 3-T / 4-B; a
-        // "Tutti …" file is the full-ensemble mix (no matching score staff).
+        // Map voice recordings: filenames start with 1-S / 2-A / 3-T / 4-B, or
+        // a combined "M" (Männer) track; a "Tutti …" file is the full-ensemble
+        // mix (no matching score staff).
         const voicePath = {};
         let tuttiPath = null;
+        const otherAudio = [];
         files.filter(function (f) { return f.type === 'audio'; }).forEach(function (f) {
-            const m = f.name.match(/^\s*[1-4]\s*-?\s*([SATB])/i);
+            const m = f.name.match(/^\s*[1-4]\s*-?\s*([SATBM])/i);
             if (m) { voicePath[m[1].toUpperCase()] = f.path; }
             else if (/^\s*tutti/i.test(f.name)) { tuttiPath = f.path; }
+            else { otherAudio.push(f); }
         });
+        // Songs without split voice tracks (e.g. a canon, or a single combined
+        // recording) have no S/A/T/B/M or "Tutti …" file. In that case the lone
+        // recording IS the Tutti — use it as the default mix so Abspielen still
+        // plays, preferring the full take over a "solo" version.
+        if (!tuttiPath && !Object.keys(voicePath).length && otherAudio.length) {
+            const full = otherAudio.find(function (f) { return !/solo/i.test(f.name); }) || otherAudio[0];
+            tuttiPath = full.path;
+        }
 
         const item      = btn.closest('.accordion-item');
         const titleSpan = item && item.querySelector('.accordion-btn-files .flex-grow-1');
@@ -143,25 +154,35 @@
         wrap.setAttribute('data-osmd-url-value', scoreUrl);
         wrap.setAttribute('data-osmd-audio-by-voice-value', JSON.stringify(audioByVoice || {}));
         wrap.setAttribute('data-osmd-tutti-url-value', tuttiUrl || '');
+        // The whole viewer (controls bar + score) rotates together in landscape,
+        // so the playback controls ride along the top edge of the rotated score.
         wrap.innerHTML =
-            '<div class="d-flex flex-wrap align-items-center gap-2 mb-3">' +
-                '<button type="button" class="btn btn-sm btn-primary" disabled data-osmd-target="playBtn" data-action="osmd#togglePlay"><i class="bi bi-play-fill"></i> Abspielen</button>' +
-                '<button type="button" class="btn btn-sm btn-outline-secondary" disabled data-osmd-target="stopBtn" data-action="osmd#stop"><i class="bi bi-stop-fill"></i> Stop</button>' +
-                '<label class="text-muted small mb-0"><i class="bi bi-speedometer2"></i> Tempo</label>' +
-                '<input type="range" class="form-range" style="width:120px" min="0.5" max="1.5" step="0.05" value="1" data-osmd-target="speed" data-action="input->osmd#changeSpeed">' +
-                '<span class="small text-muted" style="min-width:9em" data-osmd-target="speedLabel">1,00×</span>' +
-                '<span class="text-muted small d-none d-sm-inline">Stimme:</span>' +
-                '<span class="d-flex flex-wrap gap-2" data-osmd-target="controls"></span>' +
-                // Rotate the scrolling score to full-screen landscape (handy on phones).
-                '<button type="button" class="btn btn-sm btn-outline-secondary ms-auto" data-action="osmd#toggleLandscape" title="Querformat (Vollbild)"><i class="bi bi-phone-landscape"></i> Querformat</button>' +
-            '</div>' +
-            '<div class="alert alert-warning small d-none" data-osmd-target="status"></div>' +
-            // Pinch-to-zoom (mobile) acts on this scroller; touch-action keeps native
-            // one-finger panning while letting our two-finger handler own the pinch.
-            '<div class="position-relative osmd-viewer" data-osmd-target="viewer">' +
-                '<div class="border rounded bg-white p-2 osmd-scroll" data-osmd-target="scroll" style="overflow:auto;max-height:62vh;white-space:nowrap;touch-action:pan-x pan-y;"><div data-osmd-target="container"></div></div>' +
-                '<div data-osmd-target="playhead" class="position-absolute top-0 d-none" style="background:rgba(232,89,12,0.30);border-radius:3px;pointer-events:none;z-index:5;"></div>' +
-                '<button type="button" class="btn btn-sm btn-dark osmd-landscape-exit d-none" data-osmd-target="landscapeExit" data-action="osmd#toggleLandscape" title="Hochformat"><i class="bi bi-phone"></i> Hochformat</button>' +
+            '<div class="osmd-viewer" data-osmd-target="viewer">' +
+                '<div class="d-flex flex-wrap align-items-center gap-2 mb-3 osmd-controls-bar">' +
+                    '<button type="button" class="btn btn-sm btn-primary" disabled data-osmd-target="playBtn" data-action="osmd#togglePlay"><i class="bi bi-play-fill"></i> Abspielen</button>' +
+                    '<button type="button" class="btn btn-sm btn-outline-secondary" disabled data-osmd-target="stopBtn" data-action="osmd#stop"><i class="bi bi-stop-fill"></i> Stop</button>' +
+                    '<label class="text-muted small mb-0"><i class="bi bi-speedometer2"></i> Tempo</label>' +
+                    '<input type="range" class="form-range" style="width:120px" min="0.5" max="1.5" step="0.05" value="1" data-osmd-target="speed" data-action="input->osmd#changeSpeed">' +
+                    '<span class="small text-muted" style="min-width:3em" data-osmd-target="speedLabel">1,00×</span>' +
+                    '<input type="number" class="form-control form-control-sm" style="width:5em" step="1" data-osmd-target="bpm" data-action="change->osmd#changeBpm" aria-label="BPM" title="Tempo in BPM (während der Wiedergabe änderbar)">' +
+                    '<span class="small text-muted">BPM</span>' +
+                    '<span class="text-muted small d-none d-sm-inline">Stimme:</span>' +
+                    '<span class="d-flex flex-wrap gap-2" data-osmd-target="controls"></span>' +
+                    // Single toggle: "Querformat" to rotate, "Hochformat" to return.
+                    // Mobile only (a phone gesture; PC modal is already wide). The label
+                    // swaps with the .osmd-landscape state — see app.css.
+                    '<button type="button" class="btn btn-sm btn-outline-secondary ms-auto d-lg-none" data-action="osmd#toggleLandscape" title="Querformat / Hochformat">' +
+                        '<span class="osmd-toggle-enter"><i class="bi bi-phone-landscape"></i> Querformat</span>' +
+                        '<span class="osmd-toggle-exit"><i class="bi bi-phone"></i> Hochformat</span>' +
+                    '</button>' +
+                '</div>' +
+                '<div class="alert alert-warning small d-none" data-osmd-target="status"></div>' +
+                // Pinch-to-zoom (mobile) acts on this scroller; touch-action keeps native
+                // one-finger panning while letting our two-finger handler own the pinch.
+                '<div class="position-relative osmd-score-wrap">' +
+                    '<div class="border rounded bg-white p-2 osmd-scroll" data-osmd-target="scroll" style="overflow:auto;max-height:62vh;white-space:nowrap;touch-action:pan-x pan-y;"><div data-osmd-target="container"></div></div>' +
+                    '<div data-osmd-target="playhead" class="position-absolute top-0 d-none" style="background:rgba(232,89,12,0.30);border-radius:3px;pointer-events:none;z-index:5;"></div>' +
+                '</div>' +
             '</div>';
         return wrap;
     }

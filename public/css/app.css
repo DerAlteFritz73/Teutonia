@@ -11,10 +11,17 @@ footer { flex-shrink: 0; }
 *, *::before, *::after { box-sizing: border-box; }
 body { overflow-x: clip; }
 
-/* ── Partitur: rotate the scrolling score to a full-screen landscape view ──
-   Only the score scroller (.osmd-viewer) rotates — the playback controls stay
-   in the modal behind it. 100vh/100vw swap because the 90° turn maps the
-   element's width onto the screen height and vice-versa. */
+/* On a PC the Partitur modal uses most of the screen width (mobile stays
+   fullscreen via modal-fullscreen-lg-down) so more of the horizontal score is
+   visible without scrolling. The #id beats Bootstrap's .modal-xl max-width. */
+@media (min-width: 992px) {
+    #partiturModal .modal-dialog { max-width: 92vw; }
+}
+
+/* ── Partitur: rotate the whole viewer (controls bar + score) to a full-screen
+   landscape view so the playback controls ride along the top of the rotated
+   score. 100vh/100vw swap because the 90° turn maps the element's width onto
+   the screen height and vice-versa. */
 body.osmd-landscape-active { overflow: hidden; }
 .osmd-viewer.osmd-landscape {
     /* !important beats Bootstrap's .position-relative utility on the wrapper. */
@@ -28,18 +35,36 @@ body.osmd-landscape-active { overflow: hidden; }
     background: #fff;
     transform-origin: top left;
     transform: rotate(90deg) translateY(-100%);
+    display: flex;
+    flex-direction: column;
 }
-.osmd-viewer.osmd-landscape > .osmd-scroll {
+/* Controls bar stays a compact strip along the top edge; the score takes the rest. */
+.osmd-viewer.osmd-landscape .osmd-controls-bar {
+    flex: 0 0 auto;
+    margin: 0;
+    padding: .5rem .75rem;
+    background: #fff;
+    border-bottom: 1px solid #dee2e6;
+}
+.osmd-viewer.osmd-landscape .osmd-score-wrap {
+    flex: 1 1 auto;
+    min-height: 0;
+}
+.osmd-viewer.osmd-landscape .osmd-scroll {
     max-height: none !important;
     height: 100% !important;
     border-radius: 0 !important;
+    /* No flex-centring here: align-items:center makes overflow unreachable by
+       scrollTop, which would break scrollStaffIntoCenter (selecting a voice).
+       The fit-zoom already sizes the staff to roughly fill, so top-aligned is
+       fine and vertical scroll-to-voice keeps working. */
 }
-.osmd-landscape-exit {
-    position: absolute;
-    top: .5rem;
-    left: .5rem;
-    z-index: 10;
-}
+
+/* The single landscape toggle button swaps its label between "Querformat"
+   (enter) and "Hochformat" (exit) depending on the .osmd-landscape state. */
+.osmd-toggle-exit { display: none; }
+.osmd-viewer.osmd-landscape .osmd-toggle-enter { display: none !important; }
+.osmd-viewer.osmd-landscape .osmd-toggle-exit { display: inline-block; }
 
 /* All replaced/embedded media shrinks to fit its container */
 img, canvas, video, iframe, svg { max-width: 100%; }

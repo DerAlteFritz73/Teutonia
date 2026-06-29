@@ -17,7 +17,7 @@ import { Controller } from '@hotwired/stimulus';
  *   </div>
  */
 export default class extends Controller {
-    static targets = ['container', 'controls', 'status', 'playBtn', 'stopBtn', 'playhead', 'speed', 'speedLabel', 'scroll', 'viewer', 'landscapeExit'];
+    static targets = ['container', 'controls', 'status', 'playBtn', 'stopBtn', 'playhead', 'speed', 'speedLabel', 'bpm', 'scroll', 'viewer'];
     static values = {
         url: String,
         audioByVoice: { type: Object, default: {} },
@@ -32,6 +32,10 @@ export default class extends Controller {
         this.activeStaff = null;
         this.tuttiActive = false;
         this.playing = false;
+        // Initialise zoom/landscape up front: the default Tutti selection below
+        // runs fitAllStavesZoom(), which reads this.zoom.
+        this.zoom = 1;
+        this.landscape = false;
 
         try {
             // The vendored OSMD bundle exposes the namespace as a single default export.
@@ -69,14 +73,15 @@ export default class extends Controller {
             this.audioEl.preservesPitch = true; // keep pitch when changing speed
             this.audioEl.addEventListener('ended', () => this.onAudioEnded());
             // Default to the Tutti mix so the play button works without a
-            // voice selected.
+            // voice selected. Songs without a Tutti mix (only per-voice tracks)
+            // fall back to the first staff that has a recording, so Abspielen
+            // still plays something instead of being a no-op.
             if (this.tuttiUrlValue) this.toggleTutti(this.tuttiBtn);
+            else this.selectDefaultVoice();
             this.enablePlayback();
             this.updateSpeedLabel();
             this.setStatus('');
 
-            this.zoom = 1;
-            this.landscape = false;
             this.setupPinchZoom();
         } catch (e) {
             this.setStatus('Fehler beim Laden der Partitur: ' + e.message);
@@ -193,16 +198,55 @@ export default class extends Controller {
     enterLandscape() {
         if (!this.hasViewerTarget) return;
         this.landscape = true;
+        // Scale the score up so the single horizontal staff fills the rotated
+        // view. Measure and re-render *before* rotating, so getBoundingClientRect
+        // still reports the un-rotated height. Remember the prior zoom to restore.
+        this.preLandscapeZoom = this.zoom;
+        this.fitLandscapeZoom();
         this.viewerTarget.classList.add('osmd-landscape');
         document.body.classList.add('osmd-landscape-active');
-        if (this.hasLandscapeExitTarget) this.landscapeExitTarget.classList.remove('d-none');
+        // Enter/exit button visibility is driven by the .osmd-landscape class (see app.css).
     }
 
     exitLandscape() {
         this.landscape = false;
         if (this.hasViewerTarget) this.viewerTarget.classList.remove('osmd-landscape');
         document.body.classList.remove('osmd-landscape-active');
-        if (this.hasLandscapeExitTarget) this.landscapeExitTarget.classList.add('d-none');
+        // Restore the zoom we had before entering landscape.
+        if (this.preLandscapeZoom != null && Math.abs(this.preLandscapeZoom - this.zoom) > 0.01) {
+            this.applyZoom(this.preLandscapeZoom);
+        }
+        this.preLandscapeZoom = null;
+    }
+
+    // Pick a zoom so the staff's rendered height roughly matches the viewport
+    // width — which becomes the on-screen cross-axis once the view is rotated
+    // 90° — so the score fills the screen instead of sitting in a thin strip.
+    fitLandscapeZoom() {
+        if (!this.osmd) return;
+        const svg = this.containerTarget.querySelector('svg');
+        const current = svg ? svg.getBoundingClientRect().height : 0;
+        if (!current) return;
+        const target = window.innerWidth * 0.85; // leave room for the controls bar + margin
+        const z = Math.min(4, Math.max(0.5, this.zoom * (target / current)));
+        if (Math.abs(z - this.zoom) > 0.05) this.applyZoom(z);
+    }
+
+    // Pick a zoom so the whole stack of staves (all voices) fits in the scroll
+    // viewport's height — used by Tutti, where every part should be visible at
+    // once. In landscape the SVG is rotated 90°, so its rendered height is the
+    // screen bounding box's *width* (the axes swap).
+    fitAllStavesZoom() {
+        if (!this.osmd) return;
+        const scrollEl = this.scrollContainer();
+        const svg = this.containerTarget.querySelector('svg');
+        if (!scrollEl || !svg) return;
+        const rect = svg.getBoundingClientRect();
+        const rendered = this.isLandscape ? rect.width : rect.height; // the score's own height
+        const avail = scrollEl.clientHeight; // local height, unaffected by the rotation
+        if (!rendered || !avail) return;
+        const z = Math.min(4, Math.max(0.25, this.zoom * (avail * 0.96 / rendered)));
+        if (Math.abs(z - this.zoom) > 0.02) this.applyZoom(z);
     }
 
     setStatus(msg) {
@@ -286,23 +330,51 @@ export default class extends Controller {
         this.updateSpeedLabel();
     }
 
-    // "1,00× · 120 BPM" — the multiplier and the resulting tempo.
+    // Set the playback tempo directly from the editable BPM field. We can't
+    // re-render the audio, so a new BPM maps to a playback rate (newBpm / score
+    // BPM), clamped to the same 0.5–1.5× range as the slider.
+    changeBpm() {
+        if (!this.hasBpmTarget || !this.bpm) return;
+        const entered = parseFloat(this.bpmTarget.value);
+        if (!entered || entered <= 0) { this.updateSpeedLabel(); return; }
+        const rate = Math.min(1.5, Math.max(0.5, entered / this.bpm));
+        this.playbackRate = rate;
+        if (this.audioEl) this.audioEl.playbackRate = rate;
+        if (this.hasSpeedTarget) this.speedTarget.value = rate;
+        // Reflect any clamping back into the field (e.g. 999 → max).
+        this.bpmTarget.value = Math.round(this.bpm * rate);
+        this.updateSpeedLabel();
+    }
+
+    // Show the current multiplier, and mirror the resulting tempo into the BPM
+    // field (unless the user is mid-edit in it).
     updateSpeedLabel() {
-        if (!this.hasSpeedLabelTarget) return;
-        const pct = this.playbackRate.toFixed(2).replace('.', ',');
-        const bpm = Math.round((this.bpm || 0) * this.playbackRate);
-        this.speedLabelTarget.textContent = `${pct}× · ${bpm} BPM`;
+        if (this.hasSpeedLabelTarget) {
+            this.speedLabelTarget.textContent = `${this.playbackRate.toFixed(2).replace('.', ',')}×`;
+        }
+        if (this.hasBpmTarget && document.activeElement !== this.bpmTarget) {
+            this.bpmTarget.value = Math.round((this.bpm || 0) * this.playbackRate);
+        }
     }
 
     audioForStaff(staffIndex) {
-        return staffIndex === null ? null : this.audioByVoiceValue[this.voiceCode(staffIndex)];
+        if (staffIndex === null) return null;
+        const code = this.voiceCode(staffIndex);
+        let url = this.audioByVoiceValue[code];
+        // "M" is a combined Männer (men's) recording covering both Tenor and
+        // Bass; use it for those staves when no dedicated T/B track exists.
+        if (!url && (code === 'T' || code === 'B')) url = this.audioByVoiceValue['M'];
+        // Otherwise fall back to the Tutti/combined mix for songs that have no
+        // split per-voice tracks (e.g. a canon), so selecting a single staff
+        // still plays (just highlighting that part).
+        return url || this.tuttiUrlValue || null;
     }
 
-    // Map a staff to its SATB voice code, preferring the staff label's initial
-    // (Sopran/Alt/Tenor/Bass → S/A/T/B), falling back to stacking order.
+    // Map a staff to its voice code, preferring the staff label's initial
+    // (Sopran/Alt/Tenor/Bass/Männer → S/A/T/B/M), falling back to stacking order.
     voiceCode(staffIndex) {
         const initial = (this.staffLabels()[staffIndex] || '').trim()[0]?.toUpperCase();
-        if (['S', 'A', 'T', 'B'].includes(initial)) return initial;
+        if (['S', 'A', 'T', 'B', 'M'].includes(initial)) return initial;
         return ['S', 'A', 'T', 'B'][staffIndex];
     }
 
@@ -315,6 +387,11 @@ export default class extends Controller {
         const sheet = this.osmd?.Sheet;
         const bpm = sheet && sheet.HasBPMInfo ? sheet.DefaultStartTempoInBpm : null;
         this.bpm = bpm && bpm > 0 ? bpm : 120;
+        // Bound the BPM field to the same 0.5–1.5× window as the speed slider.
+        if (this.hasBpmTarget) {
+            this.bpmTarget.min = Math.round(this.bpm * 0.5);
+            this.bpmTarget.max = Math.round(this.bpm * 1.5);
+        }
     }
 
     // Advance/rewind the cursor to match the audio position. A whole note lasts
@@ -560,11 +637,31 @@ export default class extends Controller {
         this.tuttiActive = false;
         this.selectAudio(this.audioForStaff(this.activeStaff));
 
-        this.osmd.render();
+        // A single part renders at the default zoom. The Tutti view zooms out to
+        // fit every staff at once; restore 1× when focusing one part so it isn't
+        // shown shrunken. applyZoom() re-renders (also committing the colouring).
+        if (turningOn && Math.abs(this.zoom - 1) > 0.01) {
+            this.applyZoom(1);
+        } else {
+            this.osmd.render();
+        }
         this.controlsTarget.querySelectorAll('button').forEach((b) => b.classList.remove('active'));
         if (turningOn) {
             btn.classList.add('active');
             this.scrollStaffIntoCenter(staffIndex);
+        }
+    }
+
+    // No Tutti mix available: auto-select the first staff that has its own
+    // recording, so the play button works on open instead of doing nothing.
+    selectDefaultVoice() {
+        const buttons = this.controlsTarget.querySelectorAll('button');
+        const count = this.staffCount();
+        for (let i = 0; i < count; i++) {
+            if (this.audioForStaff(i) && buttons[i]) {
+                this.toggleStaff(i, buttons[i]);
+                return;
+            }
         }
     }
 
@@ -578,7 +675,12 @@ export default class extends Controller {
         if (hadColour) this.osmd.render(); // clear previous staff colouring
         this.selectAudio(turningOn ? this.tuttiUrlValue : null);
         this.controlsTarget.querySelectorAll('button').forEach((b) => b.classList.remove('active'));
-        if (turningOn) btn.classList.add('active');
+        if (turningOn) {
+            btn.classList.add('active');
+            // Zoom so every voice is visible at once, then show the whole score.
+            this.fitAllStavesZoom();
+            this.scrollContainer()?.scrollTo({ top: 0, behavior: 'smooth' });
+        }
     }
 
     // Vertically centre the given staff in the scroll viewport. All parts are

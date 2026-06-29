@@ -26,7 +26,11 @@
                 <label class="text-muted small mb-0"><i class="bi bi-speedometer2"></i> Tempo</label>
                 <input type="range" class="form-range" style="width:120px" min="0.5" max="1.5" step="0.05" value="1"
                        data-osmd-target="speed" data-action="input->osmd#changeSpeed">
-                <span class="small text-muted" style="min-width:8em" data-osmd-target="speedLabel">1,00×</span>
+                <span class="small text-muted" style="min-width:3em" data-osmd-target="speedLabel">1,00×</span>
+                <input type="number" class="form-control form-control-sm" style="width:5em" step="1"
+                       data-osmd-target="bpm" data-action="change->osmd#changeBpm" aria-label="BPM"
+                       title="Tempo in BPM (während der Wiedergabe änderbar)">
+                <span class="small text-muted">BPM</span>
                 <span class="vr d-none d-sm-inline"></span>
                 <span class="text-muted small">Stimme hervorheben:</span>
                 <span class="d-flex flex-wrap gap-2" data-osmd-target="controls"></span>
