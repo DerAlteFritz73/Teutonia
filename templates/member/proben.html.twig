@@ -29,7 +29,7 @@
                                     data-bs-toggle="collapse"
                                     data-bs-target="#{{ folderId }}"
                                     aria-expanded="false"
-                                    {% set probenPath = song.aktuelleDropboxlink ?? song.dropboxlink %}
+                                    {% set probenPath = probenPaths[song.id]|default(song.aktuelleDropboxlink ?? song.dropboxlink) %}
                     {% if probenPath %}data-dropbox-path="{{ probenPath }}"{% endif %}{% if hasMovements and childCounts[song.id] is defined %} data-server-counts="1"{% endif %}>
                                 <i class="bi bi-folder2-open me-2"></i>
                                 <span class="d-flex flex-column lh-sm flex-grow-1">

@@ -521,6 +521,19 @@ class DropboxService
         return $node;
     }
 
+    /**
+     * True when the structure cache shows the folder holds any files or
+     * subfolders. Cache-only (no Dropbox API calls), so it is safe to call once
+     * per song at render time. Returns false for folders absent from the cache
+     * (treated as empty) — callers can then fall back to a canonical folder.
+     */
+    public function folderHasContent(string $folderPath): bool
+    {
+        $node = $this->findCachedNode($folderPath);
+
+        return $node !== null && (!empty($node['_files']) || !empty($node['_subfolders']));
+    }
+
     /** @return array{pdf: int, audio: int} */
     private function countTreeFiles(array $node): array
     {

@@ -68,7 +68,38 @@ class MemberController extends AbstractController
         return $this->render('member/proben.html.twig', [
             'aktuelleProben' => $songs,
             'childCounts'    => $this->parentFileCounts($songs, $dropbox),
+            'probenPaths'    => $this->probenPaths($songs, $dropbox),
         ]);
+    }
+
+    /**
+     * Effective Dropbox folder for each Aktuelle-Proben song's own file listing,
+     * keyed by song id.
+     *
+     * A song's dedicated "Aktuelle Proben" copy (aktuelleDropboxlink) is used
+     * normally, but that copy is sometimes empty or stale (an incomplete push —
+     * e.g. Mambo, whose copy holds none of the Noten folder's files, not even the
+     * MusicXML score). When the copy has no files or subfolders we fall back to the
+     * canonical Noten folder so the files — and the Partitur feature — still show.
+     * A copy that legitimately holds its own files (even more than Noten) is kept.
+     *
+     * @param SongKeyword[] $songs
+     * @return array<int, string|null>
+     */
+    private function probenPaths(array $songs, DropboxService $dropbox): array
+    {
+        $paths = [];
+        foreach ($songs as $song) {
+            $akt   = $song->getAktuelleDropboxlink();
+            $noten = $song->getDropboxlink();
+
+            $path = $akt ?? $noten;
+            if ($akt && $noten && $akt !== $noten && !$dropbox->folderHasContent($akt)) {
+                $path = $noten;
+            }
+            $paths[$song->getId()] = $path;
+        }
+        return $paths;
     }
 
     #[Route('/noten', name: 'member_noten')]
