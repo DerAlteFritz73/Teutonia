@@ -152,11 +152,16 @@
                 '<span class="small text-muted" style="min-width:9em" data-osmd-target="speedLabel">1,00×</span>' +
                 '<span class="text-muted small d-none d-sm-inline">Stimme:</span>' +
                 '<span class="d-flex flex-wrap gap-2" data-osmd-target="controls"></span>' +
+                // Rotate the scrolling score to full-screen landscape (handy on phones).
+                '<button type="button" class="btn btn-sm btn-outline-secondary ms-auto" data-action="osmd#toggleLandscape" title="Querformat (Vollbild)"><i class="bi bi-phone-landscape"></i> Querformat</button>' +
             '</div>' +
             '<div class="alert alert-warning small d-none" data-osmd-target="status"></div>' +
-            '<div class="position-relative">' +
-                '<div class="border rounded bg-white p-2" style="overflow:auto;max-height:62vh;white-space:nowrap;"><div data-osmd-target="container"></div></div>' +
+            // Pinch-to-zoom (mobile) acts on this scroller; touch-action keeps native
+            // one-finger panning while letting our two-finger handler own the pinch.
+            '<div class="position-relative osmd-viewer" data-osmd-target="viewer">' +
+                '<div class="border rounded bg-white p-2 osmd-scroll" data-osmd-target="scroll" style="overflow:auto;max-height:62vh;white-space:nowrap;touch-action:pan-x pan-y;"><div data-osmd-target="container"></div></div>' +
                 '<div data-osmd-target="playhead" class="position-absolute top-0 d-none" style="background:rgba(232,89,12,0.30);border-radius:3px;pointer-events:none;z-index:5;"></div>' +
+                '<button type="button" class="btn btn-sm btn-dark osmd-landscape-exit d-none" data-osmd-target="landscapeExit" data-action="osmd#toggleLandscape" title="Hochformat"><i class="bi bi-phone"></i> Hochformat</button>' +
             '</div>';
         return wrap;
     }

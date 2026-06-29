@@ -11,6 +11,36 @@ footer { flex-shrink: 0; }
 *, *::before, *::after { box-sizing: border-box; }
 body { overflow-x: clip; }
 
+/* ── Partitur: rotate the scrolling score to a full-screen landscape view ──
+   Only the score scroller (.osmd-viewer) rotates — the playback controls stay
+   in the modal behind it. 100vh/100vw swap because the 90° turn maps the
+   element's width onto the screen height and vice-versa. */
+body.osmd-landscape-active { overflow: hidden; }
+.osmd-viewer.osmd-landscape {
+    /* !important beats Bootstrap's .position-relative utility on the wrapper. */
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100vh;
+    height: 100vw;
+    margin: 0;
+    z-index: 2000;
+    background: #fff;
+    transform-origin: top left;
+    transform: rotate(90deg) translateY(-100%);
+}
+.osmd-viewer.osmd-landscape > .osmd-scroll {
+    max-height: none !important;
+    height: 100% !important;
+    border-radius: 0 !important;
+}
+.osmd-landscape-exit {
+    position: absolute;
+    top: .5rem;
+    left: .5rem;
+    z-index: 10;
+}
+
 /* All replaced/embedded media shrinks to fit its container */
 img, canvas, video, iframe, svg { max-width: 100%; }
 img { height: auto !important; }

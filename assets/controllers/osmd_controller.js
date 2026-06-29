@@ -17,7 +17,7 @@ import { Controller } from '@hotwired/stimulus';
  *   </div>
  */
 export default class extends Controller {
-    static targets = ['container', 'controls', 'status', 'playBtn', 'stopBtn', 'playhead', 'speed', 'speedLabel'];
+    static targets = ['container', 'controls', 'status', 'playBtn', 'stopBtn', 'playhead', 'speed', 'speedLabel', 'scroll', 'viewer', 'landscapeExit'];
     static values = {
         url: String,
         audioByVoice: { type: Object, default: {} },
@@ -74,6 +74,10 @@ export default class extends Controller {
             this.enablePlayback();
             this.updateSpeedLabel();
             this.setStatus('');
+
+            this.zoom = 1;
+            this.landscape = false;
+            this.setupPinchZoom();
         } catch (e) {
             this.setStatus('Fehler beim Laden der Partitur: ' + e.message);
             console.error('[osmd]', e);
@@ -99,6 +103,8 @@ export default class extends Controller {
 
     disconnect() {
         this.stopAutoScroll();
+        this.teardownPinchZoom();
+        if (this.landscape) this.exitLandscape();
         try {
             this.audioEl?.pause();
         } catch (e) { /* ignore */ }
@@ -106,6 +112,97 @@ export default class extends Controller {
             this.osmd.clear();
             this.osmd = null;
         }
+    }
+
+    // ---- Zoom (pinch on mobile) -----------------------------------------
+
+    // Two-finger pinch on the score scroller changes OSMD's zoom. During the
+    // gesture we show a cheap CSS-transform preview; on release we commit the new
+    // zoom with a single re-render so the scroll area gets the correct extent.
+    setupPinchZoom() {
+        if (!this.hasScrollTarget) return;
+        this._onTouchStart = this.onTouchStart.bind(this);
+        this._onTouchMove = this.onTouchMove.bind(this);
+        this._onTouchEnd = this.onTouchEnd.bind(this);
+        const el = this.scrollTarget;
+        el.addEventListener('touchstart', this._onTouchStart, { passive: false });
+        el.addEventListener('touchmove', this._onTouchMove, { passive: false });
+        el.addEventListener('touchend', this._onTouchEnd);
+        el.addEventListener('touchcancel', this._onTouchEnd);
+    }
+
+    teardownPinchZoom() {
+        if (!this.hasScrollTarget || !this._onTouchStart) return;
+        const el = this.scrollTarget;
+        el.removeEventListener('touchstart', this._onTouchStart);
+        el.removeEventListener('touchmove', this._onTouchMove);
+        el.removeEventListener('touchend', this._onTouchEnd);
+        el.removeEventListener('touchcancel', this._onTouchEnd);
+    }
+
+    pinchDistance(touches) {
+        const dx = touches[0].clientX - touches[1].clientX;
+        const dy = touches[0].clientY - touches[1].clientY;
+        return Math.hypot(dx, dy);
+    }
+
+    onTouchStart(e) {
+        if (e.touches.length !== 2) return;
+        e.preventDefault();
+        this._pinch = { startDist: this.pinchDistance(e.touches), baseZoom: this.zoom, target: this.zoom };
+    }
+
+    onTouchMove(e) {
+        if (!this._pinch || e.touches.length !== 2) return;
+        e.preventDefault();
+        const ratio = this.pinchDistance(e.touches) / this._pinch.startDist;
+        const target = Math.min(3, Math.max(0.5, this._pinch.baseZoom * ratio));
+        this._pinch.target = target;
+        // Live preview relative to the already-rendered zoom (pivot at centre).
+        this.containerTarget.style.transformOrigin = '50% 50%';
+        this.containerTarget.style.transform = 'scale(' + (target / this._pinch.baseZoom) + ')';
+    }
+
+    onTouchEnd() {
+        if (!this._pinch) return;
+        const target = this._pinch.target;
+        this._pinch = null;
+        this.containerTarget.style.transform = '';
+        this.containerTarget.style.transformOrigin = '';
+        if (Math.abs(target - this.zoom) > 0.01) this.applyZoom(target);
+    }
+
+    applyZoom(z) {
+        this.zoom = z;
+        if (!this.osmd) return;
+        this.osmd.Zoom = z;
+        this.osmd.render();
+        if (this.playing) this.osmd.cursor.show();
+    }
+
+    // ---- Landscape (rotate the scrolling score to full-screen) ----------
+
+    get isLandscape() {
+        return !!this.landscape;
+    }
+
+    toggleLandscape() {
+        this.landscape ? this.exitLandscape() : this.enterLandscape();
+    }
+
+    enterLandscape() {
+        if (!this.hasViewerTarget) return;
+        this.landscape = true;
+        this.viewerTarget.classList.add('osmd-landscape');
+        document.body.classList.add('osmd-landscape-active');
+        if (this.hasLandscapeExitTarget) this.landscapeExitTarget.classList.remove('d-none');
+    }
+
+    exitLandscape() {
+        this.landscape = false;
+        if (this.hasViewerTarget) this.viewerTarget.classList.remove('osmd-landscape');
+        document.body.classList.remove('osmd-landscape-active');
+        if (this.hasLandscapeExitTarget) this.landscapeExitTarget.classList.add('d-none');
     }
 
     setStatus(msg) {
@@ -285,7 +382,12 @@ export default class extends Controller {
     followByThreshold(scrollEl) {
         const cursorEl = this.osmd?.cursor?.cursorElement;
         if (!cursorEl || cursorEl.offsetParent === null) return;
-        const cursorX = cursorEl.getBoundingClientRect().left - scrollEl.getBoundingClientRect().left;
+        const cr = cursorEl.getBoundingClientRect();
+        const sr = scrollEl.getBoundingClientRect();
+        // The view is rotated 90° in landscape, so the score's horizontal scroll
+        // axis runs along the screen's Y. Lengths are preserved by the rotation,
+        // so the same clientWidth thresholds apply — only the measured axis swaps.
+        const cursorX = this.isLandscape ? (cr.top - sr.top) : (cr.left - sr.left);
         if (cursorX > scrollEl.clientWidth * 0.1 && cursorX <= scrollEl.clientWidth * 0.75) return;
         const target = scrollEl.scrollLeft + (cursorX - scrollEl.clientWidth * 0.25);
         const max = scrollEl.scrollWidth - scrollEl.clientWidth;
@@ -305,7 +407,12 @@ export default class extends Controller {
         const measureBand = this.measureHighlightValue ? this.measureXBand(scrollEl, viewRect) : null;
         const band = measureBand || (() => {
             const r = cursorEl.getBoundingClientRect();
-            return { left: r.left - viewRect.left, width: Math.max(r.width, 8) };
+            // In landscape the scroll axis is the screen's Y (see followByThreshold);
+            // the playhead lives inside the rotated wrapper, so positioning it with
+            // these local-axis values keeps it aligned over the cursor.
+            return this.isLandscape
+                ? { left: r.top - viewRect.top, width: Math.max(r.height, 8) }
+                : { left: r.left - viewRect.left, width: Math.max(r.width, 8) };
         })();
         // Clamp to the visible viewport.
         const left = Math.max(0, band.left);
