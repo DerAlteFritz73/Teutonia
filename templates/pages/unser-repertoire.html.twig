@@ -59,7 +59,7 @@
                         {% for song in visibleSongs %}
                             {% if song.parent is null %}
                                 {% set movements = [] %}
-                                {% for movement in song.children %}
+                                {% for movement in song.sortedChildren %}
                                     {% set movements = movements|merge([movement.songName]) %}
                                 {% endfor %}
                                 {% set songsData = songsData|merge([{

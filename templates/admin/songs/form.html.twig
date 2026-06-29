@@ -208,7 +208,7 @@
             {% endif %}
             {% if song.children|length > 0 %}
             <div class="accordion {% if mainPath %}border-top{% endif %}" id="editMovementsAccordion">
-                {% for movement in song.children %}
+                {% for movement in song.sortedChildren %}
                     {% set movHasDropbox = movement.dropboxlink is not null and movement.dropboxlink != '' %}
                     <div class="accordion-item border-0">
                         <h2 class="accordion-header">

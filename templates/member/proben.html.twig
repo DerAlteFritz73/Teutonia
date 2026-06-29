@@ -58,6 +58,20 @@
                         <div id="{{ folderId }}" class="accordion-collapse collapse"
                              data-bs-parent="#probenAccordion">
                             <div class="accordion-body">
+                                {# Song metadata row – only for songs without movements (mirrors Liederverzeichnis layout) #}
+                                {% if not hasMovements %}
+                                <div class="d-flex flex-wrap gap-3 mb-3 text-muted small">
+                                    {% if song.composer %}
+                                        <span><i class="bi bi-person me-1"></i>{{ song.composer }}</span>
+                                    {% endif %}
+                                    {% if song.etikett %}
+                                        <span><i class="bi bi-hash me-1"></i>{{ song.etikett }}</span>
+                                    {% endif %}
+                                    {% if song.latestKonzertDate %}
+                                        <span><i class="bi bi-calendar-event me-1"></i>Letzte Aufführung: {{ song.latestKonzertDate|date('d.m.Y') }}</span>
+                                    {% endif %}
+                                </div>
+                                {% endif %}
                                 {% if song.background %}
                                     <div class="alert alert-light border small mb-3">
                                         <i class="bi bi-info-circle me-1"></i>{{ song.background|nl2br }}
@@ -86,16 +100,20 @@
                                     </div>
                                 {% endif %}
                                 {% if probenPath %}
-                                    <div class="list-group song-files-container mb-3" data-dropbox-path="{{ probenPath }}" data-song-id="{{ song.id }}"{% if hasMovements %} data-has-movements="true"{% endif %}>
+                                    <div class="list-group song-files-container {% if hasMovements %}mb-3{% endif %}" data-dropbox-path="{{ probenPath }}" data-song-id="{{ song.id }}"{% if hasMovements %} data-has-movements="true"{% endif %}>
                                         <div class="text-center text-muted py-3 file-loading-spinner">
                                             <span class="spinner-border spinner-border-sm me-2" role="status"></span>
                                             Lade Dateien…
                                         </div>
                                     </div>
+                                {% elseif not hasMovements %}
+                                    <p class="text-muted mb-0">
+                                        <i class="bi bi-info-circle me-1"></i>Keine Dateien in Dropbox verfügbar.
+                                    </p>
                                 {% endif %}
                                 {% if hasMovements %}
                                     <div class="accordion" id="{{ folderId }}-movements">
-                                        {% for movement in song.children %}
+                                        {% for movement in song.sortedChildren %}
                                             {% set movId = folderId ~ '-mov-' ~ loop.index %}
                                             <div class="accordion-item border-start border-3 border-primary">
                                                 <h2 class="accordion-header">

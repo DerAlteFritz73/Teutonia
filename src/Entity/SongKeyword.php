@@ -282,6 +282,26 @@ class SongKeyword
     public function getParent(): ?self { return $this->parent; }
     public function setParent(?self $parent): static { $this->parent = $parent; return $this; }
     public function getChildren(): Collection { return $this->children; }
+
+    /**
+     * Children ordered for display: explicit sortOrder first, then a natural,
+     * numeric-aware comparison of the name so movement "10. …" sorts after
+     * "2. …" instead of lexicographically (1, 10, 2, …). Use this in templates
+     * instead of getChildren() wherever movement order matters.
+     *
+     * @return self[]
+     */
+    public function getSortedChildren(): array
+    {
+        $children = $this->children->toArray();
+        usort($children, static fn (self $a, self $b): int =>
+            ($a->getSortOrder() <=> $b->getSortOrder())
+                ?: strnatcasecmp($a->getSongName(), $b->getSongName())
+        );
+
+        return $children;
+    }
+
     public function hasChildren(): bool { return !$this->children->isEmpty(); }
     public function isMovement(): bool { return $this->parent !== null; }
 

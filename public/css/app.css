@@ -79,6 +79,27 @@ p:has(br:only-child) { display: none; }
 /* Pin the expand chevron to the right edge so it stays vertically aligned
    across rows regardless of genre/file-badge width (esp. on mobile). */
 .accordion-btn-files { position: relative; padding-right: 3rem; text-align: left; }
+/* When expanded, give the whole row (header columns + body) a light grey
+   background instead of Bootstrap's blue tint. The toggle button itself goes
+   transparent so the header's Etikett/title/genres/admin columns all share the
+   single light background painted on the header row and the collapse panel. */
+.accordion-btn-files:not(.collapsed) {
+    background-color: transparent;
+}
+.song-row:has(> .accordion-btn-files:not(.collapsed)),
+.accordion-collapse.show,
+.accordion-collapse.collapsing {
+    background-color: var(--bs-tertiary-bg, #f4f6f8);
+}
+/* No blue focus ring / active border on the song-row toggles, in any state. */
+.accordion-btn-files,
+.accordion-btn-files:focus,
+.accordion-btn-files:focus-visible,
+.accordion-btn-files:not(.collapsed) {
+    box-shadow: none;
+    outline: none;
+    border-color: transparent;
+}
 .accordion-btn-files::after {
     position: absolute;
     right: 1.25rem;
@@ -163,15 +184,29 @@ p:has(br:only-child) { display: none; }
         column-gap: .1rem;
     }
     .song-row > .accordion-btn-files {
-        --song-genres-w: 3.75rem;
-        grid-template-columns: auto minmax(5rem, 1fr) var(--song-genres-w);
-        padding-right: 1.9rem;
+        grid-template-columns: auto minmax(0, 1fr);   /* icon | title only */
+        padding-right: 1.9rem;       /* room for the chevron at the top-right */
         column-gap: .2rem;
     }
-    .song-row > .accordion-btn-files::after { right: .55rem; }
+    /* Chevron pinned to the top-right, level with the title's first line. */
+    .song-row > .accordion-btn-files::after { right: .55rem; top: 1.7rem; }
+    /* Genres, "Sätze" and file-type badges drop to a full-width row tucked
+       UNDER the chevron (right-aligned) instead of a separate right-hand column. */
+    .song-row > .accordion-btn-files > .accordion-btn-badges {
+        grid-column: 1 / -1;
+        flex-flow: row wrap;
+        justify-content: flex-end;
+        align-items: center;
+        gap: .25rem;
+        margin-top: .35rem !important;
+    }
+    /* Admin action buttons sit side by side on one line, tucked UNDER the chevron. */
     .song-row > .song-ctrl {
-        justify-self: end;          /* under the chevron */
-        padding-right: .5rem;
+        flex-direction: row;
+        justify-self: end;
+        align-items: center;
+        gap: .3rem;
+        padding-right: .35rem;
         padding-bottom: .35rem;
     }
     /* Folder icon hugs the title on phones to save horizontal space. */

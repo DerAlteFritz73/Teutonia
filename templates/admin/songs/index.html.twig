@@ -240,7 +240,7 @@
                     </tr>
 
                     {# ── Movement rows (hidden by default) ─────────── #}
-                    {% for child in song.children %}
+                    {% for child in song.sortedChildren %}
                         {% set prefix = child.etikett ? child.etikett|split(' ')|first|lower : '' %}
                         {% set badgeClass = {
                             'blau':     'bg-primary text-white',

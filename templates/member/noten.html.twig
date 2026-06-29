@@ -89,7 +89,7 @@
                                         <span><i class="bi bi-hash me-1"></i>{{ song.etikett }}</span>
                                     {% endif %}
                                     {% if song.latestKonzertDate %}
-                                        <span><i class="bi bi-calendar-event me-1"></i>Letzte Aufführung: {{ song.latestKonzertDate|date('M Y') }}</span>
+                                        <span><i class="bi bi-calendar-event me-1"></i>Letzte Aufführung: {{ song.latestKonzertDate|date('d.m.Y') }}</span>
                                     {% endif %}
                                 </div>
                                 {% endif %}
@@ -136,7 +136,7 @@
                                 {# Movements (Sätze) #}
                                 {% if hasMovements %}
                                     <div class="accordion" id="{{ allFolderId }}-movements">
-                                        {% for movement in song.children %}
+                                        {% for movement in song.sortedChildren %}
                                             {% set movId = allFolderId ~ '-mov-' ~ loop.index %}
                                             {% set movHasDropbox = movement.dropboxlink is not null and movement.dropboxlink != '' %}
                                             <div class="accordion-item border-start border-3 border-primary">
