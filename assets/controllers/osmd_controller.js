@@ -64,6 +64,13 @@ export default class extends Controller {
             this.buildStaffButtons();
             this.readTempo();
 
+            // On phones, open straight into the rotated full-screen view: the
+            // score is wide and landscape uses the screen far better, and the
+            // controls bar then rides as a fixed strip (always visible). Entering
+            // before the default selection below lets its fit-zoom use the
+            // landscape geometry. Desktop/tablet stay in portrait.
+            if (this.isMobilePhone) this.enterLandscape();
+
             // Playback uses the real per-voice MP3 recordings (and the Tutti
             // full mix). The selected voice's recording is played and the cursor
             // is driven from its playback time (see syncCursorToAudio).
@@ -192,6 +199,14 @@ export default class extends Controller {
 
     get isLandscape() {
         return !!this.landscape;
+    }
+
+    // A phone (not a tablet/desktop): touch input and a small short side. Using
+    // the smaller viewport dimension separates phones (~<500px short side) from
+    // tablets (~768px) regardless of how the device is currently held.
+    get isMobilePhone() {
+        return window.matchMedia('(pointer: coarse)').matches
+            && Math.min(window.innerWidth, window.innerHeight) < 600;
     }
 
     toggleLandscape() {
@@ -546,18 +561,19 @@ export default class extends Controller {
         };
     }
 
-    // A staff's vertical range in rendered SVG pixels (relative to the SVG top),
-    // taken from its StaffLine. The unit→pixel factor is derived from the SVG's
-    // own rendered height vs the page height in OSMD units, so it stays correct
-    // regardless of zoom/autoResize (a fixed unitInPixels would drift per staff).
-    staffSvgRange(staffIndex, svgRect) {
+    // A staff's centre and height as fractions of the page height, from its
+    // StaffLine's PositionAndShape. Pure OSMD units, so it's orientation-
+    // independent — the same numbers in portrait and the rotated landscape view.
+    staffBand(staffIndex) {
         const page = this.osmd?.GraphicSheet?.MusicPages?.[0];
         const staffLine = page?.MusicSystems?.[0]?.StaffLines?.[staffIndex];
         const pageH = page?.PositionAndShape?.Size?.height;
         if (!staffLine || !pageH) return null;
-        const k = svgRect.height / pageH; // px per OSMD unit
         const ps = staffLine.PositionAndShape;
-        return { y: ps.AbsolutePosition.y * k, h: ps.Size.height * k };
+        return {
+            center: (ps.AbsolutePosition.y + ps.Size.height / 2) / pageH,
+            height: ps.Size.height / pageH,
+        };
     }
 
     setPlayLabel() {
@@ -664,9 +680,10 @@ export default class extends Controller {
         this.tuttiActive = false;
         this.selectAudio(this.audioForStaff(this.activeStaff));
 
-        // A single part renders at the default zoom. The Tutti view zooms out to
-        // fit every staff at once; restore 1× when focusing one part so it isn't
-        // shown shrunken. applyZoom() re-renders (also committing the colouring).
+        // A focused part renders at the default 100% zoom (the Tutti view zooms
+        // out to fit every staff at once; restore 1× when focusing one part), then
+        // gets vertically centred below. applyZoom() re-renders — also committing
+        // the colouring.
         if (turningOn && Math.abs(this.zoom - 1) > 0.01) {
             this.applyZoom(1);
         } else {
@@ -710,20 +727,16 @@ export default class extends Controller {
         }
     }
 
-    // Vertically centre the given staff in the scroll viewport. All parts are
-    // stacked in one horizontal staff line, so a staff's Y is constant across
-    // the piece; we read it from the staff's StaffLine (see staffSvgRange).
+    // Vertically centre the given staff in the scroll viewport. The staff stack
+    // is the scroller's LOCAL vertical axis in both orientations — scrollTop /
+    // scrollHeight / clientHeight are unaffected by the landscape CSS rotation —
+    // so we map the staff's fractional position straight onto the scroll extent.
     scrollStaffIntoCenter(staffIndex) {
         const scrollEl = this.scrollContainer();
-        const svg = this.containerTarget.querySelector('svg');
-        if (!scrollEl || !svg) return;
-        const svgRect = svg.getBoundingClientRect();
-        const r = this.staffSvgRange(staffIndex, svgRect);
-        if (!r) return;
-
-        const viewRect = scrollEl.getBoundingClientRect();
-        const centerContentY = (svgRect.top - viewRect.top) + (r.y + r.h / 2) + scrollEl.scrollTop;
-        const target = centerContentY - scrollEl.clientHeight / 2;
+        const band = this.staffBand(staffIndex);
+        if (!scrollEl || !band) return;
+        const center = band.center * scrollEl.scrollHeight;
+        const target = center - scrollEl.clientHeight / 2;
         const max = scrollEl.scrollHeight - scrollEl.clientHeight;
         scrollEl.scrollTo({ top: Math.max(0, Math.min(target, max)), behavior: 'smooth' });
     }
