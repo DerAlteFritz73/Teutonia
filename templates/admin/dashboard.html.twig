@@ -69,8 +69,8 @@
                     <h5 class="card-title"><i class="bi bi-box-arrow-in-right me-1"></i>Logins der Mitglieder</h5>
                     <p class="display-4">{{ memberLoginSum }} <span class="fs-5 opacity-75">({{ memberUniqueLoginCount }} Mitglieder)</span></p>
                     <p class="card-text small mb-0">Gesamtanzahl Anmeldungen aller Mitglieder</p>
-                    {% if memberLastLoginAt %}
-                    <p class="card-text small mt-1 mb-0 opacity-75">Letzte Anmeldung: {{ memberLastLoginAt|date('d.m.Y H:i') }}</p>
+                    {% if memberLastSeenAt %}
+                    <p class="card-text small mt-1 mb-0 opacity-75">Zuletzt aktiv: {{ memberLastSeenAt|date('d.m.Y H:i') }}</p>
                     {% endif %}
                 </div>
             </div>

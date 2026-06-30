@@ -31,7 +31,7 @@
                     <th>Name</th>
                     <th class="d-none d-md-table-cell">E-Mail</th>
                     <th class="d-none d-sm-table-cell">Rollen</th>
-                    <th class="d-none d-md-table-cell">Letzter Login</th>
+                    <th class="d-none d-md-table-cell">Zuletzt aktiv</th>
                     <th>Aktionen</th>
                 </tr>
             </thead>
@@ -54,8 +54,8 @@
                             {% endfor %}
                         </td>
                         <td class="d-none d-md-table-cell">
-                            {% if user.lastLoginAt %}
-                                {{ user.lastLoginAt|date('d.m.Y H:i') }}
+                            {% if user.lastSeenAt %}
+                                {{ user.lastSeenAt|date('d.m.Y H:i') }}
                             {% else %}
                                 <span class="text-muted">—</span>
                             {% endif %}

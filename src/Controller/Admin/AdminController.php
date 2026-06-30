@@ -102,7 +102,7 @@ class AdminController extends AbstractController
             'liederlistenCount'   => $liederlisteRepository->countAll(),
             'memberLoginSum'          => $userRepository->sumLoginCountExcluding('joel'),
             'memberUniqueLoginCount'  => $userRepository->countUsersWithLoginsExcluding('joel'),
-            'memberLastLoginAt'       => $userRepository->lastLoginAtExcluding('joel'),
+            'memberLastSeenAt'        => $userRepository->lastSeenAtExcluding('joel'),
             'logErrorCount'  => $logStats['errorCount'],
             'logLastErrorAt' => $logStats['lastErrorAt'],
         ]);

@@ -47,6 +47,11 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(type: Types::DATETIME_MUTABLE, nullable: true)]
     private ?\DateTimeInterface $lastLoginAt = null;
 
+    // Last time the member was active on the site (updated per visit, throttled),
+    // as opposed to lastLoginAt which only tracks (re-)authentications.
+    #[ORM\Column(type: Types::DATETIME_MUTABLE, nullable: true)]
+    private ?\DateTimeInterface $lastSeenAt = null;
+
     public function getId(): ?int
     {
         return $this->id;
@@ -185,6 +190,17 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setLastLoginAt(?\DateTimeInterface $lastLoginAt): static
     {
         $this->lastLoginAt = $lastLoginAt;
+        return $this;
+    }
+
+    public function getLastSeenAt(): ?\DateTimeInterface
+    {
+        return $this->lastSeenAt;
+    }
+
+    public function setLastSeenAt(?\DateTimeInterface $lastSeenAt): static
+    {
+        $this->lastSeenAt = $lastSeenAt;
         return $this;
     }
 

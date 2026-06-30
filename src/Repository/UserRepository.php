@@ -82,4 +82,19 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
 
         return $user?->getLastLoginAt();
     }
+
+    public function lastSeenAtExcluding(string $username): ?\DateTimeInterface
+    {
+        $user = $this->createQueryBuilder('u')
+            ->where('u.username != :username')
+            ->andWhere('u.lastSeenAt IS NOT NULL')
+            ->andWhere("u.roles NOT LIKE '%ROLE_GUEST%'")
+            ->setParameter('username', $username)
+            ->orderBy('u.lastSeenAt', 'DESC')
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult();
+
+        return $user?->getLastSeenAt();
+    }
 }
