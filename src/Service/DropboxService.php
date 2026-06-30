@@ -433,9 +433,8 @@ class DropboxService
             // Navigate: first segment is a top-level key, subsequent ones are _subfolders
             $node = $tree;
             foreach ($parts as $i => $part) {
-                $node = $i === 0
-                    ? ($node[$part] ?? null)
-                    : (($node['_subfolders'] ?? [])[$part] ?? null);
+                $level = $i === 0 ? $node : ($node['_subfolders'] ?? []);
+                $node  = $this->matchFolderSegment($level, $part);
                 if ($node === null) {
                     break;
                 }
@@ -513,12 +512,44 @@ class DropboxService
 
         $node = $this->structureTree;
         foreach ($parts as $i => $part) {
-            $node = $i === 0 ? ($node[$part] ?? null) : (($node['_subfolders'] ?? [])[$part] ?? null);
+            $level = $i === 0 ? $node : ($node['_subfolders'] ?? []);
+            $node  = $this->matchFolderSegment($level, $part);
             if ($node === null) {
                 return null;
             }
         }
         return $node;
+    }
+
+    /**
+     * Resolve one path segment against a level of the structure tree (a map of
+     * folder-name => node). Tries an exact key first, then a whitespace- and
+     * case-insensitive fallback: stored dropboxlinks sometimes drift from the
+     * real Dropbox folder name only by spacing — e.g. a multi-movement song
+     * stored as ".../1 - Bumerang" whose actual subfolder is "1-Bumerang".
+     * Without the fallback those movements resolve to no files (no Partitur,
+     * no count badges).
+     *
+     * @param array<string,mixed> $level
+     */
+    private function matchFolderSegment(array $level, string $segment): ?array
+    {
+        if (isset($level[$segment]) && is_array($level[$segment])) {
+            return $level[$segment];
+        }
+
+        $normalize = static fn (string $s): string => mb_strtolower(preg_replace('/\s+/', '', $s) ?? '');
+        $target    = $normalize($segment);
+
+        foreach ($level as $name => $child) {
+            if (!is_array($child) || $name === '_files' || $name === '_subfolders') {
+                continue;
+            }
+            if ($normalize((string) $name) === $target) {
+                return $child;
+            }
+        }
+        return null;
     }
 
     /**

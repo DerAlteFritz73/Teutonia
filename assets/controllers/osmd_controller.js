@@ -379,9 +379,14 @@ export default class extends Controller {
         if (staffIndex === null) return null;
         const code = this.voiceCode(staffIndex);
         let url = this.audioByVoiceValue[code];
-        // "M" is a combined Männer (men's) recording covering both Tenor and
-        // Bass; use it for those staves when no dedicated T/B track exists.
-        if (!url && (code === 'T' || code === 'B')) url = this.audioByVoiceValue['M'];
+        if (!url) {
+            // Divisi staff (e.g. "S2") with only an undivided "S" recording: fall
+            // back to the base voice. "M" is a combined Männer (men's) recording
+            // covering Tenor and Bass when no dedicated T/B track exists.
+            const base = code[0];
+            url = this.audioByVoiceValue[base];
+            if (!url && (base === 'T' || base === 'B')) url = this.audioByVoiceValue['M'];
+        }
         // Otherwise fall back to the Tutti/combined mix for songs that have no
         // split per-voice tracks (e.g. a canon), so selecting a single staff
         // still plays (just highlighting that part).
@@ -389,10 +394,16 @@ export default class extends Controller {
     }
 
     // Map a staff to its voice code, preferring the staff label's initial
-    // (Sopran/Alt/Tenor/Bass/Männer → S/A/T/B/M), falling back to stacking order.
+    // (Sopran/Alt/Tenor/Bass/Männer → S/A/T/B/M) plus any divisi number on the
+    // label (Sopran 2 → S2, matching a "2 - S2 - …" recording), falling back to
+    // stacking order.
     voiceCode(staffIndex) {
-        const initial = (this.staffLabels()[staffIndex] || '').trim()[0]?.toUpperCase();
-        if (['S', 'A', 'T', 'B', 'M'].includes(initial)) return initial;
+        const label   = (this.staffLabels()[staffIndex] || '').trim();
+        const initial = label[0]?.toUpperCase();
+        if (['S', 'A', 'T', 'B', 'M'].includes(initial)) {
+            const div = label.match(/(\d+)\s*$/);
+            return div ? initial + div[1] : initial;
+        }
         return ['S', 'A', 'T', 'B'][staffIndex];
     }
 

@@ -96,14 +96,19 @@
         const score = files.find(function (f) { return f.type === 'score'; });
         if (!score) return;
 
-        // Map voice recordings: filenames start with 1-S / 2-A / 3-T / 4-B, or
-        // a combined "M" (Männer) track; a "Tutti …" file is the full-ensemble
-        // mix (no matching score staff).
+        // Map voice recordings from the leading prefix only, independent of the
+        // song name: an order number, optional separator, then the voice token —
+        //   "1S - Foo", "1-S Foo", "2A -Foo", "3M -Foo"   → S / A / M
+        //   "1 - S1 - Foo", "5 - T2 - Foo", "4 - A2 - Foo" → S1 / T2 / A2 (divisi)
+        // "M" is a combined Männer (Tenor+Bass) track. A "Tutti …" file is the
+        // full-ensemble mix (no matching score staff). The voice token must be
+        // followed by a separator/end so a title like "1. Bumerang" or "5 - Foo"
+        // is not misread as a voice.
         const voicePath = {};
         let tuttiPath = null;
         const otherAudio = [];
         files.filter(function (f) { return f.type === 'audio'; }).forEach(function (f) {
-            const m = f.name.match(/^\s*[1-4]\s*-?\s*([SATBM])/i);
+            const m = f.name.match(/^\s*\d+\s*[-.\s]*([SATBM][12]?)(?=[\s.\-]|$)/i);
             if (m) { voicePath[m[1].toUpperCase()] = f.path; }
             else if (/^\s*tutti/i.test(f.name)) { tuttiPath = f.path; }
             else { otherAudio.push(f); }
@@ -118,12 +123,19 @@
         }
 
         const item      = btn.closest('.accordion-item');
-        const titleSpan = item && item.querySelector('.accordion-btn-files .flex-grow-1');
-        // The song name is the first text node of the title span (the <small>
-        // composer follows). Fall back to the full span text if needed.
-        const rawTitle  = titleSpan
-            ? ((titleSpan.childNodes[0] && titleSpan.childNodes[0].textContent) || titleSpan.textContent)
-            : 'Partitur';
+        // Top-level songs wrap the name in .flex-grow-1 (composer in a trailing
+        // <small>); movement (Satz) buttons put the name as a bare text node next
+        // to the icon. Either way the song name is the first non-empty *text* node
+        // (skips the icon <i> and the badge <span>), so we don't pull in counts.
+        const titleSpan = item && (item.querySelector('.accordion-btn-files .flex-grow-1')
+            || item.querySelector('.accordion-btn-files'));
+        let rawTitle = 'Partitur';
+        if (titleSpan) {
+            const textNode = Array.prototype.find.call(titleSpan.childNodes, function (n) {
+                return n.nodeType === 3 && n.textContent.trim();
+            });
+            rawTitle = textNode ? textNode.textContent : titleSpan.textContent;
+        }
         const title = rawTitle.trim().replace(/\s+/g, ' ') || 'Partitur';
 
         btn.disabled = true;

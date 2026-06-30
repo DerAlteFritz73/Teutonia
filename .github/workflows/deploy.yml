@@ -17,8 +17,15 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             set -e
-            git -C /var/www/teutonia reset --hard
-            git -C /var/www/teutonia pull
+            # Force the working tree to exactly match origin/main. A plain
+            # "reset --hard" + "pull" aborts when prod has stray untracked files
+            # (e.g. a migration or class left by an earlier partial deploy) that a
+            # fast-forward would overwrite. fetch + reset to origin/main + clean
+            # makes the deploy idempotent regardless of prod's prior state.
+            # clean -fd respects .gitignore, so .env.local and var/ are preserved.
+            git -C /var/www/teutonia fetch origin main
+            git -C /var/www/teutonia reset --hard origin/main
+            git -C /var/www/teutonia clean -fd
             docker compose -f /var/www/teutonia/compose.yaml --env-file /var/www/teutonia/.env.local --project-directory /var/www/teutonia build php
             docker rm -f teutonia-php-1 teutonia-nginx-1 teutonia-database-1 2>/dev/null || true
             docker compose -f /var/www/teutonia/compose.yaml --env-file /var/www/teutonia/.env.local --project-directory /var/www/teutonia up -d --force-recreate --remove-orphans
