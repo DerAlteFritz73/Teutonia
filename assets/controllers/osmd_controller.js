@@ -72,6 +72,9 @@ export default class extends Controller {
             this.audioEl.preload = 'auto';
             this.audioEl.preservesPitch = true; // keep pitch when changing speed
             this.audioEl.addEventListener('ended', () => this.onAudioEnded());
+            // Each track's duration calibrates the real tempo (the notated score
+            // tempo is often a placeholder that doesn't match the recording).
+            this.audioEl.addEventListener('loadedmetadata', () => this.calibrateTempoFromAudio());
             // Default to the Tutti mix so the play button works without a
             // voice selected. Songs without a Tutti mix (only per-voice tracks)
             // fall back to the first staff that has a recording, so Abspielen
@@ -378,20 +381,44 @@ export default class extends Controller {
         return ['S', 'A', 'T', 'B'][staffIndex];
     }
 
-    // Score tempo in BPM (quarter notes / minute). The MP3s are rendered from
-    // the MusicXML at this tempo, so the cursor is driven by elapsed audio time
-    // × tempo — the same scheduling the synth used. (Driving off audioEl.duration
-    // instead is unreliable: browsers misreport MP3 duration, which made the
-    // cursor lag.)
+    // Establish the playback tempo (BPM = quarter notes / minute), used to drive
+    // the cursor from elapsed audio time. The score's notated <sound tempo> is
+    // often just a placeholder (e.g. 120) that does NOT match the real recording,
+    // so we treat it only as a starting estimate and calibrate against the actual
+    // audio duration once a track loads (see calibrateTempoFromAudio).
     readTempo() {
         const sheet = this.osmd?.Sheet;
         const bpm = sheet && sheet.HasBPMInfo ? sheet.DefaultStartTempoInBpm : null;
         this.bpm = bpm && bpm > 0 ? bpm : 120;
-        // Bound the BPM field to the same 0.5–1.5× window as the speed slider.
+        // Total notated length in whole notes — the basis for tempo calibration.
+        // Only trustworthy without repeats: a repeated piece's recording is
+        // longer than this source length, so we skip calibration there.
+        this.scoreWholeNotes = sheet?.SheetEndTimestamp?.RealValue || 0;
+        this.hasRepeats = (sheet?.Repetitions?.length || 0) > 0;
+        this.applyBpmBounds();
+    }
+
+    // Bound the BPM field to the same 0.5–1.5× window as the speed slider.
+    applyBpmBounds() {
         if (this.hasBpmTarget) {
             this.bpmTarget.min = Math.round(this.bpm * 0.5);
             this.bpmTarget.max = Math.round(this.bpm * 1.5);
         }
+    }
+
+    // Derive the real tempo from the loaded track's duration vs the notated
+    // length (bpm = wholeNotes·240/seconds), so the cursor stays in sync even
+    // when the score's notated tempo is a placeholder that doesn't match the
+    // recording. Skipped for pieces with repeats (recording is longer than the
+    // notated source length) and when the duration isn't known/usable.
+    calibrateTempoFromAudio() {
+        const dur = this.audioEl?.duration;
+        if (this.hasRepeats || !this.scoreWholeNotes || !dur || !isFinite(dur)) return;
+        const bpm = this.scoreWholeNotes * 240 / dur;
+        if (!(bpm > 0) || !isFinite(bpm)) return;
+        this.bpm = bpm;
+        this.applyBpmBounds();
+        this.updateSpeedLabel();
     }
 
     // Advance/rewind the cursor to match the audio position. A whole note lasts
