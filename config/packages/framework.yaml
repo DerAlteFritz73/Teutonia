@@ -5,7 +5,12 @@ framework:
     trusted_headers: ['x-forwarded-for', 'x-forwarded-host', 'x-forwarded-proto', 'x-forwarded-port', 'x-forwarded-prefix']
 
     # Note that the session will be started ONLY if you read or write from it.
-    session: true
+    session:
+        enabled: true
+        # Was the PHP default 1440s (24 min), so idle members were dropped fast.
+        # Keep idle sessions ~7 days; remember_me re-authenticates beyond that.
+        gc_maxlifetime: 604800
+        cookie_lifetime: 0 # session cookie; persistence is handled by remember_me
 
     #esi: true
     #fragments: true

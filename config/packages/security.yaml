@@ -24,6 +24,14 @@ security:
             logout:
                 path: app_logout
                 target: app_home
+            # Keep members logged in across browser closes, the session GC, and
+            # deploys (which wipe the in-container session files). Signature-based
+            # (no DB): a signed cookie re-authenticates silently from APP_SECRET +
+            # the user's password hash, so changing a password invalidates it.
+            remember_me:
+                secret: '%kernel.secret%'
+                lifetime: 2592000 # 30 days
+                always_remember_me: true # every login is remembered (no checkbox)
 
     role_hierarchy:
         ROLE_GUEST: [ROLE_USER]
