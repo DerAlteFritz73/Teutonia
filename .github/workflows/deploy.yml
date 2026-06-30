@@ -29,3 +29,13 @@ jobs:
             docker compose -f /var/www/teutonia/compose.yaml --env-file /var/www/teutonia/.env.local --project-directory /var/www/teutonia build php
             docker rm -f teutonia-php-1 teutonia-nginx-1 teutonia-database-1 2>/dev/null || true
             docker compose -f /var/www/teutonia/compose.yaml --env-file /var/www/teutonia/.env.local --project-directory /var/www/teutonia up -d --force-recreate --remove-orphans
+            # Apply DB migrations: nothing else in the stack runs them (the php
+            # entrypoint only execs php-fpm). The database was just force-recreated,
+            # so wait for it to accept connections before migrating. Run as
+            # www-data to avoid root-owning var/cache (breaks the site).
+            for i in $(seq 1 30); do
+              docker exec -u www-data teutonia-php-1 php bin/console doctrine:query:sql "SELECT 1" >/dev/null 2>&1 && break
+              echo "Waiting for database... ($i)"
+              sleep 2
+            done
+            docker exec -u www-data teutonia-php-1 php bin/console doctrine:migrations:migrate -n
