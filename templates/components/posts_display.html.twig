@@ -53,7 +53,7 @@
             {% endif %}
 
             <div class="row mt-2" id="post-row-{{ loop.index }}">
-                <div class="col-md-8 mx-auto mb-2" id="post-{{ post.id }}-container" data-year="{% if post.date %}{{ post.date|slice(0, 4) }}{% endif %}">
+                <div class="col-md-8 mb-2" id="post-{{ post.id }}-container" data-year="{% if post.date %}{{ post.date|slice(0, 4) }}{% endif %}">
                     <h3{% if post.fontTitle or post.fontTitleSize or post.fontTitleBold or post.fontTitleItalic or post.fontTitleUnderline %} style="{% if post.fontTitle and post.fontTitle != 'default' %}font-family: {{ post.fontTitle }};{% endif %}{% if post.fontTitleSize %} font-size: {{ post.fontTitleSize }}px;{% endif %}{% if post.fontTitleBold %} font-weight: bold;{% endif %}{% if post.fontTitleItalic %} font-style: italic;{% endif %}{% if post.fontTitleUnderline %} text-decoration: underline;{% endif %}"{% endif %}>{{ singerCount is defined ? post.title|replace({'{singer_count}': singerCount}) : post.title }}</h3>
                     {% if post.subtitle %}
                         <h5 class="text-muted"{% if post.fontSubtitle or post.fontSubtitleSize or post.fontSubtitleBold or post.fontSubtitleItalic or post.fontSubtitleUnderline %} style="{% if post.fontSubtitle and post.fontSubtitle != 'default' %}font-family: {{ post.fontSubtitle }};{% endif %}{% if post.fontSubtitleSize %} font-size: {{ post.fontSubtitleSize }}px;{% endif %}{% if post.fontSubtitleBold %} font-weight: bold;{% endif %}{% if post.fontSubtitleItalic %} font-style: italic;{% endif %}{% if post.fontSubtitleUnderline %} text-decoration: underline;{% endif %}"{% endif %}>{{ post.subtitle }}</h5>
