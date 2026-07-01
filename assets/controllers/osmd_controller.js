@@ -25,6 +25,11 @@ export default class extends Controller {
         // Highlight the whole current measure instead of just the current note.
         // Set data-osmd-measure-highlight-value="true" to switch.
         measureHighlight: { type: Boolean, default: false },
+        // How long a fermata holds its note, as a multiple of the note's notated
+        // value (2 = held twice as long — the common notation-software default).
+        // The recordings render fermatas, so the cursor must dwell to match; tune
+        // per song with data-osmd-fermata-stretch-value if a hold sounds off.
+        fermataStretch: { type: Number, default: 2 },
     };
 
     async connect() {
@@ -40,6 +45,7 @@ export default class extends Controller {
         try {
             // The vendored OSMD bundle exposes the namespace as a single default export.
             const OSMD = (await import('opensheetmusicdisplay')).default;
+            this.OSMDns = OSMD; // kept for enum lookups (e.g. ArticulationEnum)
             this.osmd = new OSMD.OpenSheetMusicDisplay(this.containerTarget, {
                 // Render the whole piece as one long horizontal staff line so
                 // playback can scroll smoothly sideways (no per-system jumps).
@@ -421,7 +427,75 @@ export default class extends Controller {
         // longer than this source length, so we skip calibration there.
         this.scoreWholeNotes = sheet?.SheetEndTimestamp?.RealValue || 0;
         this.hasRepeats = (sheet?.Repetitions?.length || 0) > 0;
+        this.scanFermatas();
         this.applyBpmBounds();
+    }
+
+    // The ArticulationEnum values that mark a fermata, read from the OSMD
+    // namespace when exposed, else the OSMD 2.0.0 literals.
+    fermataEnums() {
+        const A = this.OSMDns?.ArticulationEnum;
+        if (A && typeof A.fermata === 'number') {
+            const out = [A.fermata];
+            if (typeof A.invertedfermata === 'number') out.push(A.invertedfermata);
+            return out;
+        }
+        return [10, 11]; // ArticulationEnum.fermata / invertedfermata
+    }
+
+    // Scan the source score for fermata holds. A fermata makes the performer —
+    // and the rendered recording — sustain a note well past its notated value,
+    // which a constant-tempo cursor races straight through. We record each
+    // fermata's musical start (whole notes) and the held note's notated length so
+    // the time map (effectivePos) can stretch that span. Fermatas sounding on the
+    // same beat in several voices collapse to one (a fermata holds the whole
+    // ensemble). Skipped when the piece repeats: source≠enrolled positions then,
+    // and fermata+repeat is rare — fall back to the plain constant-tempo map.
+    scanFermatas() {
+        this.fermatas = [];
+        this.fermataStretch = this.fermataStretchValue > 1 ? this.fermataStretchValue : 2;
+        this.effectiveWholeNotes = this.scoreWholeNotes;
+        if (this.hasRepeats) return;
+
+        const measures = this.osmd?.Sheet?.SourceMeasures || [];
+        const ferm = this.fermataEnums();
+        const byStart = new Map(); // start(whole notes) → longest held note length there
+        for (const m of measures) {
+            const mAbs = m.AbsoluteTimestamp?.RealValue || 0;
+            for (const c of (m.VerticalSourceStaffEntryContainers || [])) {
+                for (const se of (c.StaffEntries || [])) {
+                    if (!se) continue;
+                    for (const ve of (se.VoiceEntries || [])) {
+                        if (!(ve.Articulations || []).some((a) => ferm.includes(a.articulationEnum))) continue;
+                        const start = mAbs + (ve.Timestamp?.RealValue || 0);
+                        const len = Math.max(0, ...(ve.Notes || []).map((n) => n.Length?.RealValue || 0));
+                        if (len <= 0) continue;
+                        if (!(byStart.get(start) >= len)) byStart.set(start, len);
+                    }
+                }
+            }
+        }
+        this.fermatas = [...byStart.entries()]
+            .map(([start, len]) => ({ start, len }))
+            .sort((a, b) => a.start - b.start);
+        const extra = this.fermatas.reduce((s, f) => s + f.len * (this.fermataStretch - 1), 0);
+        this.effectiveWholeNotes = this.scoreWholeNotes + extra;
+    }
+
+    // Map a real musical position (whole notes) to "effective" whole notes, where
+    // each fermata span [start, start+len] is stretched by fermataStretch. The
+    // cursor↔audio time map runs in this effective space, so wall-clock time spent
+    // crossing a fermata matches the recording and the cursor stays in sync.
+    effectivePos(p) {
+        const f = this.fermatas;
+        if (!f || !f.length) return p;
+        const k = this.fermataStretch - 1;
+        let e = p;
+        for (const fm of f) {
+            if (p <= fm.start) break; // sorted by start
+            e += Math.min(p - fm.start, fm.len) * k;
+        }
+        return e;
     }
 
     // Bound the BPM field to the same 0.5–1.5× window as the speed slider.
@@ -439,8 +513,12 @@ export default class extends Controller {
     // notated source length) and when the duration isn't known/usable.
     calibrateTempoFromAudio() {
         const dur = this.audioEl?.duration;
-        if (this.hasRepeats || !this.scoreWholeNotes || !dur || !isFinite(dur)) return;
-        const bpm = this.scoreWholeNotes * 240 / dur;
+        // Calibrate over the fermata-stretched length so the held note's extra
+        // time is attributed to the fermata, not smeared across the whole piece
+        // as a slower tempo (which left the cursor adrift around the hold).
+        const len = this.effectiveWholeNotes || this.scoreWholeNotes;
+        if (this.hasRepeats || !len || !dur || !isFinite(dur)) return;
+        const bpm = len * 240 / dur;
         if (!(bpm > 0) || !isFinite(bpm)) return;
         this.bpm = bpm;
         this.applyBpmBounds();
@@ -455,12 +533,16 @@ export default class extends Controller {
     syncCursorToAudio() {
         const a = this.audioEl;
         if (!a || !this.bpm) return;
+        // Target is in effective (fermata-stretched) whole notes, and we compare
+        // the cursor's position mapped into the same space, so the cursor dwells
+        // through a held fermata instead of running ahead of the recording.
         const target = a.currentTime * this.bpm / 240;
         const cur = this.osmd.cursor;
-        if (!cur.Iterator.EndReached && cur.Iterator.CurrentEnrolledTimestamp.RealValue > target + 1e-6) {
+        const pos = () => this.effectivePos(cur.Iterator.CurrentEnrolledTimestamp.RealValue);
+        if (!cur.Iterator.EndReached && pos() > target + 1e-6) {
             cur.reset(); // playback moved backwards (e.g. user seek)
         }
-        while (!cur.Iterator.EndReached && cur.Iterator.CurrentEnrolledTimestamp.RealValue < target - 1e-9) {
+        while (!cur.Iterator.EndReached && pos() < target - 1e-9) {
             cur.next();
         }
     }
