@@ -106,7 +106,8 @@ class LiederlisteController extends AbstractController
         $data = $this->buildRows($liste, $songRepo);
 
         $html = $this->renderView('admin/liederliste/pdf.html.twig', [
-            'title'       => $liste->getTitle() ?: $liste->getName(),
+            'title'       => $liste->getName(),
+            'subtitle'    => $liste->getTitle(),
             'showEtikett' => $data['showEtikett'],
             'rows'        => $data['rows'],
             'total'       => $data['total'],
@@ -268,9 +269,13 @@ class LiederlisteController extends AbstractController
             'marginRight'  => \PhpOffice\PhpWord\Shared\Converter::cmToTwip(2.5),
         ]);
 
-        $phpWord->addTitleStyle(1, ['name' => 'Calibri', 'size' => 16, 'bold' => true], ['spaceAfter' => 240]);
+        $subtitle = $liste->getTitle();
+        $phpWord->addTitleStyle(1, ['name' => 'Calibri', 'size' => 16, 'bold' => true], ['spaceAfter' => $subtitle ? 40 : 240]);
 
-        $section->addTitle($liste->getTitle() ?: $liste->getName(), 1);
+        $section->addTitle($liste->getName(), 1);
+        if ($subtitle) {
+            $section->addText($subtitle, ['name' => 'Calibri', 'size' => 12, 'italic' => true, 'color' => '555555'], ['spaceAfter' => 240]);
+        }
 
         // Column widths in twips — A4 text area: 16cm = 9072 twips (2.5cm margins each side)
         $wNum  = 500;
