@@ -48,3 +48,7 @@ compose.override.yaml
 
 # Partitur POC voice recordings (large binaries, kept out of git)
 /public/poc/*.mp3
+
+# Uploaded Liederliste logos (persist on server, never committed)
+/public/liederlisten/*
+!/public/liederlisten/.gitkeep

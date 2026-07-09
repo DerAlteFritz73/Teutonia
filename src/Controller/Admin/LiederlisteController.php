@@ -12,6 +12,7 @@ use PhpOffice\PhpWord\PhpWord;
 use PhpOffice\PhpWord\SimpleType\Jc;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -108,6 +109,7 @@ class LiederlisteController extends AbstractController
         $html = $this->renderView('admin/liederliste/pdf.html.twig', [
             'title'       => $liste->getName(),
             'subtitle'    => $liste->getTitle(),
+            'logo'        => $this->imageDataUri($liste),
             'showEtikett' => $data['showEtikett'],
             'rows'        => $data['rows'],
             'total'       => $data['total'],
@@ -192,6 +194,121 @@ class LiederlisteController extends AbstractController
         return $this->redirectToRoute('admin_liederlisten_edit', ['id' => $liste->getId()]);
     }
 
+    /** Absolute path to the public image-upload directory (created on demand). */
+    private function imageDir(): string
+    {
+        $dir = $this->getParameter('kernel.project_dir') . '/public/liederlisten';
+        if (!is_dir($dir)) {
+            mkdir($dir, 0755, true);
+        }
+        return $dir;
+    }
+
+    /**
+     * Stores an uploaded logo (image or PDF) and returns its web path relative to
+     * public/. PDFs and non-web-safe images are rasterised/normalised to PNG via
+     * Imagick (ghostscript delegate) so every export format can embed them.
+     */
+    private function storeImage(UploadedFile $file): string
+    {
+        $dir  = $this->imageDir();
+        $base = 'll-' . uniqid();
+        $ext  = strtolower($file->getClientOriginalExtension() ?: '');
+        $isPdf   = $ext === 'pdf' || $file->getMimeType() === 'application/pdf';
+        $webSafe = in_array($ext, ['png', 'jpg', 'jpeg', 'gif'], true);
+
+        if (!$isPdf && $webSafe) {
+            $filename = $base . '.' . ($ext === 'jpeg' ? 'jpg' : $ext);
+            $file->move($dir, $filename);
+            return 'liederlisten/' . $filename;
+        }
+
+        // PDF first page or exotic image formats → flatten onto white and write PNG.
+        $img = new \Imagick();
+        if ($isPdf) {
+            $img->setResolution(200, 200);
+        }
+        $img->readImage($file->getPathname() . ($isPdf ? '[0]' : ''));
+        $img->setImageBackgroundColor('white');
+        $img = $img->mergeImageLayers(\Imagick::LAYERMETHOD_FLATTEN);
+        $img->setImageFormat('png');
+        $filename = $base . '.png';
+        $img->writeImage($dir . '/' . $filename);
+        $img->clear();
+
+        return 'liederlisten/' . $filename;
+    }
+
+    /** Deletes a previously stored logo file (web path relative to public/). */
+    private function deleteImageFile(?string $webPath): void
+    {
+        if (!$webPath) {
+            return;
+        }
+        $full = $this->getParameter('kernel.project_dir') . '/public/' . $webPath;
+        if (is_file($full)) {
+            @unlink($full);
+        }
+    }
+
+    /**
+     * Adds the list's logo as a floating image anchored to the top-right page
+     * margin (DOCX/ODT). Dimensions are in points, scaled to fit ≈3.2 cm while
+     * preserving the aspect ratio.
+     */
+    private function addCornerImage(\PhpOffice\PhpWord\Element\Section $section, Liederliste $liste): void
+    {
+        $webPath = $liste->getImagePath();
+        if (!$webPath) {
+            return;
+        }
+        $abs = $this->getParameter('kernel.project_dir') . '/public/' . $webPath;
+        if (!is_file($abs)) {
+            return;
+        }
+
+        $max = 92; // points ≈ 3.2 cm
+        $w = $h = $max;
+        $size = @getimagesize($abs);
+        if ($size && $size[0] > 0 && $size[1] > 0) {
+            $ratio = $size[1] / $size[0];
+            if ($ratio <= 1) {
+                $w = $max;
+                $h = $max * $ratio;
+            } else {
+                $h = $max;
+                $w = $max / $ratio;
+            }
+        }
+
+        $section->addImage($abs, [
+            'width'              => $w,
+            'height'             => $h,
+            'wrappingStyle'      => 'square',
+            'positioning'        => 'absolute',
+            'posHorizontal'      => 'right',
+            'posHorizontalRelTo' => 'margin',
+            'posVertical'        => 'top',
+            'posVerticalRelTo'   => 'margin',
+        ]);
+    }
+
+    /** Base64 data-URI of the list's logo for embedding in the PDF/HTML export, or null. */
+    private function imageDataUri(Liederliste $liste): ?string
+    {
+        $webPath = $liste->getImagePath();
+        if (!$webPath) {
+            return null;
+        }
+        $abs = $this->getParameter('kernel.project_dir') . '/public/' . $webPath;
+        if (!is_file($abs)) {
+            return null;
+        }
+        $mime = mime_content_type($abs) ?: 'image/png';
+
+        return 'data:' . $mime . ';base64,' . base64_encode((string) file_get_contents($abs));
+    }
+
     /**
      * Normalises a Liederliste into flat rows shared by every export format
      * (DOCX/ODT via PhpWord and PDF/HTML via Twig). Each row carries the values
@@ -268,6 +385,8 @@ class LiederlisteController extends AbstractController
             'marginLeft'   => \PhpOffice\PhpWord\Shared\Converter::cmToTwip(2.5),
             'marginRight'  => \PhpOffice\PhpWord\Shared\Converter::cmToTwip(2.5),
         ]);
+
+        $this->addCornerImage($section, $liste);
 
         $subtitle = $liste->getTitle();
         $phpWord->addTitleStyle(1, ['name' => 'Calibri', 'size' => 16, 'bold' => true], ['spaceAfter' => $subtitle ? 40 : 240]);
@@ -433,6 +552,28 @@ class LiederlisteController extends AbstractController
                 $liste->setName($name);
                 $liste->setTitle(trim((string) $request->request->get('liste_title', '')) ?: null);
                 $liste->setShowEtikett($request->request->has('show_etikett'));
+
+                // Corner logo: remove and/or replace.
+                if ($request->request->has('remove_image')) {
+                    $this->deleteImageFile($liste->getImagePath());
+                    $liste->setImagePath(null);
+                }
+                /** @var ?UploadedFile $imageFile */
+                $imageFile = $request->files->get('liste_image');
+                if ($imageFile) {
+                    $mime = (string) $imageFile->getMimeType();
+                    if (!str_starts_with($mime, 'image/') && $mime !== 'application/pdf') {
+                        $this->addFlash('error', 'Nur Bilder oder PDF-Dateien sind als Logo erlaubt.');
+                    } else {
+                        try {
+                            $newPath = $this->storeImage($imageFile);
+                            $this->deleteImageFile($liste->getImagePath());
+                            $liste->setImagePath($newPath);
+                        } catch (\Throwable $e) {
+                            $this->addFlash('error', 'Bild konnte nicht verarbeitet werden.');
+                        }
+                    }
+                }
 
                 $itemsJson = (string) $request->request->get('items_json', '[]');
                 $items     = json_decode($itemsJson, true);

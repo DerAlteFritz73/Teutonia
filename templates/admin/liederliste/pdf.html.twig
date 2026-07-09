@@ -7,6 +7,7 @@
         body { font-family: "DejaVu Sans", sans-serif; color: #212529; }
         h1 { font-size: 16pt; margin: 0 0 12pt; }
         .subtitle { font-size: 12pt; font-style: italic; color: #555555; margin: -8pt 0 12pt; }
+        .corner-logo { float: right; max-width: 3.2cm; max-height: 3.2cm; margin: 0 0 6pt 10pt; }
         table { width: 100%; border-collapse: collapse; }
         th, td {
             border: 0.5pt solid #cccccc;
@@ -28,6 +29,7 @@
     </style>
 </head>
 <body>
+    {% if logo %}<img class="corner-logo" src="{{ logo }}">{% endif %}
     <h1>{{ title }}</h1>
     {% if subtitle %}<div class="subtitle">{{ subtitle }}</div>{% endif %}
     <table>

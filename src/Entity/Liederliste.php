@@ -24,6 +24,10 @@ class Liederliste
     #[ORM\Column]
     private bool $showEtikett = false;
 
+    /** Web path (relative to public/) of a logo/emblem shown in the exports' upper-right corner. */
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $imagePath = null;
+
     /**
      * Each item: {type:'song'|'custom', songId?:int, composer:string, title:string, duration?:string}
      */
@@ -58,6 +62,9 @@ class Liederliste
 
     public function isShowEtikett(): bool { return $this->showEtikett; }
     public function setShowEtikett(bool $v): static { $this->showEtikett = $v; return $this; }
+
+    public function getImagePath(): ?string { return $this->imagePath; }
+    public function setImagePath(?string $imagePath): static { $this->imagePath = $imagePath; return $this; }
 
     public function getItems(): array { return $this->items; }
     public function setItems(array $items): static { $this->items = $items; return $this; }

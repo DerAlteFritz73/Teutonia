@@ -13,6 +13,7 @@ services:
       - style_images:/var/www/html/public/images/styles
       - assets:/var/assets
       - pdfs:/var/www/html/public/pdfs
+      - liederlisten:/var/www/html/public/liederlisten
       - /root/.ssh/id_ed25519:/run/hetzner_key:ro
     depends_on:
       database:
@@ -30,6 +31,7 @@ services:
       - style_images:/var/www/html/public/images/styles:ro
       - assets:/var/assets:ro
       - pdfs:/var/www/html/public/pdfs:ro
+      - liederlisten:/var/www/html/public/liederlisten:ro
     depends_on:
       - php
 
@@ -57,3 +59,4 @@ volumes:
   style_images:
   assets:
   pdfs:
+  liederlisten:

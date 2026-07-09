@@ -72,8 +72,8 @@ COPY . .
 RUN composer dump-autoload --optimize \
     && APP_ENV=prod composer run-script post-install-cmd \
     && APP_ENV=prod php bin/console asset-map:compile \
-    && mkdir -p public/images/styles \
-    && chown -R www-data:www-data var/ public/images/styles \
+    && mkdir -p public/images/styles public/liederlisten \
+    && chown -R www-data:www-data var/ public/images/styles public/liederlisten \
     && cp -r public/assets /var/assets-seed
 
 COPY docker/php/entrypoint.sh /entrypoint.sh

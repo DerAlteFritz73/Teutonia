@@ -9,6 +9,7 @@ chown -R www-data:www-data \
     /var/www/html/public/images/posts \
     /var/www/html/public/images/styles \
     /var/www/html/public/pdfs \
+    /var/www/html/public/liederlisten \
     2>/dev/null || true
 
 # Make the Hetzner SSH key readable by www-data (bind-mount is owned by root)
