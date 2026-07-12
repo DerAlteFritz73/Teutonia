@@ -338,7 +338,9 @@ class MemberController extends AbstractController
             'Any-Latin; Latin-ASCII; [^A-Za-z0-9_] remove; Lower()',
             $originalFilename
         );
-        $newFilename = $safeFilename . '-' . uniqid() . '.pdf';
+        // Preserve the uploaded file's extension (PDF, image, audio, …).
+        $extension = $pdfFile->guessExtension() ?: $pdfFile->getClientOriginalExtension();
+        $newFilename = $safeFilename . '-' . uniqid() . ($extension ? '.' . $extension : '');
 
         $pdfFile->move($uploadDir, $newFilename);
 

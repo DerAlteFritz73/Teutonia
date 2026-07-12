@@ -49,20 +49,22 @@ class SongSuggestionType extends AbstractType
                 ],
             ])
             ->add('pdfFile', FileType::class, [
-                'label' => 'Noten hochladen (PDF)',
+                'label' => 'Datei hochladen (PDF, Bild oder Audio)',
                 'mapped' => false,
                 'required' => false,
                 'attr' => [
                     'class' => 'form-control',
-                    'accept' => 'application/pdf'
+                    'accept' => 'application/pdf,image/*,audio/*'
                 ],
                 'constraints' => [
                     new File([
                         'maxSize' => '20M',
                         'mimeTypes' => [
                             'application/pdf',
+                            'image/*',
+                            'audio/*',
                         ],
-                        'mimeTypesMessage' => 'Bitte laden Sie eine gültige PDF-Datei hoch',
+                        'mimeTypesMessage' => 'Bitte laden Sie eine gültige Datei hoch (PDF, Bild oder Audio)',
                     ])
                 ],
             ]);

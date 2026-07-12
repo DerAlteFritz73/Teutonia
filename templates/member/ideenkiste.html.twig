@@ -74,8 +74,18 @@
                             </div>
 
                             {% if suggestion.pdfPath %}
+                                {% set ext = suggestion.pdfPath|split('.')|last|lower %}
+                                {% if ext in ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg'] %}
+                                    {% set fileIcon = 'bi-file-image' %}
+                                {% elseif ext in ['mp3', 'm4a', 'ogg', 'wav', 'aac', 'flac'] %}
+                                    {% set fileIcon = 'bi-file-music' %}
+                                {% elseif ext == 'pdf' %}
+                                    {% set fileIcon = 'bi-file-pdf' %}
+                                {% else %}
+                                    {% set fileIcon = 'bi-file-earmark' %}
+                                {% endif %}
                                 <a href="{{ asset(suggestion.pdfPath) }}" target="_blank" class="btn btn-sm btn-outline-primary w-100 mb-2">
-                                    <i class="bi bi-file-pdf"></i> Noten ansehen
+                                    <i class="bi {{ fileIcon }}"></i> Datei ansehen
                                 </a>
                             {% endif %}
 

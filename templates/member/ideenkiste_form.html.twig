@@ -53,7 +53,7 @@
                 {{ form_row(form.pdfFile) }}
                 {% if not isNew and suggestion.pdfPath %}
                     <small class="text-muted">
-                        Aktuelle Datei: <a href="{{ asset(suggestion.pdfPath) }}" target="_blank">Noten ansehen</a>
+                        Aktuelle Datei: <a href="{{ asset(suggestion.pdfPath) }}" target="_blank">Datei ansehen</a>
                     </small>
                 {% endif %}
             </div>
