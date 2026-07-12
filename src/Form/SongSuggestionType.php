@@ -49,12 +49,12 @@ class SongSuggestionType extends AbstractType
                 ],
             ])
             ->add('pdfFile', FileType::class, [
-                'label' => 'Datei hochladen (PDF, Bild oder Audio)',
+                'label' => 'Datei hochladen (PDF, Bild, Audio oder MuseScore)',
                 'mapped' => false,
                 'required' => false,
                 'attr' => [
                     'class' => 'form-control',
-                    'accept' => 'application/pdf,image/*,audio/*'
+                    'accept' => 'application/pdf,image/*,audio/*,.mscz,.mscx'
                 ],
                 'constraints' => [
                     new File([
@@ -63,8 +63,12 @@ class SongSuggestionType extends AbstractType
                             'application/pdf',
                             'image/*',
                             'audio/*',
+                            // MuseScore: .mscz is a zip container, .mscx is plain XML
+                            'application/zip',
+                            'application/xml',
+                            'text/xml',
                         ],
-                        'mimeTypesMessage' => 'Bitte laden Sie eine gültige Datei hoch (PDF, Bild oder Audio)',
+                        'mimeTypesMessage' => 'Bitte laden Sie eine gültige Datei hoch (PDF, Bild, Audio oder MuseScore)',
                     ])
                 ],
             ]);

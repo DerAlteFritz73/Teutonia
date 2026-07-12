@@ -339,7 +339,14 @@ class MemberController extends AbstractController
             $originalFilename
         );
         // Preserve the uploaded file's extension (PDF, image, audio, …).
-        $extension = $pdfFile->guessExtension() ?: $pdfFile->getClientOriginalExtension();
+        // guessExtension() maps by MIME type, which collapses MuseScore files
+        // (.mscz -> zip, .mscx -> xml); keep the client extension for those.
+        $clientExtension = strtolower($pdfFile->getClientOriginalExtension());
+        if (in_array($clientExtension, ['mscz', 'mscx'], true)) {
+            $extension = $clientExtension;
+        } else {
+            $extension = $pdfFile->guessExtension() ?: $clientExtension;
+        }
         $newFilename = $safeFilename . '-' . uniqid() . ($extension ? '.' . $extension : '');
 
         $pdfFile->move($uploadDir, $newFilename);

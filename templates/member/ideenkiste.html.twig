@@ -77,7 +77,7 @@
                                 {% set ext = suggestion.pdfPath|split('.')|last|lower %}
                                 {% if ext in ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg'] %}
                                     {% set fileIcon = 'bi-file-image' %}
-                                {% elseif ext in ['mp3', 'm4a', 'ogg', 'wav', 'aac', 'flac'] %}
+                                {% elseif ext in ['mp3', 'm4a', 'ogg', 'wav', 'aac', 'flac', 'mscz', 'mscx'] %}
                                     {% set fileIcon = 'bi-file-music' %}
                                 {% elseif ext == 'pdf' %}
                                     {% set fileIcon = 'bi-file-pdf' %}
