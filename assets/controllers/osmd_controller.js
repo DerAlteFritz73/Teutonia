@@ -37,10 +37,13 @@ export default class extends Controller {
         this.activeStaff = null;
         this.tuttiActive = false;
         this.playing = false;
-        // Initialise zoom/landscape up front: the default Tutti selection below
-        // runs fitAllStavesZoom(), which reads this.zoom.
-        this.zoom = 1;
+        // Immersive view state: `landscape` = full-screen overlay active;
+        // `rotated` = the 90° CSS turn is applied (portrait phone only).
         this.landscape = false;
+        this.rotated = false;
+        // Initialise zoom up front: the default Tutti selection below runs
+        // fitAllStavesZoom(), which reads this.zoom.
+        this.zoom = 1;
 
         try {
             // The vendored OSMD bundle exposes the namespace as a single default export.
@@ -201,10 +204,22 @@ export default class extends Controller {
         if (this.playing) this.osmd.cursor.show();
     }
 
-    // ---- Landscape (rotate the scrolling score to full-screen) ----------
+    // ---- Immersive full-screen view (follows the device's real orientation) --
 
+    // True only while the score is actually CSS-rotated 90° (portrait phone). The
+    // playhead/auto-scroll math swaps its measured axis on this, so it must NOT be
+    // set for the un-rotated natural-landscape view (a phone already held sideways).
     get isLandscape() {
-        return !!this.landscape;
+        return !!this.rotated;
+    }
+
+    // The device's real orientation. Used to pick the immersive sub-mode: a
+    // portrait phone gets the 90° CSS rotation (so the wide score fills the
+    // screen); a phone already held in landscape is shown upright. matchMedia is
+    // the most compatible signal across iOS Safari / Android Chrome / desktop.
+    get isPortrait() {
+        const mq = window.matchMedia('(orientation: portrait)');
+        return typeof mq.matches === 'boolean' ? mq.matches : window.innerHeight >= window.innerWidth;
     }
 
     // A phone (not a tablet/desktop): touch input and a small short side. Using
@@ -219,28 +234,79 @@ export default class extends Controller {
         this.landscape ? this.exitLandscape() : this.enterLandscape();
     }
 
+    // Enter the immersive full-screen view. The presentation then follows the
+    // device's real orientation (see applyOrientationMode) and re-evaluates
+    // whenever the device is turned.
     enterLandscape() {
         if (!this.hasViewerTarget) return;
         this.landscape = true;
-        // Scale the score up so the single horizontal staff fills the rotated
-        // view. Measure and re-render *before* rotating, so getBoundingClientRect
-        // still reports the un-rotated height. Remember the prior zoom to restore.
+        // Remember the prior zoom to restore on exit.
         this.preLandscapeZoom = this.zoom;
-        this.fitLandscapeZoom();
-        this.viewerTarget.classList.add('osmd-landscape');
+        this.viewerTarget.classList.add('osmd-immersive');
         document.body.classList.add('osmd-landscape-active');
-        // Enter/exit button visibility is driven by the .osmd-landscape class (see app.css).
+        this.applyOrientationMode();
+        this.listenOrientation();
+        // Enter/exit button visibility is driven by the .osmd-immersive class (see app.css).
+    }
+
+    // Pick the immersive sub-mode from the device's *physical* orientation:
+    //   • portrait phone  → rotate the wide score 90° so it fills the screen
+    //   • landscape phone → show it upright (natural fill, no CSS rotation)
+    // Called on entry and on every orientation change, so turning the device
+    // swaps modes and refits. The zoom is fitted while the rotation is removed, so
+    // getBoundingClientRect reports the true un-rotated staff height first.
+    applyOrientationMode() {
+        if (!this.landscape || !this.hasViewerTarget) return;
+        const rotate = this.isPortrait;
+        this.viewerTarget.classList.remove('osmd-rotated');
+        this.rotated = false;
+        if (rotate) {
+            this.fitLandscapeZoom();
+            this.viewerTarget.classList.add('osmd-rotated');
+            this.rotated = true;
+        } else {
+            this.fitNaturalZoom();
+        }
     }
 
     exitLandscape() {
         this.landscape = false;
-        if (this.hasViewerTarget) this.viewerTarget.classList.remove('osmd-landscape');
+        this.rotated = false;
+        this.unlistenOrientation();
+        if (this.hasViewerTarget) this.viewerTarget.classList.remove('osmd-immersive', 'osmd-rotated');
         document.body.classList.remove('osmd-landscape-active');
-        // Restore the zoom we had before entering landscape.
+        // Restore the zoom we had before entering the immersive view.
         if (this.preLandscapeZoom != null && Math.abs(this.preLandscapeZoom - this.zoom) > 0.01) {
             this.applyZoom(this.preLandscapeZoom);
         }
         this.preLandscapeZoom = null;
+    }
+
+    // React to the device being physically rotated while immersive: re-pick the
+    // sub-mode and refit. Listening to matchMedia('(orientation: …)') change is the
+    // cross-browser-reliable signal; orientationchange is kept as a fallback for
+    // engines that don't fire the media-query change. Debounced because the
+    // viewport dimensions settle a beat after the event fires.
+    listenOrientation() {
+        if (this._orientMq) return;
+        this._orientMq = window.matchMedia('(orientation: portrait)');
+        this._orientHandler = () => {
+            clearTimeout(this._orientTimer);
+            this._orientTimer = setTimeout(() => this.applyOrientationMode(), 150);
+        };
+        if (this._orientMq.addEventListener) this._orientMq.addEventListener('change', this._orientHandler);
+        else if (this._orientMq.addListener) this._orientMq.addListener(this._orientHandler); // older Safari
+        window.addEventListener('orientationchange', this._orientHandler);
+    }
+
+    unlistenOrientation() {
+        clearTimeout(this._orientTimer);
+        if (!this._orientMq) return;
+        if (this._orientMq.removeEventListener) this._orientMq.removeEventListener('change', this._orientHandler);
+        else if (this._orientMq.removeListener) this._orientMq.removeListener(this._orientHandler);
+        window.removeEventListener('orientationchange', this._orientHandler);
+        this._orientMq = null;
+        this._orientHandler = null;
     }
 
     // Pick a zoom so the staff's rendered height roughly matches the viewport
@@ -252,6 +318,19 @@ export default class extends Controller {
         const current = svg ? svg.getBoundingClientRect().height : 0;
         if (!current) return;
         const target = window.innerWidth * 0.85; // leave room for the controls bar + margin
+        const z = Math.min(4, Math.max(0.5, this.zoom * (target / current)));
+        if (Math.abs(z - this.zoom) > 0.05) this.applyZoom(z);
+    }
+
+    // Natural landscape (phone already held sideways, no CSS rotation): fit the
+    // staff height into the full-screen viewport height, leaving the controls
+    // strip its room. No axis swap here — the score is drawn the normal way up.
+    fitNaturalZoom() {
+        if (!this.osmd) return;
+        const svg = this.containerTarget.querySelector('svg');
+        const current = svg ? svg.getBoundingClientRect().height : 0;
+        if (!current) return;
+        const target = window.innerHeight * 0.72; // fill most of the height below the controls bar
         const z = Math.min(4, Math.max(0.5, this.zoom * (target / current)));
         if (Math.abs(z - this.zoom) > 0.05) this.applyZoom(z);
     }
@@ -422,13 +501,38 @@ export default class extends Controller {
         const sheet = this.osmd?.Sheet;
         const bpm = sheet && sheet.HasBPMInfo ? sheet.DefaultStartTempoInBpm : null;
         this.bpm = bpm && bpm > 0 ? bpm : 120;
-        // Total notated length in whole notes — the basis for tempo calibration.
-        // Only trustworthy without repeats: a repeated piece's recording is
-        // longer than this source length, so we skip calibration there.
+        // Notated source length in whole notes (no repeats expanded).
         this.scoreWholeNotes = sheet?.SheetEndTimestamp?.RealValue || 0;
         this.hasRepeats = (sheet?.Repetitions?.length || 0) > 0;
+        // Actual played length in whole notes with repeats/voltas unrolled — what
+        // the recording really contains. This (not the source length) is the basis
+        // for tempo calibration, so a repeated piece calibrates correctly instead
+        // of running at the notated placeholder tempo.
+        this.enrolledWholeNotes = this.computeEnrolledLength();
         this.scanFermatas();
         this.applyBpmBounds();
+    }
+
+    // Walk a cursor to the end to measure the unrolled playback length in whole
+    // notes (the last enrolled timestamp). The cursor iterator follows repeats and
+    // voltas, so this equals the recording's musical length even for repeated
+    // pieces. Runs once at load, before playback resets the cursor.
+    computeEnrolledLength() {
+        const cur = this.osmd?.cursor;
+        if (!cur) return this.scoreWholeNotes;
+        try {
+            cur.reset();
+            let last = 0, steps = 0;
+            while (!cur.Iterator.EndReached && steps < 100000) {
+                last = cur.Iterator.CurrentEnrolledTimestamp.RealValue;
+                cur.next();
+                steps++;
+            }
+            cur.reset();
+            return last || this.scoreWholeNotes;
+        } catch (e) {
+            return this.scoreWholeNotes;
+        }
     }
 
     // The ArticulationEnum values that mark a fermata, read from the OSMD
@@ -454,7 +558,9 @@ export default class extends Controller {
     scanFermatas() {
         this.fermatas = [];
         this.fermataStretch = this.fermataStretchValue > 1 ? this.fermataStretchValue : 2;
-        this.effectiveWholeNotes = this.scoreWholeNotes;
+        // Base the effective (time-map) length on the unrolled playback length, so
+        // repeated pieces calibrate against what the recording actually plays.
+        this.effectiveWholeNotes = this.enrolledWholeNotes || this.scoreWholeNotes;
         if (this.hasRepeats) return;
 
         const measures = this.osmd?.Sheet?.SourceMeasures || [];
@@ -479,7 +585,7 @@ export default class extends Controller {
             .map(([start, len]) => ({ start, len }))
             .sort((a, b) => a.start - b.start);
         const extra = this.fermatas.reduce((s, f) => s + f.len * (this.fermataStretch - 1), 0);
-        this.effectiveWholeNotes = this.scoreWholeNotes + extra;
+        this.effectiveWholeNotes = (this.enrolledWholeNotes || this.scoreWholeNotes) + extra;
     }
 
     // Map a real musical position (whole notes) to "effective" whole notes, where
@@ -506,18 +612,17 @@ export default class extends Controller {
         }
     }
 
-    // Derive the real tempo from the loaded track's duration vs the notated
-    // length (bpm = wholeNotes·240/seconds), so the cursor stays in sync even
-    // when the score's notated tempo is a placeholder that doesn't match the
-    // recording. Skipped for pieces with repeats (recording is longer than the
-    // notated source length) and when the duration isn't known/usable.
+    // Derive the real tempo from the loaded track's duration vs the *played*
+    // length (bpm = wholeNotes·240/seconds), so the cursor stays in sync even when
+    // the score's notated tempo is a placeholder that doesn't match the recording.
+    // effectiveWholeNotes is the unrolled (repeats/voltas expanded) length plus any
+    // fermata stretch — the same space syncCursorToAudio measures the cursor in —
+    // so this now calibrates repeated pieces too, which previously ran at the
+    // notated placeholder tempo and drifted badly.
     calibrateTempoFromAudio() {
         const dur = this.audioEl?.duration;
-        // Calibrate over the fermata-stretched length so the held note's extra
-        // time is attributed to the fermata, not smeared across the whole piece
-        // as a slower tempo (which left the cursor adrift around the hold).
-        const len = this.effectiveWholeNotes || this.scoreWholeNotes;
-        if (this.hasRepeats || !len || !dur || !isFinite(dur)) return;
+        const len = this.effectiveWholeNotes || this.enrolledWholeNotes || this.scoreWholeNotes;
+        if (!len || !dur || !isFinite(dur)) return;
         const bpm = len * 240 / dur;
         if (!(bpm > 0) || !isFinite(bpm)) return;
         this.bpm = bpm;

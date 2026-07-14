@@ -18,39 +18,47 @@ body { overflow-x: clip; }
     #partiturModal .modal-dialog { max-width: 92vw; }
 }
 
-/* ── Partitur: rotate the whole viewer (controls bar + score) to a full-screen
-   landscape view so the playback controls ride along the top of the rotated
-   score. 100vh/100vw swap because the 90° turn maps the element's width onto
-   the screen height and vice-versa. */
+/* ── Partitur: immersive full-screen score view. The presentation follows the
+   device's real orientation (JS: applyOrientationMode):
+     • .osmd-immersive            → full-screen overlay, upright (phone already
+                                     held in landscape — "natural fill").
+     • .osmd-immersive.osmd-rotated → additionally turned 90° so the wide score
+                                     fills a phone held in portrait. The 100vh/100vw
+                                     swap maps the element's width onto the screen
+                                     height and vice-versa. */
 body.osmd-landscape-active { overflow: hidden; }
-.osmd-viewer.osmd-landscape {
+.osmd-viewer.osmd-immersive {
     /* !important beats Bootstrap's .position-relative utility on the wrapper. */
     position: fixed !important;
     top: 0 !important;
     left: 0 !important;
-    width: 100vh;
-    height: 100vw;
+    width: 100vw;
+    height: 100vh;
     margin: 0;
     z-index: 2000;
     background: #fff;
-    transform-origin: top left;
-    transform: rotate(90deg) translateY(-100%);
     display: flex;
     flex-direction: column;
 }
+.osmd-viewer.osmd-immersive.osmd-rotated {
+    width: 100vh;
+    height: 100vw;
+    transform-origin: top left;
+    transform: rotate(90deg) translateY(-100%);
+}
 /* Controls bar stays a compact strip along the top edge; the score takes the rest. */
-.osmd-viewer.osmd-landscape .osmd-controls-bar {
+.osmd-viewer.osmd-immersive .osmd-controls-bar {
     flex: 0 0 auto;
     margin: 0;
     padding: .5rem .75rem;
     background: #fff;
     border-bottom: 1px solid #dee2e6;
 }
-.osmd-viewer.osmd-landscape .osmd-score-wrap {
+.osmd-viewer.osmd-immersive .osmd-score-wrap {
     flex: 1 1 auto;
     min-height: 0;
 }
-.osmd-viewer.osmd-landscape .osmd-scroll {
+.osmd-viewer.osmd-immersive .osmd-scroll {
     max-height: none !important;
     height: 100% !important;
     border-radius: 0 !important;
@@ -61,10 +69,10 @@ body.osmd-landscape-active { overflow: hidden; }
 }
 
 /* The single landscape toggle button swaps its label between "Querformat"
-   (enter) and "Hochformat" (exit) depending on the .osmd-landscape state. */
+   (enter) and "Hochformat" (exit) depending on the immersive state. */
 .osmd-toggle-exit { display: none; }
-.osmd-viewer.osmd-landscape .osmd-toggle-enter { display: none !important; }
-.osmd-viewer.osmd-landscape .osmd-toggle-exit { display: inline-block; }
+.osmd-viewer.osmd-immersive .osmd-toggle-enter { display: none !important; }
+.osmd-viewer.osmd-immersive .osmd-toggle-exit { display: inline-block; }
 
 /* All replaced/embedded media shrinks to fit its container */
 img, canvas, video, iframe, svg { max-width: 100%; }
