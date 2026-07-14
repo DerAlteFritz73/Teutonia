@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 380" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Winter: Schneeflocken und Noten an einem kahlen Zweig">
+  <defs>
+    <g id="w-flake" stroke="#ffffff" stroke-width="2" stroke-linecap="round">
+      <line x1="0" y1="-14" x2="0" y2="14"/>
+      <line x1="-12.1" y1="-7" x2="12.1" y2="7"/>
+      <line x1="-12.1" y1="7" x2="12.1" y2="-7"/>
+      <g stroke-width="1.6">
+        <path d="M0 -14 l -4 4 M0 -14 l 4 4 M0 14 l -4 -4 M0 14 l 4 -4"/>
+        <path d="M-12.1 -7 l 1 5.5 M12.1 7 l -1 -5.5 M-12.1 7 l 1 -5.5 M12.1 -7 l -1 5.5"/>
+      </g>
+    </g>
+    <g id="w-note">
+      <ellipse cx="0" cy="0" rx="9" ry="6.3" transform="rotate(-22)" fill="#ffffff"/>
+      <rect x="6.8" y="-31" width="2.5" height="31" fill="#ffffff"/>
+    </g>
+  </defs>
+  <!-- staff across, cool and faint -->
+  <g stroke="#ffffff" stroke-opacity="0.14" stroke-width="1.4" fill="none">
+    <path d="M-20 150 C 300 130, 900 190, 1220 150"/>
+    <path d="M-20 178 C 300 158, 900 218, 1220 178"/>
+    <path d="M-20 206 C 300 186, 900 246, 1220 206"/>
+  </g>
+  <!-- bare branch, lower-left -->
+  <path d="M-30 400 C 120 320, 220 300, 470 250" fill="none"
+        stroke="#ffffff" stroke-opacity="0.5" stroke-width="3.6" stroke-linecap="round"/>
+  <path d="M160 335 C 180 300, 175 280, 150 250 M300 288 C 320 260, 322 240, 305 214 M470 250 C 486 226, 486 208, 470 186"
+        fill="none" stroke="#ffffff" stroke-opacity="0.38" stroke-width="2.2" stroke-linecap="round"/>
+  <!-- notes on the branch tips -->
+  <g fill="#ffffff" opacity="0.9">
+    <use href="#w-note" transform="translate(150 250)"/>
+    <use href="#w-note" transform="translate(305 214)"/>
+    <use href="#w-note" transform="translate(470 186)"/>
+  </g>
+  <!-- snowflakes: some crisp, some faint (some sit on the staff like notes) -->
+  <g stroke-opacity="0.85">
+    <use href="#w-flake" transform="translate(640 120) scale(1.2)"/>
+    <use href="#w-flake" transform="translate(880 200)"/>
+    <use href="#w-flake" transform="translate(1030 150) scale(1.35)"/>
+  </g>
+  <g stroke-opacity="0.4">
+    <use href="#w-flake" transform="translate(560 240) scale(0.8)"/>
+    <use href="#w-flake" transform="translate(760 300) scale(0.9)"/>
+    <use href="#w-flake" transform="translate(960 300) scale(0.7)"/>
+    <use href="#w-flake" transform="translate(700 60) scale(0.65)"/>
+  </g>
+</svg>

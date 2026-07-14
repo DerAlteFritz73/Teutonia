@@ -22,6 +22,10 @@ services:
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones
 
+    App\Twig\ThemeExtension:
+        arguments:
+            $configuredTheme: '%env(SITE_THEME)%'
+
     App\Service\GoogleCalendarService:
         arguments:
             $apiKey: '%env(GOOGLE_CALENDAR_API_KEY)%'

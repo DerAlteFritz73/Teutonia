@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 380" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Herbst: fallende Blätter als Noten">
+  <defs>
+    <!-- a leaf that doubles as a note head, with a stem -->
+    <g id="a-leaf">
+      <path d="M0 0 C 14 -10, 14 -24, 0 -30 C -14 -24, -14 -10, 0 0 Z" fill="#ffffff"/>
+      <line x1="0" y1="-2" x2="0" y2="-28" stroke="#e9c9a0" stroke-width="1.3" stroke-opacity="0.7"/>
+    </g>
+    <g id="a-note">
+      <ellipse cx="0" cy="0" rx="9" ry="6.3" transform="rotate(-22)" fill="#ffffff"/>
+      <rect x="6.8" y="-31" width="2.5" height="31" fill="#ffffff"/>
+    </g>
+  </defs>
+  <!-- staff drifting down to the right -->
+  <g stroke="#ffffff" stroke-opacity="0.15" stroke-width="1.5" fill="none">
+    <path d="M-20 110 C 350 140, 780 220, 1220 300"/>
+    <path d="M-20 138 C 350 168, 780 248, 1220 328"/>
+    <path d="M-20 166 C 350 196, 780 276, 1220 356"/>
+  </g>
+  <!-- bough, upper left -->
+  <path d="M-30 40 C 180 70, 300 120, 430 130" fill="none"
+        stroke="#ffffff" stroke-opacity="0.5" stroke-width="4" stroke-linecap="round"/>
+  <path d="M210 88 C 250 96, 275 118, 300 150" fill="none"
+        stroke="#ffffff" stroke-opacity="0.36" stroke-width="2.4" stroke-linecap="round"/>
+  <!-- falling leaves/notes scattered, drifting to lower-right -->
+  <g opacity="0.9">
+    <use href="#a-leaf" transform="translate(300 150) rotate(15) scale(1.15)"/>
+    <use href="#a-leaf" transform="translate(430 130) rotate(-10) scale(1.25)"/>
+    <use href="#a-leaf" transform="translate(520 210) rotate(35)"/>
+    <use href="#a-note" transform="translate(660 250)"/>
+    <use href="#a-leaf" transform="translate(770 300) rotate(-25) scale(1.1)"/>
+    <use href="#a-note" transform="translate(900 300)"/>
+    <use href="#a-leaf" transform="translate(1010 330) rotate(20)"/>
+  </g>
+  <g fill="#ffffff" fill-opacity="0.45">
+    <use href="#a-leaf" transform="translate(600 120) rotate(45) scale(0.8)"/>
+    <use href="#a-leaf" transform="translate(840 170) rotate(-30) scale(0.85)"/>
+  </g>
+</svg>

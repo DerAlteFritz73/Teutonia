@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 380" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Sommer: Sonne über einer Notenlinie">
+  <defs>
+    <g id="su-note">
+      <ellipse cx="0" cy="0" rx="9" ry="6.3" transform="rotate(-22)" fill="#ffffff"/>
+      <rect x="6.8" y="-32" width="2.6" height="32" fill="#ffffff"/>
+      <path d="M8.5 -32 C 22 -28, 24 -16, 15 -12 C 20 -20, 16 -28, 8.5 -26 Z" fill="#ffffff"/>
+    </g>
+  </defs>
+  <!-- radiant sun, upper right -->
+  <g transform="translate(1010 96)">
+    <g stroke="#ffffff" stroke-opacity="0.5" stroke-width="4" stroke-linecap="round">
+      <line x1="0" y1="-92" x2="0" y2="-64"/><line x1="65" y1="-65" x2="45" y2="-45"/>
+      <line x1="92" y1="0" x2="64" y2="0"/><line x1="65" y1="65" x2="45" y2="45"/>
+      <line x1="0" y1="92" x2="0" y2="64"/><line x1="-65" y1="65" x2="-45" y2="45"/>
+      <line x1="-92" y1="0" x2="-64" y2="0"/><line x1="-65" y1="-65" x2="-45" y2="-45"/>
+    </g>
+    <circle r="46" fill="#ffffff" fill-opacity="0.16"/>
+    <circle r="36" fill="#fff6d8" fill-opacity="0.85"/>
+  </g>
+  <!-- wavy staff across the band -->
+  <g stroke="#ffffff" stroke-opacity="0.16" stroke-width="1.5" fill="none">
+    <path d="M-20 210 C 250 170, 550 250, 820 210 S 1120 170, 1220 200"/>
+    <path d="M-20 238 C 250 198, 550 278, 820 238 S 1120 198, 1220 228"/>
+    <path d="M-20 266 C 250 226, 550 306, 820 266 S 1120 226, 1220 256"/>
+    <path d="M-20 294 C 250 254, 550 334, 820 294 S 1120 254, 1220 284"/>
+  </g>
+  <!-- notes riding the wave -->
+  <g fill="#ffffff" opacity="0.9">
+    <use href="#su-note" transform="translate(150 222)"/>
+    <use href="#su-note" transform="translate(300 250)"/>
+    <use href="#su-note" transform="translate(470 232)"/>
+    <use href="#su-note" transform="translate(640 258)"/>
+  </g>
+  <!-- reeds / grass, lower left -->
+  <g stroke="#ffffff" stroke-opacity="0.4" stroke-width="3" stroke-linecap="round" fill="none">
+    <path d="M60 400 C 55 320, 70 280, 60 240"/>
+    <path d="M95 400 C 100 330, 88 290, 100 250"/>
+    <path d="M130 400 C 122 340, 138 300, 128 268"/>
+  </g>
+</svg>

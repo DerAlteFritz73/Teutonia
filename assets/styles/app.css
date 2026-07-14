@@ -1,3 +1,3 @@
-body {
-    background-color: skyblue;
-}
+/* Site-wide visual styling lives in public/css/app.css (the THEME SYSTEM block),
+   which is themeable via the SITE_THEME env var. This AssetMapper entry is kept
+   intentionally empty so it does not override the theme's body background. */

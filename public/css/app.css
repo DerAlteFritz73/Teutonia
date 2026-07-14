@@ -11,6 +11,244 @@ footer { flex-shrink: 0; }
 *, *::before, *::after { box-sizing: border-box; }
 body { overflow-x: clip; }
 
+/* ══════════════════════════════════════════════════════════════════════════
+   THEME SYSTEM
+   Five selectable looks for a modern choir, chosen with the SITE_THEME env var
+   (warm | forest | navy | mono | plum) which sets <html data-theme="…">. Each
+   theme is just a palette + font pairing in CSS variables; a single component
+   layer below maps those variables onto Bootstrap so no templates change.
+   ────────────────────────────────────────────────────────────────────────── */
+
+/* Font stacks (families loaded in base.html.twig; graceful serif/sans fallbacks). */
+:root {
+    --font-cormorant: 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
+    --font-fraunces:  'Fraunces', Georgia, 'Times New Roman', serif;
+    --font-inter:     'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+}
+
+/* ── warm — Burgundy & Gold (default): classic choir elegance, serif headings */
+:root, [data-theme="warm"] {
+    --site-bg: #faf6ef;   --site-surface: #ffffff;  --site-surface-2: #f3ece0;
+    --site-ink: #2b2422;  --site-muted: #6f645d;    --site-border: #e7ddcf;
+    --site-primary: #7a1f2b;  --site-primary-rgb: 122,31,43;  --site-primary-hover: #641823;  --site-on-primary: #ffffff;
+    --site-accent: #c8a24a;   --site-accent-rgb: 200,162,74;  --site-accent-ink: #4a3a12;
+    --site-navbar-bg: #2a2020;  --site-navbar-ink: #f3e9e0;  --site-member-bg: #382a2a;  --site-footer-bg: #241b1b;
+    --site-head-font: var(--font-cormorant);  --site-head-weight: 700;  --site-head-spacing: .01em;
+    --site-body-font: var(--font-inter);
+    --site-hero: linear-gradient(135deg, #2a2020 0%, #4a2530 55%, #7a1f2b 100%);
+}
+/* ── forest — Forest Green & Amber: fresh, contemporary, clean sans */
+[data-theme="forest"] {
+    --site-bg: #f7f5f0;   --site-surface: #ffffff;  --site-surface-2: #eef1ea;
+    --site-ink: #22302a;  --site-muted: #5c6b62;    --site-border: #e0e4dc;
+    --site-primary: #2f6b4f;  --site-primary-rgb: 47,107,79;  --site-primary-hover: #245840;  --site-on-primary: #ffffff;
+    --site-accent: #d9a441;   --site-accent-rgb: 217,164,65;  --site-accent-ink: #4a3410;
+    --site-navbar-bg: #1e2b24;  --site-navbar-ink: #eaf1ea;  --site-member-bg: #26362d;  --site-footer-bg: #1a251f;
+    --site-head-font: var(--font-inter);  --site-head-weight: 700;  --site-head-spacing: -.015em;
+    --site-body-font: var(--font-inter);
+    --site-hero: linear-gradient(135deg, #1e2b24 0%, #2f6b4f 100%);
+}
+/* ── navy — Deep Navy & Gold: refined concert-hall blue, serif headings */
+[data-theme="navy"] {
+    --site-bg: #f4f6fa;   --site-surface: #ffffff;  --site-surface-2: #e9eef6;
+    --site-ink: #1c2430;  --site-muted: #5a6572;    --site-border: #dbe1ea;
+    --site-primary: #1f3a5f;  --site-primary-rgb: 31,58,95;  --site-primary-hover: #172e4c;  --site-on-primary: #ffffff;
+    --site-accent: #c6a24a;   --site-accent-rgb: 198,162,74;  --site-accent-ink: #3a2f12;
+    --site-navbar-bg: #14243a;  --site-navbar-ink: #e7edf6;  --site-member-bg: #1c3149;  --site-footer-bg: #101d2e;
+    --site-head-font: var(--font-cormorant);  --site-head-weight: 700;  --site-head-spacing: .01em;
+    --site-body-font: var(--font-inter);
+    --site-hero: linear-gradient(135deg, #14243a 0%, #1f3a5f 100%);
+}
+/* ── mono — Graphite & Gold: understated, timeless, modern serif headings */
+[data-theme="mono"] {
+    --site-bg: #f6f4f1;   --site-surface: #ffffff;  --site-surface-2: #edeae5;
+    --site-ink: #1e1c1a;  --site-muted: #6b665f;    --site-border: #e4e0da;
+    --site-primary: #33312e;  --site-primary-rgb: 51,49,46;  --site-primary-hover: #201f1d;  --site-on-primary: #ffffff;
+    --site-accent: #b58a3c;   --site-accent-rgb: 181,138,60;  --site-accent-ink: #3a2c12;
+    --site-navbar-bg: #1b1a18;  --site-navbar-ink: #ece9e4;  --site-member-bg: #2a2825;  --site-footer-bg: #161513;
+    --site-head-font: var(--font-fraunces);  --site-head-weight: 600;  --site-head-spacing: .005em;
+    --site-body-font: var(--font-inter);
+    --site-hero: linear-gradient(135deg, #1b1a18 0%, #3a3733 100%);
+}
+/* ── plum — Plum & Copper: warm contemporary, modern serif headings */
+[data-theme="plum"] {
+    --site-bg: #f9f5f6;   --site-surface: #ffffff;  --site-surface-2: #f0e7ea;
+    --site-ink: #2c2028;  --site-muted: #6d5f66;    --site-border: #ebe0e5;
+    --site-primary: #6a2c4f;  --site-primary-rgb: 106,44,79;  --site-primary-hover: #571f40;  --site-on-primary: #ffffff;
+    --site-accent: #b5763f;   --site-accent-rgb: 181,118,63;  --site-accent-ink: #ffffff;
+    --site-navbar-bg: #241820;  --site-navbar-ink: #f2e6ec;  --site-member-bg: #34222c;  --site-footer-bg: #1f141b;
+    --site-head-font: var(--font-fraunces);  --site-head-weight: 600;  --site-head-spacing: .005em;
+    --site-body-font: var(--font-inter);
+    --site-hero: linear-gradient(135deg, #241820 0%, #6a2c4f 100%);
+}
+
+/* ── Seasonal themes: each pairs a palette with a hero illustration (SVG in
+      public/images/themes/) blending the season with musical motifs — staves,
+      notes, blossoms/leaves/snowflakes. The illustration layers over a seasonal
+      gradient; motifs hug the edges so centred hero text stays legible. ─────── */
+[data-theme="spring"] {
+    --site-bg: #f3f8f3;   --site-surface: #ffffff;  --site-surface-2: #e8f1e8;
+    --site-ink: #1f2a22;  --site-muted: #5d6b60;    --site-border: #dde7dc;
+    --site-primary: #47895a;  --site-primary-rgb: 71,137,90;  --site-primary-hover: #3a7449;  --site-on-primary: #ffffff;
+    --site-accent: #d97a97;   --site-accent-rgb: 217,122,151;  --site-accent-ink: #4a1f2c;
+    --site-navbar-bg: #24402e;  --site-navbar-ink: #eaf3ea;  --site-member-bg: #2c4d38;  --site-footer-bg: #1c3324;
+    --site-head-font: var(--font-cormorant);  --site-head-weight: 700;  --site-head-spacing: .01em;
+    --site-body-font: var(--font-inter);
+    --site-hero: url('/images/themes/spring.svg') center/cover no-repeat,
+                 linear-gradient(135deg, #2e5a3b 0%, #47895a 100%);
+}
+[data-theme="summer"] {
+    --site-bg: #f4f8fb;   --site-surface: #ffffff;  --site-surface-2: #e6f0f5;
+    --site-ink: #16262d;  --site-muted: #566670;    --site-border: #dde6ec;
+    --site-primary: #1f7f9e;  --site-primary-rgb: 31,127,158;  --site-primary-hover: #196a85;  --site-on-primary: #ffffff;
+    --site-accent: #edb63a;   --site-accent-rgb: 237,182,58;  --site-accent-ink: #4a3410;
+    --site-navbar-bg: #123c4b;  --site-navbar-ink: #e6f2f6;  --site-member-bg: #17505f;  --site-footer-bg: #0e2f3b;
+    --site-head-font: var(--font-fraunces);  --site-head-weight: 600;  --site-head-spacing: .005em;
+    --site-body-font: var(--font-inter);
+    --site-hero: url('/images/themes/summer.svg') center/cover no-repeat,
+                 linear-gradient(135deg, #185f78 0%, #2f8fb0 100%);
+}
+[data-theme="autumn"] {
+    --site-bg: #faf4ec;   --site-surface: #ffffff;  --site-surface-2: #f2e7d7;
+    --site-ink: #2a1c14;  --site-muted: #6b5c50;    --site-border: #ece1d2;
+    --site-primary: #a8481f;  --site-primary-rgb: 168,72,31;  --site-primary-hover: #8c3a16;  --site-on-primary: #ffffff;
+    --site-accent: #d98a2b;   --site-accent-rgb: 217,138,43;  --site-accent-ink: #3a2410;
+    --site-navbar-bg: #3a1c10;  --site-navbar-ink: #f4e7da;  --site-member-bg: #4d2717;  --site-footer-bg: #2a140b;
+    --site-head-font: var(--font-cormorant);  --site-head-weight: 700;  --site-head-spacing: .01em;
+    --site-body-font: var(--font-inter);
+    --site-hero: url('/images/themes/autumn.svg') center/cover no-repeat,
+                 linear-gradient(135deg, #6e2f14 0%, #a8481f 100%);
+}
+[data-theme="winter"] {
+    --site-bg: #f1f4f8;   --site-surface: #ffffff;  --site-surface-2: #e6ecf3;
+    --site-ink: #1a2230;  --site-muted: #5a6572;    --site-border: #dde3ec;
+    --site-primary: #294060;  --site-primary-rgb: 41,64,96;  --site-primary-hover: #20334d;  --site-on-primary: #ffffff;
+    --site-accent: #6ea3c4;   --site-accent-rgb: 110,163,196;  --site-accent-ink: #10222f;
+    --site-navbar-bg: #182740;  --site-navbar-ink: #e6edf6;  --site-member-bg: #223252;  --site-footer-bg: #101a2e;
+    --site-head-font: var(--font-fraunces);  --site-head-weight: 600;  --site-head-spacing: .005em;
+    --site-body-font: var(--font-inter);
+    --site-hero: url('/images/themes/winter.svg') center/cover no-repeat,
+                 linear-gradient(135deg, #1c2c40 0%, #33506f 100%);
+}
+
+/* ── Component layer: map the theme variables onto Bootstrap + base elements ── */
+:root {
+    --bs-primary: var(--site-primary);
+    --bs-primary-rgb: var(--site-primary-rgb);
+    --bs-link-color: var(--site-primary);
+    --bs-link-color-rgb: var(--site-primary-rgb);
+    --bs-link-hover-color: var(--site-primary-hover);
+    --bs-body-bg: var(--site-bg);
+    --bs-body-color: var(--site-ink);
+    --bs-border-color: var(--site-border);
+}
+body {
+    background-color: var(--site-bg);
+    color: var(--site-ink);
+    font-family: var(--site-body-font);
+}
+h1, h2, h3, h4, h5, h6,
+.h1, .h2, .h3, .h4, .h5, .h6 {
+    font-family: var(--site-head-font);
+    font-weight: var(--site-head-weight);
+    letter-spacing: var(--site-head-spacing);
+    /* Colour is inherited (Bootstrap default), so headings are dark on the page
+       body yet stay light inside dark/coloured contexts (e.g. .text-white card
+       headers). Don't force a colour here or those become dark-on-dark. */
+}
+.navbar-brand {
+    font-family: var(--site-head-font);
+    font-weight: var(--site-head-weight);
+    letter-spacing: .02em;
+    font-size: 1.4rem;
+}
+a { color: var(--site-primary); text-underline-offset: .15em; }
+a:hover { color: var(--site-primary-hover); }
+.lead { color: var(--site-muted); font-weight: 400; }
+.text-primary { color: var(--site-primary) !important; }
+.bg-primary { background-color: var(--site-primary) !important; }
+.border-primary { border-color: var(--site-primary) !important; }
+
+/* Buttons — primary */
+.btn-primary {
+    --bs-btn-bg: var(--site-primary);              --bs-btn-border-color: var(--site-primary);
+    --bs-btn-hover-bg: var(--site-primary-hover);  --bs-btn-hover-border-color: var(--site-primary-hover);
+    --bs-btn-active-bg: var(--site-primary-hover);  --bs-btn-active-border-color: var(--site-primary-hover);
+    --bs-btn-disabled-bg: var(--site-primary);     --bs-btn-disabled-border-color: var(--site-primary);
+    --bs-btn-color: var(--site-on-primary);        --bs-btn-hover-color: var(--site-on-primary);
+    --bs-btn-active-color: var(--site-on-primary);  --bs-btn-disabled-color: var(--site-on-primary);
+}
+.btn-outline-primary {
+    --bs-btn-color: var(--site-primary);           --bs-btn-border-color: var(--site-primary);
+    --bs-btn-hover-bg: var(--site-primary);        --bs-btn-hover-border-color: var(--site-primary);
+    --bs-btn-hover-color: var(--site-on-primary);
+    --bs-btn-active-bg: var(--site-primary);       --bs-btn-active-border-color: var(--site-primary);
+    --bs-btn-active-color: var(--site-on-primary);
+}
+.btn { border-radius: .5rem; }
+.btn-sm { border-radius: .4rem; }
+
+/* Accent = the theme's gold/amber/copper. Bootstrap's "warning" role (member nav
+   highlight, logout, LiederListe) is re-tinted to the accent so it stays on-theme. */
+.text-warning { color: var(--site-accent) !important; }
+.btn-warning {
+    --bs-btn-bg: var(--site-accent);        --bs-btn-border-color: var(--site-accent);
+    --bs-btn-hover-bg: var(--site-accent);  --bs-btn-hover-border-color: var(--site-accent);
+    --bs-btn-color: var(--site-accent-ink);  --bs-btn-hover-color: var(--site-accent-ink);
+    --bs-btn-active-color: var(--site-accent-ink);
+    filter: none;
+}
+.btn-outline-warning {
+    --bs-btn-color: var(--site-accent);        --bs-btn-border-color: var(--site-accent);
+    --bs-btn-hover-bg: var(--site-accent);     --bs-btn-hover-border-color: var(--site-accent);
+    --bs-btn-hover-color: var(--site-accent-ink);
+    --bs-btn-active-bg: var(--site-accent);    --bs-btn-active-color: var(--site-accent-ink);
+}
+
+/* Cards & surfaces */
+.card {
+    --bs-card-bg: var(--site-surface);
+    --bs-card-border-color: var(--site-border);
+    border-radius: .75rem;
+    box-shadow: 0 1px 2px rgba(0,0,0,.04), 0 6px 20px rgba(0,0,0,.05);
+}
+.card-title { font-family: var(--site-head-font); font-weight: var(--site-head-weight); }
+
+/* Navbars & footer */
+.navbar.bg-dark { background-color: var(--site-navbar-bg) !important; }
+.navbar.member-nav {
+    background-color: var(--site-member-bg);
+    border-top: 2px solid var(--site-accent);
+}
+.navbar .nav-link.active,
+.navbar .nav-link:hover { color: var(--site-accent) !important; }
+footer.bg-dark { background-color: var(--site-footer-bg) !important; }
+
+/* Form focus ring picks up the theme colour */
+.form-control:focus, .form-select:focus, .form-check-input:focus {
+    border-color: var(--site-primary);
+    box-shadow: 0 0 0 .2rem rgba(var(--site-primary-rgb), .25);
+}
+.form-check-input:checked { background-color: var(--site-primary); border-color: var(--site-primary); }
+
+/* Homepage / section hero: a full-width themed band. Any <h1> that opens a page
+   container gets the display treatment; add .site-hero for the coloured band. */
+.site-hero {
+    background: var(--site-hero);
+    color: #fff;
+    border-radius: 1rem;
+    padding: clamp(2rem, 6vw, 4.5rem) clamp(1.25rem, 5vw, 3rem);
+    margin-bottom: 2rem;
+    box-shadow: 0 10px 30px rgba(0,0,0,.12);
+}
+.site-hero h1, .site-hero .h1 { color: #fff; margin-bottom: .5rem; }
+.site-hero .lead { color: rgba(255,255,255,.85); }
+.site-hero::after {
+    content: ""; display: block; width: 3.5rem; height: 3px;
+    background: var(--site-accent); margin-top: 1.25rem; border-radius: 2px;
+}
+/* END THEME SYSTEM ═════════════════════════════════════════════════════════ */
+
 /* On a PC the Partitur modal uses most of the screen width (mobile stays
    fullscreen via modal-fullscreen-lg-down) so more of the horizontal score is
    visible without scrolling. The #id beats Bootstrap's .modal-xl max-width. */

@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 380" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Frühling: blühender Zweig mit Notenblüten">
+  <defs>
+    <g id="s-note">
+      <ellipse cx="0" cy="0" rx="8.5" ry="6" transform="rotate(-22)" fill="#ffffff"/>
+      <rect x="6.4" y="-30" width="2.4" height="30" fill="#ffffff"/>
+    </g>
+    <g id="s-blossom">
+      <circle cx="0" cy="-9" r="7"/><circle cx="8.5" cy="-2.7" r="7"/>
+      <circle cx="5.3" cy="7.3" r="7"/><circle cx="-5.3" cy="7.3" r="7"/>
+      <circle cx="-8.5" cy="-2.7" r="7"/>
+      <circle cx="0" cy="0" r="3.4" fill="#ffe1ea"/>
+    </g>
+  </defs>
+  <!-- staff sweeping across, very soft -->
+  <g stroke="#ffffff" stroke-opacity="0.14" stroke-width="1.4" fill="none">
+    <path d="M-20 120 C 300 70, 900 190, 1220 130"/>
+    <path d="M-20 150 C 300 100, 900 220, 1220 160"/>
+    <path d="M-20 180 C 300 130, 900 250, 1220 190"/>
+  </g>
+  <!-- arching branch, lower-left -->
+  <path d="M-30 400 C 140 300, 210 250, 470 210 C 360 230, 250 300, 150 400 Z"
+        fill="#ffffff" fill-opacity="0.10"/>
+  <path d="M-30 402 C 150 300, 260 250, 520 214" fill="none"
+        stroke="#ffffff" stroke-opacity="0.55" stroke-width="4" stroke-linecap="round"/>
+  <path d="M120 348 C 180 330, 210 300, 250 250" fill="none"
+        stroke="#ffffff" stroke-opacity="0.4" stroke-width="2.6" stroke-linecap="round"/>
+  <g fill="#ffffff" fill-opacity="0.9">
+    <use href="#s-blossom" transform="translate(250 248) scale(1.1)"/>
+    <use href="#s-blossom" transform="translate(360 224)"/>
+    <use href="#s-blossom" transform="translate(470 214) scale(1.15)"/>
+    <use href="#s-blossom" transform="translate(180 300) scale(0.85)"/>
+  </g>
+  <!-- notes riding the staff, right side -->
+  <g fill="#ffffff" opacity="0.92">
+    <use href="#s-note" transform="translate(880 176)"/>
+    <use href="#s-note" transform="translate(960 196)"/>
+    <use href="#s-note" transform="translate(1040 172)"/>
+  </g>
+  <!-- drifting petals -->
+  <g fill="#ffffff" fill-opacity="0.5">
+    <ellipse cx="620" cy="90" rx="9" ry="5" transform="rotate(30 620 90)"/>
+    <ellipse cx="700" cy="150" rx="8" ry="4.5" transform="rotate(-15 700 150)"/>
+    <ellipse cx="560" cy="260" rx="8" ry="4.5" transform="rotate(50 560 260)"/>
+    <ellipse cx="790" cy="300" rx="9" ry="5" transform="rotate(-40 790 300)"/>
+  </g>
+</svg>
