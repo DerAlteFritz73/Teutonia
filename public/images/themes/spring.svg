@@ -30,17 +30,17 @@
     <use href="#s-blossom" transform="translate(470 214) scale(1.15)"/>
     <use href="#s-blossom" transform="translate(180 300) scale(0.85)"/>
   </g>
-  <!-- notes riding the staff, right side -->
+  <!-- notes in the lower-right strip, clear of the centred hero text -->
   <g fill="#ffffff" opacity="0.92">
-    <use href="#s-note" transform="translate(880 176)"/>
-    <use href="#s-note" transform="translate(960 196)"/>
-    <use href="#s-note" transform="translate(1040 172)"/>
+    <use href="#s-note" transform="translate(870 312)"/>
+    <use href="#s-note" transform="translate(950 330)"/>
+    <use href="#s-note" transform="translate(1030 310)"/>
   </g>
-  <!-- drifting petals -->
+  <!-- drifting petals, kept to the top corners -->
   <g fill="#ffffff" fill-opacity="0.5">
-    <ellipse cx="620" cy="90" rx="9" ry="5" transform="rotate(30 620 90)"/>
-    <ellipse cx="700" cy="150" rx="8" ry="4.5" transform="rotate(-15 700 150)"/>
-    <ellipse cx="560" cy="260" rx="8" ry="4.5" transform="rotate(50 560 260)"/>
-    <ellipse cx="790" cy="300" rx="9" ry="5" transform="rotate(-40 790 300)"/>
+    <ellipse cx="640" cy="60" rx="9" ry="5" transform="rotate(30 640 60)"/>
+    <ellipse cx="760" cy="78" rx="8" ry="4.5" transform="rotate(-15 760 78)"/>
+    <ellipse cx="880" cy="64" rx="8" ry="4.5" transform="rotate(50 880 64)"/>
+    <ellipse cx="1000" cy="86" rx="9" ry="5" transform="rotate(-40 1000 86)"/>
   </g>
 </svg>

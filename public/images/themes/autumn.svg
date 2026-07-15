@@ -16,23 +16,26 @@
     <path d="M-20 138 C 350 168, 780 248, 1220 328"/>
     <path d="M-20 166 C 350 196, 780 276, 1220 356"/>
   </g>
-  <!-- bough, upper left -->
-  <path d="M-30 40 C 180 70, 300 120, 430 130" fill="none"
+  <!-- bough in the top-left corner, with a couple of leaves clinging on -->
+  <path d="M-30 30 C 120 52, 200 78, 250 110" fill="none"
         stroke="#ffffff" stroke-opacity="0.5" stroke-width="4" stroke-linecap="round"/>
-  <path d="M210 88 C 250 96, 275 118, 300 150" fill="none"
+  <path d="M150 66 C 175 78, 190 96, 195 120" fill="none"
         stroke="#ffffff" stroke-opacity="0.36" stroke-width="2.4" stroke-linecap="round"/>
-  <!-- falling leaves/notes scattered, drifting to lower-right -->
-  <g opacity="0.9">
-    <use href="#a-leaf" transform="translate(300 150) rotate(15) scale(1.15)"/>
-    <use href="#a-leaf" transform="translate(430 130) rotate(-10) scale(1.25)"/>
-    <use href="#a-leaf" transform="translate(520 210) rotate(35)"/>
-    <use href="#a-note" transform="translate(660 250)"/>
-    <use href="#a-leaf" transform="translate(770 300) rotate(-25) scale(1.1)"/>
-    <use href="#a-note" transform="translate(900 300)"/>
-    <use href="#a-leaf" transform="translate(1010 330) rotate(20)"/>
+  <g opacity="0.85">
+    <use href="#a-leaf" transform="translate(195 120) rotate(15) scale(1.05)"/>
+    <use href="#a-leaf" transform="translate(90 58) rotate(-10)"/>
   </g>
-  <g fill="#ffffff" fill-opacity="0.45">
-    <use href="#a-leaf" transform="translate(600 120) rotate(45) scale(0.8)"/>
-    <use href="#a-leaf" transform="translate(840 170) rotate(-30) scale(0.85)"/>
+  <!-- falling leaves/notes gathered in the lower strip, clear of the text -->
+  <g opacity="0.9">
+    <use href="#a-leaf" transform="translate(300 322) rotate(15) scale(1.15)"/>
+    <use href="#a-note" transform="translate(430 336)"/>
+    <use href="#a-leaf" transform="translate(560 316) rotate(35)"/>
+    <use href="#a-note" transform="translate(700 336)"/>
+    <use href="#a-leaf" transform="translate(840 318) rotate(-25) scale(1.1)"/>
+    <use href="#a-note" transform="translate(980 330)"/>
+  </g>
+  <g fill="#ffffff" fill-opacity="0.4">
+    <use href="#a-leaf" transform="translate(640 70) rotate(45) scale(0.8)"/>
+    <use href="#a-leaf" transform="translate(880 62) rotate(-30) scale(0.85)"/>
   </g>
 </svg>
