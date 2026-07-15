@@ -262,9 +262,17 @@ footer.bg-dark { background-color: var(--site-footer-bg) !important; }
    being cropped away with the reeds on the left; and ease the hero title down a
    size so it no longer fills the whole band and overlaps the sun. */
 @media (max-width: 575.98px) {
-    [data-theme="summer"] .site-hero { background-position: right center; }
-    .site-hero h1, .site-hero .h1 { font-size: 1.55rem; line-height: 1.18; }
-    .site-hero .lead { font-size: .98rem; }
+    .site-hero h1, .site-hero .h1 { font-size: 1.4rem; line-height: 1.2; }
+    .site-hero .lead { font-size: .95rem; }
+    /* Summer's sun sits in the top-right, so on phones lay the text into a left
+       column and anchor the art to the right — the title stays clear of the sun
+       instead of running underneath it. */
+    [data-theme="summer"] .site-hero {
+        background-position: right center;
+        align-items: flex-start;
+        text-align: left !important;
+    }
+    [data-theme="summer"] .site-hero > * { max-width: 64%; }
 }
 /* END THEME SYSTEM ═════════════════════════════════════════════════════════ */
 
