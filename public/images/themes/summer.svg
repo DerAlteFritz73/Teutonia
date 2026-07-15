@@ -27,7 +27,7 @@
   <g fill="#ffffff" opacity="0.9">
     <use href="#su-note" transform="translate(230 322)"/>
     <use href="#su-note" transform="translate(400 340)"/>
-    <use href="#su-note" transform="translate(600 328)"/>
+    <use href="#su-note" transform="translate(600 328) rotate(180)"/>
     <use href="#su-note" transform="translate(800 340)"/>
     <use href="#su-note" transform="translate(980 322)"/>
   </g>
