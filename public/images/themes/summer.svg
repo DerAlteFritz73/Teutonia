@@ -10,7 +10,8 @@
       <rect x="6.8" y="-32" width="2.6" height="32" fill="#ffffff"/>
     </g>
   </defs>
-  <!-- radiant sun, top-right corner (clear of the centred hero text) -->
+  <!-- radiant sun, top-right corner (clear of the centred hero text). On phones
+       the hero anchors this side into view — see the summer rule in app.css. -->
   <g transform="translate(1060 74)">
     <g stroke="#ffffff" stroke-opacity="0.5" stroke-width="4" stroke-linecap="round">
       <line x1="0" y1="-84" x2="0" y2="-58"/><line x1="59" y1="-59" x2="41" y2="-41"/>

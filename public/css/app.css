@@ -257,6 +257,15 @@ footer.bg-dark { background-color: var(--site-footer-bg) !important; }
     content: ""; display: block; width: 3.5rem; height: 3px;
     background: var(--site-accent); margin-top: 1.25rem; border-radius: 2px;
 }
+/* On phones the near-square hero crops the illustration's sides (cover). Anchor
+   the summer art to the right so its top-right sun stays on screen instead of
+   being cropped away with the reeds on the left; and ease the hero title down a
+   size so it no longer fills the whole band and overlaps the sun. */
+@media (max-width: 575.98px) {
+    [data-theme="summer"] .site-hero { background-position: right center; }
+    .site-hero h1, .site-hero .h1 { font-size: 1.55rem; line-height: 1.18; }
+    .site-hero .lead { font-size: .98rem; }
+}
 /* END THEME SYSTEM ═════════════════════════════════════════════════════════ */
 
 /* On a PC the Partitur modal uses most of the screen width (mobile stays
