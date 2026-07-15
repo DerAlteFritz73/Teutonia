@@ -235,9 +235,19 @@ footer.bg-dark { background-color: var(--site-footer-bg) !important; }
    container gets the display treatment; add .site-hero for the coloured band. */
 .site-hero {
     background: var(--site-hero);
+    background-size: cover;
+    background-position: center;
     color: #fff;
     border-radius: 1rem;
-    padding: clamp(2rem, 6vw, 4.5rem) clamp(1.25rem, 5vw, 3rem);
+    padding: clamp(1.75rem, 4vw, 3rem) clamp(1.25rem, 5vw, 3rem);
+    /* Scale the band's height with its width so the illustrated hero keeps close
+       to the artwork's proportions — otherwise a wide screen makes a short, very
+       letterboxed band and `cover` crops the top/bottom motifs (sun, notes) away.
+       Centre the text so it stays balanced as the band grows. */
+    min-height: clamp(240px, 26vw, 400px);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
     margin-bottom: 2rem;
     box-shadow: 0 10px 30px rgba(0,0,0,.12);
 }
