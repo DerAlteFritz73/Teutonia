@@ -94,7 +94,7 @@ body { overflow-x: clip; }
     --site-navbar-bg: #24402e;  --site-navbar-ink: #eaf3ea;  --site-member-bg: #2c4d38;  --site-footer-bg: #1c3324;
     --site-head-font: var(--font-cormorant);  --site-head-weight: 700;  --site-head-spacing: .01em;
     --site-body-font: var(--font-inter);
-    --site-hero: url('/images/themes/spring.svg?v=2') center/cover no-repeat,
+    --site-hero: url('/images/themes/spring.svg?v=3') center/cover no-repeat,
                  linear-gradient(135deg, #2e5a3b 0%, #47895a 100%);
 }
 [data-theme="summer"] {

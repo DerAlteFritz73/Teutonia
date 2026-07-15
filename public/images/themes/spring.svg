@@ -28,11 +28,12 @@
     <use href="#s-blossom" transform="translate(490 320) scale(1.15)"/>
     <use href="#s-blossom" transform="translate(180 344) scale(0.85)"/>
   </g>
-  <!-- notes in the lower-right strip, clear of the centred hero text -->
+  <!-- notes in the lower strip, centre-right so they stay visible inside the
+       phone's centre-crop (the blossom branch occupies the lower-left) -->
   <g fill="#ffffff" opacity="0.92">
-    <use href="#s-note" transform="translate(870 312)"/>
-    <use href="#s-note" transform="translate(950 330)"/>
-    <use href="#s-note" transform="translate(1030 310)"/>
+    <use href="#s-note" transform="translate(600 322)"/>
+    <use href="#s-note" transform="translate(720 336)"/>
+    <use href="#s-note" transform="translate(840 320)"/>
   </g>
   <!-- drifting petals, kept to the top corners -->
   <g fill="#ffffff" fill-opacity="0.5">
