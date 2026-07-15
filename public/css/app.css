@@ -94,7 +94,7 @@ body { overflow-x: clip; }
     --site-navbar-bg: #24402e;  --site-navbar-ink: #eaf3ea;  --site-member-bg: #2c4d38;  --site-footer-bg: #1c3324;
     --site-head-font: var(--font-cormorant);  --site-head-weight: 700;  --site-head-spacing: .01em;
     --site-body-font: var(--font-inter);
-    --site-hero: url('/images/themes/spring.svg') center/cover no-repeat,
+    --site-hero: url('/images/themes/spring.svg?v=2') center/cover no-repeat,
                  linear-gradient(135deg, #2e5a3b 0%, #47895a 100%);
 }
 [data-theme="summer"] {
@@ -105,7 +105,7 @@ body { overflow-x: clip; }
     --site-navbar-bg: #123c4b;  --site-navbar-ink: #e6f2f6;  --site-member-bg: #17505f;  --site-footer-bg: #0e2f3b;
     --site-head-font: var(--font-fraunces);  --site-head-weight: 600;  --site-head-spacing: .005em;
     --site-body-font: var(--font-inter);
-    --site-hero: url('/images/themes/summer.svg') center/cover no-repeat,
+    --site-hero: url('/images/themes/summer.svg?v=2') center/cover no-repeat,
                  linear-gradient(135deg, #185f78 0%, #2f8fb0 100%);
 }
 [data-theme="autumn"] {
@@ -116,7 +116,7 @@ body { overflow-x: clip; }
     --site-navbar-bg: #3a1c10;  --site-navbar-ink: #f4e7da;  --site-member-bg: #4d2717;  --site-footer-bg: #2a140b;
     --site-head-font: var(--font-cormorant);  --site-head-weight: 700;  --site-head-spacing: .01em;
     --site-body-font: var(--font-inter);
-    --site-hero: url('/images/themes/autumn.svg') center/cover no-repeat,
+    --site-hero: url('/images/themes/autumn.svg?v=2') center/cover no-repeat,
                  linear-gradient(135deg, #6e2f14 0%, #a8481f 100%);
 }
 [data-theme="winter"] {
@@ -127,7 +127,7 @@ body { overflow-x: clip; }
     --site-navbar-bg: #182740;  --site-navbar-ink: #e6edf6;  --site-member-bg: #223252;  --site-footer-bg: #101a2e;
     --site-head-font: var(--font-fraunces);  --site-head-weight: 600;  --site-head-spacing: .005em;
     --site-body-font: var(--font-inter);
-    --site-hero: url('/images/themes/winter.svg') center/cover no-repeat,
+    --site-hero: url('/images/themes/winter.svg?v=2') center/cover no-repeat,
                  linear-gradient(135deg, #1c2c40 0%, #33506f 100%);
 }
 

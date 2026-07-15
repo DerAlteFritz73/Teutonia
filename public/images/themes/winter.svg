@@ -20,16 +20,16 @@
     <path d="M-20 178 C 300 158, 900 218, 1220 178"/>
     <path d="M-20 206 C 300 186, 900 246, 1220 206"/>
   </g>
-  <!-- bare branch, lower-left -->
-  <path d="M-30 400 C 120 320, 220 300, 470 250" fill="none"
+  <!-- bare branch kept low in the bottom-left corner -->
+  <path d="M-30 404 C 150 356, 300 336, 540 320" fill="none"
         stroke="#ffffff" stroke-opacity="0.5" stroke-width="3.6" stroke-linecap="round"/>
-  <path d="M160 335 C 180 300, 175 280, 150 250 M300 288 C 320 260, 322 240, 305 214 M470 250 C 486 226, 486 208, 470 186"
+  <path d="M205 344 C 216 326, 214 314, 205 300 M356 342 C 366 324, 366 314, 356 302 M502 334 C 514 318, 514 308, 502 298"
         fill="none" stroke="#ffffff" stroke-opacity="0.38" stroke-width="2.2" stroke-linecap="round"/>
-  <!-- notes on the branch tips -->
+  <!-- notes on the branch tips (in the lower strip) -->
   <g fill="#ffffff" opacity="0.9">
-    <use href="#w-note" transform="translate(150 250)"/>
-    <use href="#w-note" transform="translate(305 214)"/>
-    <use href="#w-note" transform="translate(470 186)"/>
+    <use href="#w-note" transform="translate(205 300)"/>
+    <use href="#w-note" transform="translate(356 302)"/>
+    <use href="#w-note" transform="translate(502 298)"/>
   </g>
   <!-- snowflakes kept to the top corners and lower strip, clear of the text -->
   <g stroke-opacity="0.85">

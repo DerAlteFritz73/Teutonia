@@ -17,18 +17,16 @@
     <path d="M-20 150 C 300 100, 900 220, 1220 160"/>
     <path d="M-20 180 C 300 130, 900 250, 1220 190"/>
   </g>
-  <!-- arching branch, lower-left -->
-  <path d="M-30 400 C 140 300, 210 250, 470 210 C 360 230, 250 300, 150 400 Z"
-        fill="#ffffff" fill-opacity="0.10"/>
-  <path d="M-30 402 C 150 300, 260 250, 520 214" fill="none"
+  <!-- arching branch, kept low in the bottom-left corner -->
+  <path d="M-30 404 C 160 360, 300 336, 560 322" fill="none"
         stroke="#ffffff" stroke-opacity="0.55" stroke-width="4" stroke-linecap="round"/>
-  <path d="M120 348 C 180 330, 210 300, 250 250" fill="none"
+  <path d="M150 372 C 200 356, 230 338, 255 312" fill="none"
         stroke="#ffffff" stroke-opacity="0.4" stroke-width="2.6" stroke-linecap="round"/>
   <g fill="#ffffff" fill-opacity="0.9">
-    <use href="#s-blossom" transform="translate(250 248) scale(1.1)"/>
-    <use href="#s-blossom" transform="translate(360 224)"/>
-    <use href="#s-blossom" transform="translate(470 214) scale(1.15)"/>
-    <use href="#s-blossom" transform="translate(180 300) scale(0.85)"/>
+    <use href="#s-blossom" transform="translate(255 312) scale(1.1)"/>
+    <use href="#s-blossom" transform="translate(370 320)"/>
+    <use href="#s-blossom" transform="translate(490 320) scale(1.15)"/>
+    <use href="#s-blossom" transform="translate(180 344) scale(0.85)"/>
   </g>
   <!-- notes in the lower-right strip, clear of the centred hero text -->
   <g fill="#ffffff" opacity="0.92">
