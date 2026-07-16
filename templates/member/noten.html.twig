@@ -40,9 +40,9 @@
                                     aria-expanded="false"
                                     {% if hasDropbox %}data-dropbox-path="{{ notenPath }}"{% endif %}{% if hasMovements and childCounts[song.id] is defined %} data-server-counts="1"{% endif %}>
                                 {% if hasMovements %}
-                                    <i class="bi bi-folder2-open me-2"></i>
+                                    <i class="bi bi-folder2-open me-2 d-none d-sm-inline"></i>
                                 {% elseif hasDropbox %}
-                                    <i class="bi bi-folder2-open me-2 text-warning"></i>
+                                    <i class="bi bi-folder2-open me-2 text-warning d-none d-sm-inline"></i>
                                 {% else %}
                                     <i class="bi bi-music-note me-2 text-secondary"></i>
                                 {% endif %}
