@@ -15,13 +15,6 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 )]
 class RefreshDropboxCacheCommand extends Command
 {
-    private const FOLDERS = [
-        // Whole-tree cache read by the member file browser (getFilesForFolder).
-        '/Chorgemeinschaft Teutonia',
-        '/Chorgemeinschaft Teutonia/Noten',
-        '/Chorgemeinschaft Teutonia/Aktuelle Proben',
-    ];
-
     public function __construct(private DropboxService $dropboxService)
     {
         parent::__construct();
@@ -32,19 +25,17 @@ class RefreshDropboxCacheCommand extends Command
         $io = new SymfonyStyle($input, $output);
         $io->title('Refreshing Dropbox structure cache');
 
-        // Drop the stale structure_*.json files, then rebuild each one with a
-        // fresh fetch (useCache=false also rewrites the cache file).
-        $this->dropboxService->clearFileCache();
+        try {
+            // Drop the stale structure_*.json files, then rebuild each one with a
+            // fresh fetch (useCache=false also rewrites the cache file).
+            $counts = $this->dropboxService->refreshFileCache();
+        } catch (\Throwable $e) {
+            $io->error(sprintf('Failed to refresh Dropbox cache: %s', $e->getMessage()));
+            return Command::FAILURE;
+        }
 
-        foreach (self::FOLDERS as $folder) {
-            try {
-                $tree    = $this->dropboxService->getFileStructure($folder, false);
-                $entries = count($tree['_subfolders'] ?? []);
-                $io->text(sprintf('Refreshed %s (%d top-level folders)', $folder, $entries));
-            } catch (\Throwable $e) {
-                $io->error(sprintf('Failed to refresh %s: %s', $folder, $e->getMessage()));
-                return Command::FAILURE;
-            }
+        foreach ($counts as $folder => $entries) {
+            $io->text(sprintf('Refreshed %s (%d top-level entries)', $folder, $entries));
         }
 
         $io->success('Dropbox cache refreshed.');

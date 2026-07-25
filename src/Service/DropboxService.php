@@ -410,6 +410,35 @@ class DropboxService
         error_log('Dropbox: file structure cache cleared');
     }
 
+    /** Top-level folders whose whole-tree structure cache the member pages read. */
+    private const CACHED_FOLDERS = [
+        '/Chorgemeinschaft Teutonia',
+        '/Chorgemeinschaft Teutonia/Noten',
+        '/Chorgemeinschaft Teutonia/Aktuelle Proben',
+    ];
+
+    /**
+     * Clear the structure cache and immediately rebuild it from Dropbox, so member
+     * pages reflect additions/deletions/renames right away. Rebuilding (rather than
+     * merely clearing) keeps the PDF/audio count badges correct and avoids a
+     * cold-cache storm of per-folder live fetches when the member page loads many
+     * songs at once (see getFilesForFolder).
+     *
+     * @return array<string,int> folderPath => number of cached top-level entries
+     */
+    public function refreshFileCache(): array
+    {
+        $this->clearFileCache();
+
+        $counts = [];
+        foreach (self::CACHED_FOLDERS as $folder) {
+            $tree = $this->getFileStructure($folder, false);
+            $counts[$folder] = count($tree['_subfolders'] ?? $tree);
+        }
+
+        return $counts;
+    }
+
     /**
      * Get the list of files for a specific song folder path, read from local cache.
      * Falls back to a live Dropbox call if the cache is missing.

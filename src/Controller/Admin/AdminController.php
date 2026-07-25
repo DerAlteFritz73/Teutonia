@@ -963,9 +963,6 @@ class AdminController extends AbstractController
             return $this->json(['error' => 'CSRF-Token ungültig'], 403);
         }
 
-        // Clear stale file-name cache so renames/moves are picked up immediately
-        $dropboxService->clearFileCache();
-
         // Fetch immediate subfolders from the Noten location only.
         // "Aktuelle Proben" is no longer a sync source — membership there is
         // controlled exclusively by the "Aktuell in Proben" checkbox on the
@@ -1212,6 +1209,67 @@ class AdminController extends AbstractController
             $em->flush();
         }
 
+        // Dedup movements: collapse child songs that share the same parent AND
+        // normalised name (repeated Dropbox re-imports created several rows for one
+        // movement — e.g. "Samba lelé" appearing 3× under the Jahrmarkt parent).
+        // Mirrors the top-level dedup above but keys on parent+name, and only
+        // removes a duplicate with no concert history (kept otherwise — its konzert
+        // links must be repointed to the canonical row by hand first).
+        $movementDupsMerged = 0;
+        $byParentName       = [];
+        foreach ($songs as $s) {
+            if (!$s->isMovement() || in_array($s->getId(), $mergedIds)) continue;
+            $parent = $s->getParent();
+            if (!$parent) continue;
+            $key = $parent->getId() . '|' . $this->normalizeForSync($s->getSongName());
+            $byParentName[$key][] = $s;
+        }
+        foreach ($byParentName as $dupGroup) {
+            if (count($dupGroup) <= 1) continue;
+
+            // Prefer the "Aktuell in Proben" one, then one with a Dropbox link, then
+            // one with concert history — so the removable rows are the empty extras.
+            usort($dupGroup, function ($a, $b) {
+                $scoreA = ($a->isAktuelleProben()        ? 4 : 0)
+                        + ($a->getDropboxlink()          ? 2 : 0)
+                        + (!$a->getKonzerte()->isEmpty() ? 1 : 0);
+                $scoreB = ($b->isAktuelleProben()        ? 4 : 0)
+                        + ($b->getDropboxlink()          ? 2 : 0)
+                        + (!$b->getKonzerte()->isEmpty() ? 1 : 0);
+                return $scoreB <=> $scoreA;
+            });
+
+            $canonical = $dupGroup[0];
+            for ($i = 1; $i < count($dupGroup); $i++) {
+                $dup = $dupGroup[$i];
+
+                // Transfer Dropbox paths / flag / styles the canonical is missing
+                if ($dup->getDropboxlink() && !$canonical->getDropboxlink()) {
+                    $canonical->setDropboxlink($dup->getDropboxlink());
+                }
+                if ($dup->getAktuelleDropboxlink() && !$canonical->getAktuelleDropboxlink()) {
+                    $canonical->setAktuelleDropboxlink($dup->getAktuelleDropboxlink());
+                }
+                if ($dup->isAktuelleProben() && !$canonical->isAktuelleProben()) {
+                    $canonical->setIsAktuelleProben(true);
+                }
+                foreach ($dup->getStyles() as $style) {
+                    $canonical->addStyle($style);
+                }
+
+                // Remove only when it has no concert history (konzert_song / song_style
+                // rows cascade-delete). Rows in a concert programme are left in place.
+                if ($dup->getKonzerte()->isEmpty()) {
+                    $em->remove($dup);
+                    $mergedIds[] = $dup->getId();
+                    $movementDupsMerged++;
+                }
+            }
+        }
+        if ($movementDupsMerged > 0) {
+            $em->flush();
+        }
+
         // Build a set of all dropboxlinks already in the DB (after matching above).
         // Keys are lowercased so the lookup is case-insensitive (Dropbox may return
         // folder names with different capitalisation than what was saved in the DB).
@@ -1260,10 +1318,21 @@ class AdminController extends AbstractController
             $em->flush();
         }
 
+        // Rebuild the member-page structure cache so deletions/renames/additions in
+        // Dropbox show immediately (and the PDF/audio count badges stay correct)
+        // instead of waiting for the 1h TTL / cache-refresh cron.
+        try {
+            $dropboxService->refreshFileCache();
+        } catch (\Exception $e) {
+            // Non-fatal: the cache self-heals via TTL/cron; the sync itself succeeded.
+            error_log('Dropbox: cache refresh after sync failed: ' . $e->getMessage());
+        }
+
         return $this->json([
             'matched'           => $matched,
             'movements_matched' => $movementsMatched,
             'merged'            => $mergedCount,
+            'movement_dups_merged' => $movementDupsMerged,
             'already_linked'    => $alreadyLinked,
             'unmatched'         => count($unmatched),
             'unmatched_names'   => $unmatched,
