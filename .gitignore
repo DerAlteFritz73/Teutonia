@@ -20,6 +20,7 @@
 ###< symfony/asset-mapper ###
 
 # Test and debug files
+/_harness_tmp/
 test_*.php
 debug_*.php
 check_*.php
