@@ -34,7 +34,7 @@ class GoogleCalendarService
 
     public function refreshCache(int $maxResults = 15): array
     {
-        $this->cache->delete(self::CACHE_KEY);
+        $this->cache->delete(self::CACHE_KEY . '_' . $maxResults);
         return $this->getUpcomingEvents($maxResults);
     }
 
