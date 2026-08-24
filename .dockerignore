@@ -5,7 +5,11 @@
 .claude/
 
 var/
-vendor/
+# vendor/  <- temporarily NOT ignored (Mini PC migration, 2026-08-06): vendor is
+#             pre-copied from the Pi (same composer.lock; PHP packages are platform-
+#             independent) and baked into the image instead of downloaded, to bypass
+#             this network's flaky composer/GitHub downloads. Re-ignore + restore the
+#             composer-install step once the network is reliable again.
 public/bundles/
 public/assets/
 assets/vendor/

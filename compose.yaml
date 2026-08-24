@@ -4,6 +4,7 @@ services:
       context: .
       target: prod
     restart: unless-stopped
+    container_name: teutonia-php-prod
     env_file:
       - .env.local
     environment:
@@ -14,7 +15,6 @@ services:
       - assets:/var/assets
       - pdfs:/var/www/html/public/pdfs
       - liederlisten:/var/www/html/public/liederlisten
-      - /root/.ssh/id_ed25519:/run/hetzner_key:ro
     depends_on:
       database:
         condition: service_healthy
@@ -22,8 +22,9 @@ services:
   nginx:
     image: nginx:1.27-alpine
     restart: unless-stopped
+    container_name: teutonia-nginx-prod
     ports:
-      - "127.0.0.1:8081:80"
+      - 127.0.0.1:2225:80
     volumes:
       - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
       - ./public:/var/www/html/public:ro
@@ -38,15 +39,14 @@ services:
   database:
     image: mariadb:10.11
     restart: unless-stopped
+    container_name: teutonia-db-prod
     env_file:
       - .env.local
     environment:
-      MARIADB_DATABASE: ${MARIADB_DB:-teutonia}
-      MARIADB_USER: ${MARIADB_USER:-teutonia}
-      MARIADB_PASSWORD: ${MARIADB_PASSWORD:?MARIADB_PASSWORD is required}
-      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD:?MARIADB_ROOT_PASSWORD is required}
+      MARIADB_DATABASE: teutonia
+      MARIADB_USER: teutonia
     healthcheck:
-      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      test: [CMD, healthcheck.sh, --connect, --innodb_initialized]
       timeout: 5s
       retries: 5
       start_period: 60s

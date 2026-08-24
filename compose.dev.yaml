@@ -1,0 +1,69 @@
+# Dev stack for teutonia (this project has no prod build on the Mini PC yet -- real
+# prod is on Hetzner, at teutonia-willstaett.de). Deliberately NOT named
+# compose.override.yaml, matching the fix applied to continuo/dhamien/jason: that
+# name auto-merges into plain `docker compose up`. Invoked explicitly:
+# `docker compose -f compose.yaml -f compose.dev.yaml -p teutonia-dev up`.
+#
+# -p teutonia-dev (not just "teutonia") is required: this host also runs a
+# teutonia-*-prod mirror stack (see compose.yaml's container_name / port 2225)
+# from a checkout that also defaults to project name "teutonia". A matching
+# project name would make this dev stack reuse that stack's named volumes
+# (same database!) since neither compose file scopes them explicitly. The
+# container_name / port overrides below are the second half of that isolation:
+# container_name always creates that literal name regardless of -p, and ports
+# bind on the host regardless of project, so both must differ from prod's too.
+
+services:
+  php:
+    container_name: teutonia-php-dev
+    build:
+      target: dev
+    environment:
+      APP_ENV: dev
+      MAILER_DSN: smtp://mailer:1025
+    volumes:
+      - .:/var/www/html
+      - /var/www/html/vendor
+      - ./public/assets:/var/www/html/public/assets
+      - /home/joel/.ssh/hetzner_admin_key:/run/hetzner_key:ro
+
+  database:
+    container_name: teutonia-db-dev
+    ports:
+      - "127.0.0.1:3307:3306"
+    volumes:
+      - database_data:/var/lib/mysql
+      - ./docker/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+
+  mailer:
+    container_name: teutonia-mailer-dev
+    image: axllent/mailpit
+    ports:
+      - "127.0.0.1:1025:1025"
+      - "127.0.0.1:8083:8025"
+    environment:
+      MP_SMTP_AUTH_ACCEPT_ANY: 1
+      MP_SMTP_AUTH_ALLOW_INSECURE: 1
+
+  nginx:
+    container_name: teutonia-nginx-dev
+    # !override, not append: compose merges list keys like `ports` by
+    # concatenation by default, which would leave this stack also trying to
+    # bind prod's port 2225 (already taken by the running teutonia-nginx-prod).
+    ports: !override
+      - "127.0.0.1:2125:80"
+    volumes:
+      - ./public/assets:/var/assets:ro
+
+  phpmyadmin:
+    container_name: teutonia-phpmyadmin-dev
+    image: phpmyadmin:latest
+    restart: unless-stopped
+    ports:
+      - 127.0.0.1:8082:80
+    environment:
+      PMA_HOST: database
+      PMA_USER: root
+      PMA_PASSWORD: rootTeutonia2024!
+    depends_on:
+      - database
