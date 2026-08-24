@@ -154,7 +154,7 @@ pageLoad(function () {
     let galleryIdSeq = 0;
 
     const galleryPicker     = document.getElementById('gallery-picker');
-    const galleryFilesInput = document.getElementById('post-gallery-files');
+    const galleryFilesInput = document.getElementById('post-gallery-files') || document.getElementById('post_galleryFiles');
     const galleryThumbsEl   = document.getElementById('gallery-thumbs');
 
     document.getElementById('add-gallery-photos-btn')?.addEventListener('click', () => galleryPicker?.click());
