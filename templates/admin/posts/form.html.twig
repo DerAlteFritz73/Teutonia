@@ -169,7 +169,7 @@
                                 <button type="button" class="btn btn-outline-secondary btn-sm" id="add-gallery-photos-btn">
                                     <i class="bi bi-images me-1"></i>Fotos auswählen
                                 </button>
-                                <input type="file" id="gallery-picker" accept="image/jpeg,image/png,image/gif,image/webp,application/pdf" multiple style="display:none;">
+                                <input type="file" id="gallery-picker" accept="image/jpeg,image/png,image/gif,image/webp,application/pdf" multiple style="position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;">
                             </div>
                             {# Real field submitted with the form; populated from the cropped files via JS #}
                             {{ form_widget(form.galleryFiles, {'attr': {'style': 'display:none;', 'id': 'post-gallery-files'}}) }}
