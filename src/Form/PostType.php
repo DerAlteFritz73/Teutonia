@@ -13,6 +13,7 @@ use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\Extension\Core\Type\HiddenType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
+use Symfony\Component\Validator\Constraints\All;
 use Symfony\Component\Validator\Constraints\File;
 
 class PostType extends AbstractType
@@ -52,6 +53,31 @@ class PostType extends AbstractType
                     ])
                 ],
                 'attr' => ['class' => 'form-control'],
+            ])
+            ->add('galleryFiles', FileType::class, [
+                'label' => 'Weitere Fotos',
+                'mapped' => false,
+                'required' => false,
+                'multiple' => true,
+                'constraints' => [
+                    new All([
+                        'constraints' => [
+                            new File([
+                                'maxSize' => '20M',
+                                'mimeTypes' => [
+                                    'image/jpeg',
+                                    'image/jpg',
+                                    'image/png',
+                                    'image/gif',
+                                    'image/webp',
+                                    'application/pdf',
+                                ],
+                                'mimeTypesMessage' => 'Bitte laden Sie ein gültiges Bild (JPG, PNG, GIF, WebP) oder PDF hoch',
+                            ]),
+                        ],
+                    ]),
+                ],
+                'attr' => ['class' => 'form-control', 'multiple' => 'multiple'],
             ])
             ->add('paragraph', TextareaType::class, [
                 'label' => 'Text',

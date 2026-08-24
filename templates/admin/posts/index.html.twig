@@ -70,8 +70,11 @@
                         </td>
                         <td>
                             {% if post.imagePath %}
-                                <div style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; overflow: hidden;">
+                                <div class="position-relative" style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; overflow: hidden;">
                                     <img src="{{ asset(post.imagePath) }}" alt="{{ post.title }}" style="max-width: 60px; max-height: 60px; object-fit: contain;{% if post.imageRotation %} transform: rotate({{ post.imageRotation }}deg);{% endif %}" class="rounded">
+                                    {% if post.images|length > 0 %}
+                                        <span class="badge bg-secondary position-absolute bottom-0 end-0" title="{{ post.images|length }} weitere Fotos">+{{ post.images|length }}</span>
+                                    {% endif %}
                                 </div>
                             {% else %}
                                 <span class="text-muted">-</span>

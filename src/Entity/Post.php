@@ -3,6 +3,8 @@
 namespace App\Entity;
 
 use App\Repository\PostRepository;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
@@ -92,9 +94,14 @@ class Post
     #[ORM\Column(type: Types::STRING, length: 20, nullable: true)]
     private ?string $date = null;
 
+    #[ORM\OneToMany(targetEntity: PostImage::class, mappedBy: 'post', cascade: ['persist'], orphanRemoval: true)]
+    #[ORM\OrderBy(['position' => 'ASC'])]
+    private Collection $images;
+
     public function __construct()
     {
         $this->createdAt = new \DateTime();
+        $this->images = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -291,4 +298,27 @@ class Post
 
     public function getDate(): ?string { return $this->date; }
     public function setDate(?string $date): static { $this->date = $date; return $this; }
+
+    /**
+     * @return Collection<int, PostImage>
+     */
+    public function getImages(): Collection
+    {
+        return $this->images;
+    }
+
+    public function addImage(PostImage $image): static
+    {
+        if (!$this->images->contains($image)) {
+            $this->images->add($image);
+            $image->setPost($this);
+        }
+        return $this;
+    }
+
+    public function removeImage(PostImage $image): static
+    {
+        $this->images->removeElement($image);
+        return $this;
+    }
 }

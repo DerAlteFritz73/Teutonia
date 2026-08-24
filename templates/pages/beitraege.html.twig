@@ -42,6 +42,15 @@
                         {% if post.imagePath %}
                             <img src="{{ asset(post.imagePath) }}" alt="{{ post.title }}" class="img-fluid rounded mt-3">
                         {% endif %}
+                        {% if post.images is defined and post.images|length > 0 %}
+                            <div class="row g-2 mt-2 post-gallery">
+                                {% for galleryImage in post.images %}
+                                    <div class="col-4 col-sm-3">
+                                        <img src="{{ asset(galleryImage.imagePath) }}" alt="" class="img-fluid rounded w-100" style="height: 140px; object-fit: cover;{% if galleryImage.rotation %} transform: rotate({{ galleryImage.rotation }}deg);{% endif %}">
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
                     </div>
 
                     {% set currentLayout = 'side_by_side' %}
@@ -76,6 +85,15 @@
                             {% endif %}
                             {% if post.imagePath %}
                                 <img src="{{ asset(post.imagePath) }}" alt="{{ post.title }}" class="img-fluid rounded mt-3">
+                            {% endif %}
+                            {% if post.images is defined and post.images|length > 0 %}
+                                <div class="row g-2 mt-2 post-gallery">
+                                    {% for galleryImage in post.images %}
+                                        <div class="col-4 col-sm-3 col-md-2">
+                                            <img src="{{ asset(galleryImage.imagePath) }}" alt="" class="img-fluid rounded w-100" style="height: 140px; object-fit: cover;{% if galleryImage.rotation %} transform: rotate({{ galleryImage.rotation }}deg);{% endif %}">
+                                        </div>
+                                    {% endfor %}
+                                </div>
                             {% endif %}
                         </div>
                     </div>

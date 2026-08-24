@@ -4,6 +4,7 @@ namespace App\Controller\Admin;
 
 use App\Entity\Konzert;
 use App\Entity\Post;
+use App\Entity\PostImage;
 use App\Entity\SongKeyword;
 use App\Entity\Style;
 use App\Entity\User;
@@ -1795,6 +1796,8 @@ class AdminController extends AbstractController
                 }
             }
 
+            $this->handleGalleryUpload($post, $form->get('galleryFiles')->getData() ?? []);
+
             $em->persist($post);
             $em->flush();
 
@@ -1851,6 +1854,19 @@ class AdminController extends AbstractController
                 }
             }
 
+            $deleteImageIds = array_map('intval', $request->request->all('delete_gallery_image'));
+            if ($deleteImageIds) {
+                foreach ($post->getImages() as $image) {
+                    if (in_array($image->getId(), $deleteImageIds, true)) {
+                        $this->deleteUploadedFile($image->getImagePath());
+                        $post->removeImage($image);
+                        $em->remove($image);
+                    }
+                }
+            }
+
+            $this->handleGalleryUpload($post, $form->get('galleryFiles')->getData() ?? []);
+
             $em->flush();
 
             // Check if this is a quick save (AJAX request)
@@ -1874,11 +1890,10 @@ class AdminController extends AbstractController
     {
         if ($this->isCsrfTokenValid('delete' . $post->getId(), $request->request->get('_token'))) {
             // Delete image if exists
-            if ($post->getImagePath()) {
-                $imagePath = $this->getParameter('kernel.project_dir') . '/public/' . $post->getImagePath();
-                if (file_exists($imagePath)) {
-                    unlink($imagePath);
-                }
+            $this->deleteUploadedFile($post->getImagePath());
+
+            foreach ($post->getImages() as $image) {
+                $this->deleteUploadedFile($image->getImagePath());
             }
 
             $em->remove($post);
@@ -1932,6 +1947,52 @@ class AdminController extends AbstractController
             unlink($full);
         }
         $clearFn();
+    }
+
+    private function deleteUploadedFile(?string $webPath): void
+    {
+        if (!$webPath) {
+            return;
+        }
+        $fullPath = $this->getParameter('kernel.project_dir') . '/public/' . $webPath;
+        if (file_exists($fullPath)) {
+            unlink($fullPath);
+        }
+    }
+
+    /**
+     * @param array $galleryFiles Uploaded files for the "Weitere Fotos" gallery field
+     */
+    private function handleGalleryUpload(Post $post, array $galleryFiles): void
+    {
+        if (!$galleryFiles) {
+            return;
+        }
+
+        $position = 0;
+        foreach ($post->getImages() as $existingImage) {
+            $position = max($position, $existingImage->getPosition() + 1);
+        }
+
+        foreach ($galleryFiles as $file) {
+            if (!$file) {
+                continue;
+            }
+
+            try {
+                $imagePath = $this->handleImageUpload($file);
+            } catch (\Exception $e) {
+                $this->addFlash('error', 'Fehler beim Hochladen eines Galeriefotos: ' . $e->getMessage());
+                continue;
+            }
+
+            if ($imagePath) {
+                $postImage = new PostImage();
+                $postImage->setImagePath($imagePath);
+                $postImage->setPosition($position++);
+                $post->addImage($postImage);
+            }
+        }
     }
 
     private function handleImageUpload($imageFile, ?string $oldImagePath = null): ?string

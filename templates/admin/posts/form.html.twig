@@ -161,6 +161,38 @@
                         </div>
 
                         <div class="mb-3">
+                            <div class="d-flex align-items-center justify-content-between">
+                                {{ form_label(form.galleryFiles) }}
+                                <span class="badge bg-secondary">Optional</span>
+                            </div>
+                            <div class="mt-2">
+                                <button type="button" class="btn btn-outline-secondary btn-sm" id="add-gallery-photos-btn">
+                                    <i class="bi bi-images me-1"></i>Fotos auswählen
+                                </button>
+                                <input type="file" id="gallery-picker" accept="image/jpeg,image/png,image/gif,image/webp,application/pdf" multiple style="display:none;">
+                            </div>
+                            {# Real field submitted with the form; populated from the cropped files via JS #}
+                            {{ form_widget(form.galleryFiles, {'attr': {'style': 'display:none;', 'id': 'post-gallery-files'}}) }}
+
+                            <div id="gallery-thumbs" class="d-flex flex-wrap gap-2 mt-3">
+                                {% if not isNew %}
+                                    {% for image in post.images %}
+                                        <div class="gallery-thumb position-relative" style="width:90px;">
+                                            <img src="{{ asset(image.imagePath) }}" alt="" class="rounded border" style="width:90px;height:90px;object-fit:cover;{% if image.rotation %}transform:rotate({{ image.rotation }}deg);{% endif %}">
+                                            <label class="position-absolute top-0 end-0 bg-white bg-opacity-75 rounded-circle d-flex align-items-center justify-content-center" style="width:22px;height:22px;margin:3px;cursor:pointer;" title="Foto löschen">
+                                                <input type="checkbox" class="form-check-input m-0" name="delete_gallery_image[]" value="{{ image.id }}" style="width:16px;height:16px;">
+                                            </label>
+                                        </div>
+                                    {% endfor %}
+                                {% endif %}
+                            </div>
+                            <small class="form-text text-muted d-block">
+                                Mehrere Fotos gleichzeitig wählbar – jedes kann vor dem Speichern zugeschnitten werden. Sie werden als Galerie unterhalb des Beitrags angezeigt.
+                            </small>
+                            {{ form_errors(form.galleryFiles) }}
+                        </div>
+
+                        <div class="mb-3">
                             <div class="d-flex align-items-center">
                                 {{ form_label(form.paragraph, null, {'label_attr': {'class': 'mb-0 me-2'}}) }}
                                 <span class="badge bg-secondary me-2">Optional</span>

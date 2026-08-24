@@ -147,6 +147,95 @@ pageLoad(function () {
         });
     }
 
+    // ── Gallery (multiple additional photos) ───────────────────────────────────
+    let galleryQueue = [];       // File objects waiting to be cropped
+    let galleryFinalFiles = [];  // { id, file } already cropped, ready to submit
+    let galleryModeActive = false;
+    let galleryIdSeq = 0;
+
+    const galleryPicker     = document.getElementById('gallery-picker');
+    const galleryFilesInput = document.getElementById('post-gallery-files');
+    const galleryThumbsEl   = document.getElementById('gallery-thumbs');
+
+    document.getElementById('add-gallery-photos-btn')?.addEventListener('click', () => galleryPicker?.click());
+
+    galleryPicker?.addEventListener('change', function (e) {
+        const files = Array.from(e.target.files || []);
+        galleryQueue.push(...files);
+        this.value = '';
+        if (!galleryModeActive) processGalleryQueue();
+    });
+
+    function processGalleryQueue() {
+        if (galleryQueue.length === 0) {
+            galleryModeActive = false;
+            return;
+        }
+        const file = galleryQueue.shift();
+        if (!file.type.startsWith('image/')) {
+            // PDFs and other non-image files are uploaded as-is (server converts PDFs)
+            addGalleryFile(file, null);
+            processGalleryQueue();
+            return;
+        }
+        const reader = new FileReader();
+        reader.onload = function (event) { openImageEditor(event.target.result, file.name, false, true); };
+        reader.readAsDataURL(file);
+    }
+
+    function addGalleryFile(file, previewDataUrl) {
+        const id = ++galleryIdSeq;
+        galleryFinalFiles.push({ id, file });
+        renderGalleryThumb(id, previewDataUrl, file.name);
+        syncGalleryInput();
+        if (window.markFormDirty) window.markFormDirty();
+    }
+
+    function renderGalleryThumb(id, dataUrl, fileName) {
+        if (!galleryThumbsEl) return;
+        const div = document.createElement('div');
+        div.className = 'gallery-thumb position-relative';
+        div.style.width = '90px';
+
+        if (dataUrl) {
+            const img = document.createElement('img');
+            img.src = dataUrl;
+            img.className = 'rounded border';
+            img.style.cssText = 'width:90px;height:90px;object-fit:cover;';
+            div.appendChild(img);
+        } else {
+            const badge = document.createElement('div');
+            badge.className = 'd-flex align-items-center justify-content-center border rounded bg-light text-muted text-center';
+            badge.style.cssText = 'width:90px;height:90px;font-size:0.7rem;padding:4px;overflow:hidden;';
+            badge.textContent = fileName;
+            div.appendChild(badge);
+        }
+
+        const removeBtn = document.createElement('button');
+        removeBtn.type = 'button';
+        removeBtn.className = 'btn btn-sm btn-danger position-absolute top-0 end-0';
+        removeBtn.style.cssText = 'padding:0 6px;line-height:1.5;margin:2px;border-radius:50%;';
+        removeBtn.innerHTML = '&times;';
+        removeBtn.title = 'Entfernen';
+        removeBtn.addEventListener('click', function () {
+            galleryFinalFiles = galleryFinalFiles.filter(f => f.id !== id);
+            div.remove();
+            syncGalleryInput();
+            if (window.markFormDirty) window.markFormDirty();
+        });
+        div.appendChild(removeBtn);
+
+        galleryThumbsEl.appendChild(div);
+    }
+
+    function syncGalleryInput() {
+        if (!galleryFilesInput) return;
+        const dt = new DataTransfer();
+        galleryFinalFiles.forEach(f => dt.items.add(f.file));
+        galleryFilesInput.files = dt.files;
+    }
+    // ─────────────────────────────────────────────────────────────────────────
+
     const layoutSelect    = document.getElementById('post-layout')  || document.getElementById('post_layout');
     const isMainCheckbox  = document.getElementById('post-is-main') || document.getElementById('post_isMain');
     const pageSelect      = document.getElementById('post-page')    || document.getElementById('post_page');
@@ -287,10 +376,11 @@ pageLoad(function () {
         }
     }
 
-    function openImageEditor(dataUrl, fileName, fromFileInput) {
+    function openImageEditor(dataUrl, fileName, fromFileInput, isGallery) {
         if (!cropImage) return;
         cropOriginalFileName = fileName;
         editorFromFileInput  = !!fromFileInput;
+        galleryModeActive    = !!isGallery;
         if (cropper) { cropper.destroy(); cropper = null; }
         document.querySelectorAll('[data-ratio]').forEach(b => b.classList.remove('active'));
         document.querySelector('[data-ratio="free"]')?.classList.add('active');
@@ -416,6 +506,11 @@ pageLoad(function () {
 
     // Cancel
     document.getElementById('crop-cancel-btn')?.addEventListener('click', function () {
+        if (galleryModeActive) {
+            hideEditor();
+            processGalleryQueue();
+            return;
+        }
         if (editorFromFileInput) imageInput.value = '';
         hideEditor();
     });
@@ -431,6 +526,14 @@ pageLoad(function () {
         });
         canvas.toBlob(function (blob) {
             const file = new File([blob], cropOriginalFileName, { type: 'image/jpeg', lastModified: Date.now() });
+
+            if (galleryModeActive) {
+                addGalleryFile(file, canvas.toDataURL('image/jpeg', 0.85));
+                hideEditor();
+                processGalleryQueue();
+                return;
+            }
+
             const dt = new DataTransfer();
             dt.items.add(file);
             imageInput.files = dt.files;
