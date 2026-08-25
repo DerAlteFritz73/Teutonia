@@ -138,7 +138,6 @@
                 {r: 'page_rehearsals', l: 'Chorproben'},
                 {r: 'page_repertoire', l: 'Repertoire'},
                 {r: 'page_events',     l: 'Termine'},
-                {r: 'page_social',     l: 'Geselliges'},
             ] %}
             {% for link in links %}
                 <li class="nav-item">
@@ -156,6 +155,7 @@
                 {r: 'member_google_kalender', l: 'Kalender'},
                 {r: 'member_ideenkiste',      l: 'Ideenkiste'},
                 {r: 'member_archiv',          l: 'Archiv'},
+                {r: 'member_social',          l: 'Geselliges'},
             ] %}
             {% for link in links %}
                 {% set isActive = currentRoute in (link.active ?? [link.r]) %}

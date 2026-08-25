@@ -94,14 +94,6 @@ class PageController extends AbstractController
         ]);
     }
 
-    #[Route('/geselliges', name: 'page_social')]
-    public function geselliges(PostRepository $postRepository): Response
-    {
-        return $this->render('pages/geselliges.html.twig', [
-            'posts' => $postRepository->findByPage('geselliges'),
-        ]);
-    }
-
     #[Route('/beitraege', name: 'page_posts')]
     public function beitraege(PostRepository $postRepository, Request $request): Response
     {

@@ -60,6 +60,14 @@ class MemberController extends AbstractController
         ]);
     }
 
+    #[Route('/geselliges', name: 'member_social')]
+    public function geselliges(PostRepository $postRepository): Response
+    {
+        return $this->render('member/geselliges.html.twig', [
+            'posts' => $postRepository->findByPage('geselliges'),
+        ]);
+    }
+
     #[Route('/aktuelle-proben', name: 'member_proben')]
     public function proben(SongKeywordRepository $songRepo, DropboxService $dropbox): Response
     {
