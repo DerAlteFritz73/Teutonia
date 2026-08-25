@@ -86,10 +86,10 @@ class PostType extends AbstractType
                 'expanded' => true,
                 'multiple' => false,
                 'choices' => [
-                    'Galerie in diesem Beitrag' => 'gallery',
                     'Jeweils als eigener Beitrag' => 'separate',
+                    'Galerie in diesem Beitrag' => 'gallery',
                 ],
-                'data' => 'gallery',
+                'data' => 'separate',
                 'attr' => ['class' => 'form-check-input'],
             ])
             ->add('paragraph', TextareaType::class, [
