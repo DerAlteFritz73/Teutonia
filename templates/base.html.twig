@@ -20,9 +20,12 @@
            included from most public pages -- see
            components/_post_gallery.html.twig. */
         .post-gallery-swiper {
-            padding: 20px 40px 40px;
-            overflow-x: hidden;
-            overflow-y: visible;
+            /* Generous vertical padding so the scaled-up active slide (see
+               .swiper-slide-active below) never needs to overflow this box --
+               overflow stays the default "hidden" (both axes; setting only
+               one axis to visible makes browsers silently coerce the other
+               to "auto", which is what caused an unwanted scrollbar here). */
+            padding: 30px 40px 40px;
         }
         .post-gallery-swiper .swiper-slide {
             width: 220px;
