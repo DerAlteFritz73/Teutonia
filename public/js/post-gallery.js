@@ -11,21 +11,12 @@
             if (el.swiper) return;
 
             new Swiper(el, {
-                // Plain "slide" effect (not 3D "coverflow"): the active-slide
-                // grows via CSS (.swiper-slide-active, height only) and
-                // autoHeight below, which avoids coverflow's perspective
-                // transform getting clipped by the container's necessary
-                // horizontal overflow clipping.
+                // Deliberately minimal config -- see the CSS comment in
+                // base.html.twig for why. Fixed-size slides, plain "slide"
+                // effect, no autoHeight/offset options.
                 grabCursor: true,
                 centeredSlides: true,
                 slidesPerView: 'auto',
-                autoHeight: true,
-                // Reserves edge space Swiper itself accounts for in its slide
-                // positioning math, so slides never render under the nav
-                // arrows -- unlike CSS padding on the swiper container, which
-                // Swiper's own clientWidth-based measurements don't respect.
-                slidesOffsetBefore: 50,
-                slidesOffsetAfter: 50,
                 pagination: {
                     el: el.querySelector('.swiper-pagination'),
                     clickable: true
