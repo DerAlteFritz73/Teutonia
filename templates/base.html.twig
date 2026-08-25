@@ -38,7 +38,10 @@
         .post-gallery-wrap .post-gallery-swiper {
             flex: 1 1 auto;
             min-width: 0; /* let this flex item shrink; needed for its own overflow:hidden to clip correctly */
-            padding: 10px 0;
+            /* Extra bottom padding: Swiper's pagination dots sit only 8px
+               from the container's bottom edge by default, overlapping the
+               images otherwise. */
+            padding: 10px 0 34px;
         }
         .post-gallery-nav {
             flex: 0 0 auto;
