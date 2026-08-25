@@ -2,6 +2,13 @@
 
 {% block title %}Beiträge verwalten - {{ parent() }}{% endblock %}
 
+{% block stylesheets %}
+    {{ parent() }}
+    {# Delete/reorder redirect back here otherwise briefly shows Turbo's cached
+       snapshot of this page (taken before the change) instead of a fresh fetch. #}
+    <meta name="turbo-cache-control" content="no-cache">
+{% endblock %}
+
 {% block body %}
 <!-- template: templates/admin/posts/index.html.twig -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/footable-v3/compiled/footable.core.standalone.min.css">
