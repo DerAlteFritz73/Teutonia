@@ -14,19 +14,46 @@
         <style>
         /* Post photo galleries: centered carousel (Swiper). Each slide is
            sized to a fixed height with width auto (from the image's own
-           aspect ratio, via slidesPerView: 'auto') -- no fixed box to letterbox
-           or crop into. The active slide is only distinguished via opacity +
-           a shadow (not a size change): earlier attempts at a size
-           difference (CSS transform: scale, then Swiper's autoHeight +
-           slidesOffsetBefore/After together) each broke something else
-           (overflow clipping, a scrollbar, then scrolling itself). Nav-arrow
-           clearance is Swiper's own slidesOffsetBefore/After JS options
-           (post-gallery.js) -- CSS padding on the container doesn't work for
-           this because Swiper measures clientWidth (which includes CSS
-           padding) for its own centering math. Loaded site-wide since
-           posts_display.html.twig is included from most public pages -- see
-           components/_post_gallery.html.twig. */
-        .post-gallery-swiper { padding: 10px 0; }
+           aspect ratio, via slidesPerView: 'auto') -- no fixed box to
+           letterbox or crop into. The active slide is only distinguished via
+           opacity + a shadow (not a size change): a CSS transform: scale
+           attempt visually overflowed its own box and got clipped.
+
+           Nav buttons are NOT Swiper's default .swiper-button-prev/next
+           (absolutely positioned over the slide area -- every attempt to
+           carve out clear space for them within the swiper's own box, via
+           CSS padding or Swiper's slidesOffsetBefore/After options, either
+           didn't visually take effect or broke scrolling outright). Instead
+           they're plain buttons placed as flex siblings of .post-gallery-
+           swiper in .post-gallery-wrap (see components/_post_gallery.html
+           .twig and post-gallery.js) -- occupying their own space in the row
+           makes overlap structurally impossible, no swiper-internal
+           measurement involved. Loaded site-wide since posts_display.html
+           .twig is included from most public pages. */
+        .post-gallery-wrap {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .post-gallery-wrap .post-gallery-swiper {
+            flex: 1 1 auto;
+            min-width: 0; /* let this flex item shrink; needed for its own overflow:hidden to clip correctly */
+            padding: 10px 0;
+        }
+        .post-gallery-nav {
+            flex: 0 0 auto;
+            background: none;
+            border: none;
+            color: #0d6efd;
+            font-size: 1.75rem;
+            line-height: 1;
+            padding: 4px 6px;
+            cursor: pointer;
+        }
+        .post-gallery-nav.swiper-button-disabled {
+            opacity: 0.3;
+            cursor: default;
+        }
         .post-gallery-swiper .swiper-slide {
             width: auto;
             height: 270px;
@@ -48,10 +75,6 @@
             max-width: none !important;
             border-radius: 0.5rem;
             display: block;
-        }
-        .post-gallery-swiper .swiper-button-prev,
-        .post-gallery-swiper .swiper-button-next {
-            color: #0d6efd;
         }
         </style>
         {% block stylesheets %}

@@ -10,26 +10,26 @@
         document.querySelectorAll('.post-gallery-swiper').forEach(function (el) {
             if (el.swiper) return;
 
+            // Nav buttons are siblings of .post-gallery-swiper in the
+            // surrounding .post-gallery-wrap (flex row), not children inside
+            // it -- see the CSS comment in base.html.twig for why (both
+            // Swiper's default in-container button position and its
+            // slidesOffsetBefore/After options proved unreliable here).
+            var wrap = el.closest('.post-gallery-wrap');
+            var prevEl = wrap ? wrap.querySelector('.post-gallery-prev') : null;
+            var nextEl = wrap ? wrap.querySelector('.post-gallery-next') : null;
+
             new Swiper(el, {
                 grabCursor: true,
                 centeredSlides: true,
                 slidesPerView: 'auto',
-                // Reserves edge space Swiper itself accounts for in its slide
-                // positioning math, so slides never render under the nav
-                // arrows -- unlike CSS padding on the swiper container, which
-                // Swiper's own clientWidth-based measurements don't respect.
-                // (Tried together with autoHeight before, which broke
-                // scrolling entirely; autoHeight is gone now, this is being
-                // tried alone.)
-                slidesOffsetBefore: 40,
-                slidesOffsetAfter: 40,
                 pagination: {
                     el: el.querySelector('.swiper-pagination'),
                     clickable: true
                 },
                 navigation: {
-                    nextEl: el.querySelector('.swiper-button-next'),
-                    prevEl: el.querySelector('.swiper-button-prev')
+                    nextEl: nextEl,
+                    prevEl: prevEl
                 }
             });
         });
