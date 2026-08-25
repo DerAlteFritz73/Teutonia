@@ -12,19 +12,21 @@
         <link rel="stylesheet" href="/css/app.css?v=10">
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css">
         <style>
-        /* Post photo galleries: centered carousel (Swiper). Deliberately
-           minimal for now -- every slide is the same fixed size, only
-           dimmed via opacity when not active. Prior attempts at making the
-           active slide visually bigger (CSS transform: scale, then
-           per-slide height + Swiper's autoHeight) each broke something else
-           (overflow clipping, a scrollbar, then scrolling itself), so this
-           establishes a known-working baseline before any of that is tried
-           again carefully. Loaded site-wide since posts_display.html.twig is
-           included from most public pages -- see
-           components/_post_gallery.html.twig. */
-        .post-gallery-swiper { padding: 10px 0; }
+        /* Post photo galleries: centered carousel (Swiper). Each slide is
+           sized to a fixed height with width auto (from the image's own
+           aspect ratio, via slidesPerView: 'auto') -- no fixed box to letterbox
+           or crop into. The active slide is only distinguished via opacity +
+           a shadow (not a size change): earlier attempts at a size
+           difference (CSS transform: scale, then Swiper's autoHeight +
+           slidesOffsetBefore/After) each broke something else (overflow
+           clipping, a scrollbar, then scrolling itself). Nav-arrow clearance
+           is plain CSS padding on the container -- proven not to break
+           scrolling (unlike the JS slidesOffsetBefore/After options, which
+           did). Loaded site-wide since posts_display.html.twig is included
+           from most public pages -- see components/_post_gallery.html.twig. */
+        .post-gallery-swiper { padding: 20px 60px 30px; }
         .post-gallery-swiper .swiper-slide {
-            width: 240px;
+            width: auto;
             height: 270px;
             background-color: #e9ecef;
             border-radius: 0.5rem;
@@ -36,9 +38,8 @@
             box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.15);
         }
         .post-gallery-swiper .swiper-slide img {
-            width: 100%;
             height: 100%;
-            object-fit: contain;
+            width: auto;
             border-radius: 0.5rem;
             display: block;
         }
