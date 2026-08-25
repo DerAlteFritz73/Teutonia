@@ -92,7 +92,7 @@
                             {% endif %}
                         </td>
                         <td>
-                            <strong>{{ post.title }}</strong>
+                            <strong>{{ post.title|replace({'{singer_count}': singerCount}) }}</strong>
                             {% if post.subtitle %}
                                 <br><small class="text-muted">{{ post.subtitle }}</small>
                             {% endif %}
