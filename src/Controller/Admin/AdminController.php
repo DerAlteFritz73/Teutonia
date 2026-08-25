@@ -1796,7 +1796,12 @@ class AdminController extends AbstractController
                 }
             }
 
-            $this->handleGalleryUpload($post, $form->get('galleryFiles')->getData() ?? []);
+            $galleryFiles = $form->get('galleryFiles')->getData() ?? [];
+            if ($form->get('splitGalleryIntoPosts')->getData()) {
+                $this->createPostsFromGalleryPhotos($post, $galleryFiles, $em);
+            } else {
+                $this->handleGalleryUpload($post, $galleryFiles);
+            }
 
             $em->persist($post);
             $em->flush();
@@ -1865,7 +1870,12 @@ class AdminController extends AbstractController
                 }
             }
 
-            $this->handleGalleryUpload($post, $form->get('galleryFiles')->getData() ?? []);
+            $galleryFiles = $form->get('galleryFiles')->getData() ?? [];
+            if ($form->get('splitGalleryIntoPosts')->getData()) {
+                $this->createPostsFromGalleryPhotos($post, $galleryFiles, $em);
+            } else {
+                $this->handleGalleryUpload($post, $galleryFiles);
+            }
 
             $em->flush();
 
@@ -1992,6 +2002,67 @@ class AdminController extends AbstractController
                 $postImage->setPosition($position++);
                 $post->addImage($postImage);
             }
+        }
+    }
+
+    /**
+     * Creates one standalone Post per gallery photo, cloning title/text/layout/etc.
+     * from $template. Used instead of handleGalleryUpload() when the admin checks
+     * "Jedes Foto als eigenen Beitrag speichern".
+     *
+     * @param array $galleryFiles Uploaded files for the "Weitere Fotos" gallery field
+     */
+    private function createPostsFromGalleryPhotos(Post $template, array $galleryFiles, EntityManagerInterface $em): void
+    {
+        if (!$galleryFiles) {
+            return;
+        }
+
+        $position = ($template->getPosition() ?? 0) + 1;
+
+        foreach ($galleryFiles as $file) {
+            if (!$file) {
+                continue;
+            }
+
+            try {
+                $imagePath = $this->handleImageUpload($file);
+            } catch (\Exception $e) {
+                $this->addFlash('error', 'Fehler beim Hochladen eines Fotos: ' . $e->getMessage());
+                continue;
+            }
+
+            if (!$imagePath) {
+                continue;
+            }
+
+            $post = new Post();
+            $post->setTitle($template->getTitle());
+            $post->setSubtitle($template->getSubtitle());
+            $post->setParagraph($template->getParagraph());
+            $post->setLayout($template->getLayout());
+            $post->setPage($template->getPage());
+            $post->setDate($template->getDate());
+            $post->setIsMain(false);
+            $post->setFontTitle($template->getFontTitle());
+            $post->setFontTitleSize($template->getFontTitleSize());
+            $post->setFontTitleBold($template->isFontTitleBold());
+            $post->setFontTitleItalic($template->isFontTitleItalic());
+            $post->setFontTitleUnderline($template->isFontTitleUnderline());
+            $post->setFontSubtitle($template->getFontSubtitle());
+            $post->setFontSubtitleSize($template->getFontSubtitleSize());
+            $post->setFontSubtitleBold($template->isFontSubtitleBold());
+            $post->setFontSubtitleItalic($template->isFontSubtitleItalic());
+            $post->setFontSubtitleUnderline($template->isFontSubtitleUnderline());
+            $post->setFontParagraph($template->getFontParagraph());
+            $post->setFontParagraphSize($template->getFontParagraphSize());
+            $post->setFontParagraphBold($template->isFontParagraphBold());
+            $post->setFontParagraphItalic($template->isFontParagraphItalic());
+            $post->setFontParagraphUnderline($template->isFontParagraphUnderline());
+            $post->setImagePath($imagePath);
+            $post->setPosition($position++);
+
+            $em->persist($post);
         }
     }
 

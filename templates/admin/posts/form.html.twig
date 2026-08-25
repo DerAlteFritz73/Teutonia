@@ -190,6 +190,14 @@
                                 Mehrere Fotos gleichzeitig wählbar – sie werden unverändert hochgeladen und als Galerie unterhalb des Beitrags angezeigt.
                             </small>
                             {{ form_errors(form.galleryFiles) }}
+
+                            <div class="form-check mt-2">
+                                {{ form_widget(form.splitGalleryIntoPosts, {'attr': {'class': 'form-check-input', 'id': 'post-split-gallery'}}) }}
+                                {{ form_label(form.splitGalleryIntoPosts, null, {'label_attr': {'class': 'form-check-label', 'for': 'post-split-gallery'}}) }}
+                                <small class="form-text text-muted d-block">
+                                    Titel, Text und weitere Angaben oben werden für jeden dieser zusätzlichen Beiträge übernommen; nur das Foto unterscheidet sich. Dieser Beitrag hier wird zusätzlich normal gespeichert.
+                                </small>
+                            </div>
                         </div>
 
                         <div class="mb-3">
