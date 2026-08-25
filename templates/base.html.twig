@@ -63,10 +63,16 @@
             background-color: #e9ecef;
             border-radius: 0.5rem;
             opacity: 0.6;
-            transition: opacity 0.3s ease;
+            /* Shrink non-active slides (not grow the active one): shrinking
+               can never overflow the slide's own box the way growing did
+               (which visually overflowed into neighboring space and got
+               clipped by the container). */
+            transform: scale(0.8);
+            transition: opacity 0.3s ease, transform 0.3s ease;
         }
         .post-gallery-swiper .swiper-slide-active {
             opacity: 1;
+            transform: scale(1);
             box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.15);
         }
         .post-gallery-swiper .swiper-slide img {
