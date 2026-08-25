@@ -11,17 +11,13 @@
             if (el.swiper) return;
 
             new Swiper(el, {
-                effect: 'coverflow',
+                // Plain "slide" effect (not 3D "coverflow"): the active-slide
+                // scale-up is done in CSS (.swiper-slide-active), which avoids
+                // coverflow's perspective transform getting clipped by the
+                // container's necessary horizontal overflow clipping.
                 grabCursor: true,
                 centeredSlides: true,
                 slidesPerView: 'auto',
-                coverflowEffect: {
-                    rotate: 20,
-                    stretch: 0,
-                    depth: 150,
-                    modifier: 1,
-                    slideShadows: false
-                },
                 pagination: {
                     el: el.querySelector('.swiper-pagination'),
                     clickable: true

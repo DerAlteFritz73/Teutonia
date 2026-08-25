@@ -12,15 +12,31 @@
         <link rel="stylesheet" href="/css/app.css?v=10">
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css">
         <style>
-        /* Post photo galleries: centered/coverflow carousel (Swiper). Loaded
-           site-wide since posts_display.html.twig is included from most
-           public pages -- see components/_post_gallery.html.twig. */
-        .post-gallery-swiper { padding: 10px 0 40px; }
+        /* Post photo galleries: centered carousel (Swiper) where the active
+           slide is scaled up via plain CSS (not Swiper's 3D "coverflow"
+           effect, which enlarges the front slide via perspective and then
+           gets clipped by the container's necessary horizontal overflow
+           clipping). Loaded site-wide since posts_display.html.twig is
+           included from most public pages -- see
+           components/_post_gallery.html.twig. */
+        .post-gallery-swiper {
+            padding: 20px 40px 40px;
+            overflow-x: hidden;
+            overflow-y: visible;
+        }
         .post-gallery-swiper .swiper-slide {
-            width: 260px;
-            height: 220px;
+            width: 220px;
+            height: 190px;
             background-color: #e9ecef;
             border-radius: 0.5rem;
+            opacity: 0.65;
+            transform: scale(0.82);
+            transition: transform 0.3s ease, opacity 0.3s ease;
+        }
+        .post-gallery-swiper .swiper-slide-active {
+            opacity: 1;
+            transform: scale(1.15);
+            z-index: 2;
         }
         .post-gallery-swiper .swiper-slide img {
             width: 100%;
