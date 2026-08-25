@@ -166,21 +166,25 @@
 <script src="https://cdn.jsdelivr.net/npm/footable-v3/compiled/footable.core.min.js"></script>
 
 <script>
-document.addEventListener('turbo:load', function() {
+// This whole inline <script> block re-executes every time Turbo navigates back
+// to this page (document persists across visits, but body content -- including
+// inline scripts -- is freshly parsed and run each time). A raw
+// document.addEventListener('turbo:load', fn) call here would therefore
+// register another permanent listener on every visit, and all of them fire on
+// the next turbo:load: each re-initializes SortableJS/FooTable on the (correct,
+// freshly rendered) table, and calling either of those more than once on the
+// same table corrupts it (observed as a wiped/duplicated tbody). Guard the
+// *registration* itself with a window-level flag so this listener is attached
+// exactly once, ever -- it still runs its full body on every turbo:load.
+if (!window.__postsSortableInitDone) {
+    window.__postsSortableInitDone = true;
+    document.addEventListener('turbo:load', function() {
     const tbody = document.getElementById('sortable-posts');
 
     if (!tbody) {
         console.log('Sortable tbody not found');
         return;
     }
-
-    // This listener stays registered across Turbo visits (document itself
-    // persists), so it re-fires on every navigation back to this page --
-    // guard against initializing the same (fresh, per-visit) table twice.
-    if (tbody.dataset.sortableInitialized) {
-        return;
-    }
-    tbody.dataset.sortableInitialized = '1';
 
     // Initialize SortableJS
     const sortable = new Sortable(tbody, {
@@ -276,20 +280,20 @@ document.addEventListener('turbo:load', function() {
             img.addEventListener('load', attach);
         }
     });
-});
+    });
+}
 </script>
 <script>
-document.addEventListener('turbo:load', function () {
-    if (typeof jQuery === 'undefined' || typeof jQuery.fn.footable === 'undefined') {
-        return;
-    }
-    const $table = jQuery('#posts-table');
-    // Same accumulating-listener issue as the SortableJS init above: guard
-    // against re-running FooTable on a table it already initialized.
-    if ($table.data('footable')) {
-        return;
-    }
-    $table.footable();
-});
+// Same accumulating-listener issue as the SortableJS init above -- see the
+// comment there. Guard the registration itself instead of the target element.
+if (!window.__postsFootableInitDone) {
+    window.__postsFootableInitDone = true;
+    document.addEventListener('turbo:load', function () {
+        if (typeof jQuery === 'undefined' || typeof jQuery.fn.footable === 'undefined') {
+            return;
+        }
+        jQuery('#posts-table').footable();
+    });
+}
 </script>
 {% endblock %}
