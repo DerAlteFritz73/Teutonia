@@ -176,7 +176,7 @@ pageLoad(function () {
         const id = ++galleryIdSeq;
         galleryFinalFiles.push({ id, file });
         renderGalleryThumb(id, previewDataUrl, file.name);
-        syncGalleryInput();
+        syncGalleryOrder();
         if (window.markFormDirty) window.markFormDirty();
     }
 
@@ -184,18 +184,19 @@ pageLoad(function () {
         if (!galleryThumbsEl) return;
         const div = document.createElement('div');
         div.className = 'gallery-thumb position-relative';
+        div.dataset.newId = id;
         div.style.width = '90px';
 
         if (dataUrl) {
             const img = document.createElement('img');
             img.src = dataUrl;
-            img.className = 'rounded border';
-            img.style.cssText = 'width:90px;height:90px;object-fit:cover;';
+            img.className = 'rounded border drag-handle';
+            img.style.cssText = 'width:90px;height:90px;object-fit:cover;cursor:grab;';
             div.appendChild(img);
         } else {
             const badge = document.createElement('div');
-            badge.className = 'd-flex align-items-center justify-content-center border rounded bg-light text-muted text-center';
-            badge.style.cssText = 'width:90px;height:90px;font-size:0.7rem;padding:4px;overflow:hidden;';
+            badge.className = 'd-flex align-items-center justify-content-center border rounded bg-light text-muted text-center drag-handle';
+            badge.style.cssText = 'width:90px;height:90px;font-size:0.7rem;padding:4px;overflow:hidden;cursor:grab;';
             badge.textContent = fileName;
             div.appendChild(badge);
         }
@@ -209,7 +210,7 @@ pageLoad(function () {
         removeBtn.addEventListener('click', function () {
             galleryFinalFiles = galleryFinalFiles.filter(f => f.id !== id);
             div.remove();
-            syncGalleryInput();
+            syncGalleryOrder();
             if (window.markFormDirty) window.markFormDirty();
         });
         div.appendChild(removeBtn);
@@ -223,6 +224,41 @@ pageLoad(function () {
         galleryFinalFiles.forEach(f => dt.items.add(f.file));
         galleryFilesInput.files = dt.files;
     }
+
+    // Re-derives file order and the "existing:<id>" / "new:<index>" order list
+    // from the current DOM order of #gallery-thumbs (drag-and-drop reorders
+    // that DOM directly), then pushes both to the form.
+    function syncGalleryOrder() {
+        if (!galleryThumbsEl) return;
+
+        const newIdsInDomOrder = Array.from(galleryThumbsEl.children)
+            .filter(el => el.dataset.newId)
+            .map(el => parseInt(el.dataset.newId, 10));
+        galleryFinalFiles.sort((a, b) => newIdsInDomOrder.indexOf(a.id) - newIdsInDomOrder.indexOf(b.id));
+        syncGalleryInput();
+
+        const order = Array.from(galleryThumbsEl.children).map(function (el) {
+            if (el.dataset.existingId) return 'existing:' + el.dataset.existingId;
+            if (el.dataset.newId) return 'new:' + newIdsInDomOrder.indexOf(parseInt(el.dataset.newId, 10));
+            return null;
+        }).filter(Boolean);
+
+        const orderInput = document.getElementById('gallery-order');
+        if (orderInput) orderInput.value = JSON.stringify(order);
+    }
+
+    if (galleryThumbsEl && typeof Sortable !== 'undefined') {
+        new Sortable(galleryThumbsEl, {
+            animation: 150,
+            handle: '.drag-handle',
+            ghostClass: 'gallery-thumb-ghost',
+            onEnd: function () {
+                syncGalleryOrder();
+                if (window.markFormDirty) window.markFormDirty();
+            }
+        });
+    }
+    syncGalleryOrder();
     // ─────────────────────────────────────────────────────────────────────────
 
     const layoutSelect    = document.getElementById('post-layout')  || document.getElementById('post_layout');

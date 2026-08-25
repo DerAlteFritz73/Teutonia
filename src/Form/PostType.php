@@ -79,19 +79,6 @@ class PostType extends AbstractType
                 ],
                 'attr' => ['class' => 'form-control', 'multiple' => 'multiple'],
             ])
-            ->add('galleryMode', ChoiceType::class, [
-                'label' => 'Weitere Fotos speichern als',
-                'mapped' => false,
-                'required' => true,
-                'expanded' => true,
-                'multiple' => false,
-                'choices' => [
-                    'Jeweils als eigener Beitrag' => 'separate',
-                    'Galerie in diesem Beitrag' => 'gallery',
-                ],
-                'data' => 'separate',
-                'attr' => ['class' => 'form-check-input'],
-            ])
             ->add('paragraph', TextareaType::class, [
                 'label' => 'Text',
                 'required' => false,
