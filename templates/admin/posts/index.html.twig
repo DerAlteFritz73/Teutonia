@@ -11,7 +11,6 @@
 
 {% block body %}
 <!-- template: templates/admin/posts/index.html.twig -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/footable-v3/compiled/footable.core.standalone.min.css">
 <div class="container py-5">
     <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
         <h1 class="mb-0">Beiträge</h1>
@@ -59,13 +58,13 @@
         <table class="table table-striped" id="posts-table">
             <thead>
                 <tr>
-                    <th style="width: 30px;" data-toggle="true"></th>
-                    <th data-breakpoints="xs sm" data-title="Bild" data-type="html">Bild</th>
+                    <th style="width: 30px;"></th>
+                    <th>Bild</th>
                     <th>Titel</th>
-                    <th data-breakpoints="xs sm md" data-title="Seite">Seite</th>
-                    <th data-breakpoints="xs sm md" data-title="Layout" data-type="html">Layout</th>
-                    <th data-breakpoints="xs sm md" data-title="Hauptbeitrag" data-type="html">Hauptbeitrag</th>
-                    <th data-breakpoints="xs sm" data-title="Datum">Datum</th>
+                    <th>Seite</th>
+                    <th>Layout</th>
+                    <th>Hauptbeitrag</th>
+                    <th>Datum</th>
                     <th>Aktionen</th>
                 </tr>
             </thead>
@@ -162,18 +161,13 @@
 
 {# SortableJS Library #}
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.slim.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/footable-v3/compiled/footable.core.min.js"></script>
 
 <script>
 // This whole inline <script> block re-executes every time Turbo navigates back
 // to this page (document persists across visits, but body content -- including
 // inline scripts -- is freshly parsed and run each time). A raw
 // document.addEventListener('turbo:load', fn) call here would therefore
-// register another permanent listener on every visit, and all of them fire on
-// the next turbo:load: each re-initializes SortableJS/FooTable on the (correct,
-// freshly rendered) table, and calling either of those more than once on the
-// same table corrupts it (observed as a wiped/duplicated tbody). Guard the
+// register another permanent listener on every visit. Guard the
 // *registration* itself with a window-level flag so this listener is attached
 // exactly once, ever -- it still runs its full body on every turbo:load.
 if (!window.__postsSortableInitDone) {
@@ -280,19 +274,6 @@ if (!window.__postsSortableInitDone) {
             img.addEventListener('load', attach);
         }
     });
-    });
-}
-</script>
-<script>
-// Same accumulating-listener issue as the SortableJS init above -- see the
-// comment there. Guard the registration itself instead of the target element.
-if (!window.__postsFootableInitDone) {
-    window.__postsFootableInitDone = true;
-    document.addEventListener('turbo:load', function () {
-        if (typeof jQuery === 'undefined' || typeof jQuery.fn.footable === 'undefined') {
-            return;
-        }
-        jQuery('#posts-table').footable();
     });
 }
 </script>
