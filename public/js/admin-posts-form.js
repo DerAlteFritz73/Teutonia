@@ -147,10 +147,8 @@ pageLoad(function () {
         });
     }
 
-    // ── Gallery (multiple additional photos) ───────────────────────────────────
-    let galleryQueue = [];       // File objects waiting to be cropped
-    let galleryFinalFiles = [];  // { id, file } already cropped, ready to submit
-    let galleryModeActive = false;
+    // ── Gallery (multiple additional photos, uploaded as-is, no crop/rotate step) ──
+    let galleryFinalFiles = [];  // { id, file }, ready to submit
     let galleryIdSeq = 0;
 
     const galleryPicker     = document.getElementById('gallery-picker');
@@ -161,27 +159,18 @@ pageLoad(function () {
 
     galleryPicker?.addEventListener('change', function (e) {
         const files = Array.from(e.target.files || []);
-        galleryQueue.push(...files);
         this.value = '';
-        if (!galleryModeActive) processGalleryQueue();
+        files.forEach(function (file) {
+            if (!file.type.startsWith('image/')) {
+                // PDFs and other non-image files are uploaded as-is (server converts PDFs)
+                addGalleryFile(file, null);
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = function (event) { addGalleryFile(file, event.target.result); };
+            reader.readAsDataURL(file);
+        });
     });
-
-    function processGalleryQueue() {
-        if (galleryQueue.length === 0) {
-            galleryModeActive = false;
-            return;
-        }
-        const file = galleryQueue.shift();
-        if (!file.type.startsWith('image/')) {
-            // PDFs and other non-image files are uploaded as-is (server converts PDFs)
-            addGalleryFile(file, null);
-            processGalleryQueue();
-            return;
-        }
-        const reader = new FileReader();
-        reader.onload = function (event) { openImageEditor(event.target.result, file.name, false, true); };
-        reader.readAsDataURL(file);
-    }
 
     function addGalleryFile(file, previewDataUrl) {
         const id = ++galleryIdSeq;
@@ -376,11 +365,10 @@ pageLoad(function () {
         }
     }
 
-    function openImageEditor(dataUrl, fileName, fromFileInput, isGallery) {
+    function openImageEditor(dataUrl, fileName, fromFileInput) {
         if (!cropImage) return;
         cropOriginalFileName = fileName;
         editorFromFileInput  = !!fromFileInput;
-        galleryModeActive    = !!isGallery;
         if (cropper) { cropper.destroy(); cropper = null; }
         document.querySelectorAll('[data-ratio]').forEach(b => b.classList.remove('active'));
         document.querySelector('[data-ratio="free"]')?.classList.add('active');
@@ -506,11 +494,6 @@ pageLoad(function () {
 
     // Cancel
     document.getElementById('crop-cancel-btn')?.addEventListener('click', function () {
-        if (galleryModeActive) {
-            hideEditor();
-            processGalleryQueue();
-            return;
-        }
         if (editorFromFileInput) imageInput.value = '';
         hideEditor();
     });
@@ -526,14 +509,6 @@ pageLoad(function () {
         });
         canvas.toBlob(function (blob) {
             const file = new File([blob], cropOriginalFileName, { type: 'image/jpeg', lastModified: Date.now() });
-
-            if (galleryModeActive) {
-                addGalleryFile(file, canvas.toDataURL('image/jpeg', 0.85));
-                hideEditor();
-                processGalleryQueue();
-                return;
-            }
-
             const dt = new DataTransfer();
             dt.items.add(file);
             imageInput.files = dt.files;
