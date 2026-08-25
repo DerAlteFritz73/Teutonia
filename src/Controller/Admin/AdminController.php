@@ -1797,7 +1797,7 @@ class AdminController extends AbstractController
             }
 
             $galleryFiles = $form->get('galleryFiles')->getData() ?? [];
-            if ($form->get('splitGalleryIntoPosts')->getData()) {
+            if ($form->get('galleryMode')->getData() === 'separate') {
                 $this->createPostsFromGalleryPhotos($post, $galleryFiles, $em);
             } else {
                 $this->handleGalleryUpload($post, $galleryFiles);
@@ -1871,7 +1871,7 @@ class AdminController extends AbstractController
             }
 
             $galleryFiles = $form->get('galleryFiles')->getData() ?? [];
-            if ($form->get('splitGalleryIntoPosts')->getData()) {
+            if ($form->get('galleryMode')->getData() === 'separate') {
                 $this->createPostsFromGalleryPhotos($post, $galleryFiles, $em);
             } else {
                 $this->handleGalleryUpload($post, $galleryFiles);

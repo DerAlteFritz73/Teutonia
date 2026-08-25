@@ -79,10 +79,17 @@ class PostType extends AbstractType
                 ],
                 'attr' => ['class' => 'form-control', 'multiple' => 'multiple'],
             ])
-            ->add('splitGalleryIntoPosts', CheckboxType::class, [
-                'label' => 'Jedes Foto als eigenen Beitrag speichern (statt als Galerie in diesem Beitrag)',
+            ->add('galleryMode', ChoiceType::class, [
+                'label' => 'Weitere Fotos speichern als',
                 'mapped' => false,
-                'required' => false,
+                'required' => true,
+                'expanded' => true,
+                'multiple' => false,
+                'choices' => [
+                    'Galerie in diesem Beitrag' => 'gallery',
+                    'Jeweils als eigener Beitrag' => 'separate',
+                ],
+                'data' => 'gallery',
                 'attr' => ['class' => 'form-check-input'],
             ])
             ->add('paragraph', TextareaType::class, [

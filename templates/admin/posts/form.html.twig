@@ -191,12 +191,20 @@
                             </small>
                             {{ form_errors(form.galleryFiles) }}
 
-                            <div class="form-check mt-2">
-                                {{ form_widget(form.splitGalleryIntoPosts, {'attr': {'class': 'form-check-input', 'id': 'post-split-gallery'}}) }}
-                                {{ form_label(form.splitGalleryIntoPosts, null, {'label_attr': {'class': 'form-check-label', 'for': 'post-split-gallery'}}) }}
-                                <small class="form-text text-muted d-block">
-                                    Titel, Text und weitere Angaben oben werden für jeden dieser zusätzlichen Beiträge übernommen; nur das Foto unterscheidet sich. Dieser Beitrag hier wird zusätzlich normal gespeichert.
+                            <div class="mt-3">
+                                <label class="form-label d-block mb-1">{{ form.galleryMode.vars.label }}</label>
+                                <div class="d-flex flex-wrap gap-3">
+                                    {% for radio in form.galleryMode %}
+                                        <div class="form-check">
+                                            {{ form_widget(radio, {'attr': {'class': 'form-check-input'}}) }}
+                                            {{ form_label(radio, null, {'label_attr': {'class': 'form-check-label'}}) }}
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                                <small class="form-text text-muted d-block mt-1">
+                                    „Jeweils als eigener Beitrag“: Titel, Text und weitere Angaben oben werden für jeden zusätzlichen Beitrag übernommen; nur das Foto unterscheidet sich. Dieser Beitrag hier wird zusätzlich normal gespeichert.
                                 </small>
+                                {{ form_errors(form.galleryMode) }}
                             </div>
                         </div>
 
