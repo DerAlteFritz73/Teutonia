@@ -166,26 +166,29 @@
                                 {{ form_label(form.galleryFiles) }}
                                 <span class="badge bg-secondary">Optional</span>
                             </div>
-                            <div class="mt-2">
-                                <button type="button" class="btn btn-outline-secondary btn-sm" id="add-gallery-photos-btn">
-                                    <i class="bi bi-images me-1"></i>Fotos auswählen
-                                </button>
+                            <div id="gallery-dropzone" class="mt-2 p-3 rounded" style="border:2px dashed #adb5bd; background-color:#f8f9fa;">
+                                <div class="d-flex align-items-center gap-2 mb-2 flex-wrap">
+                                    <button type="button" class="btn btn-outline-secondary btn-sm" id="add-gallery-photos-btn">
+                                        <i class="bi bi-images me-1"></i>Fotos auswählen
+                                    </button>
+                                    <span class="text-muted small">oder Fotos hierher ziehen</span>
+                                </div>
                                 <input type="file" id="gallery-picker" accept="image/jpeg,image/png,image/gif,image/webp,application/pdf" multiple style="position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;">
-                            </div>
-                            {# Real field submitted with the form; populated from the cropped files via JS #}
-                            {{ form_widget(form.galleryFiles, {'attr': {'style': 'display:none;', 'id': 'post-gallery-files'}}) }}
+                                {# Real field submitted with the form; populated from the cropped files via JS #}
+                                {{ form_widget(form.galleryFiles, {'attr': {'style': 'display:none;', 'id': 'post-gallery-files'}}) }}
 
-                            <div id="gallery-thumbs" class="d-flex flex-wrap gap-2 mt-3">
-                                {% if not isNew %}
-                                    {% for image in post.images %}
-                                        <div class="gallery-thumb position-relative" data-existing-id="{{ image.id }}" style="width:90px;">
-                                            <img src="{{ asset(image.imagePath) }}" alt="" class="rounded border drag-handle" style="width:90px;height:90px;object-fit:cover;cursor:grab;{% if image.rotation %}transform:rotate({{ image.rotation }}deg);{% endif %}">
-                                            <label class="position-absolute top-0 end-0 bg-white bg-opacity-75 rounded-circle d-flex align-items-center justify-content-center" style="width:22px;height:22px;margin:3px;cursor:pointer;" title="Foto löschen">
-                                                <input type="checkbox" class="form-check-input m-0" name="delete_gallery_image[]" value="{{ image.id }}" style="width:16px;height:16px;">
-                                            </label>
-                                        </div>
-                                    {% endfor %}
-                                {% endif %}
+                                <div id="gallery-thumbs" class="d-flex flex-wrap gap-2">
+                                    {% if not isNew %}
+                                        {% for image in post.images %}
+                                            <div class="gallery-thumb position-relative" data-existing-id="{{ image.id }}" style="width:90px;">
+                                                <img src="{{ asset(image.imagePath) }}" alt="" class="rounded border drag-handle" style="width:90px;height:90px;object-fit:cover;cursor:grab;{% if image.rotation %}transform:rotate({{ image.rotation }}deg);{% endif %}">
+                                                <label class="position-absolute top-0 end-0 bg-white bg-opacity-75 rounded-circle d-flex align-items-center justify-content-center" style="width:22px;height:22px;margin:3px;cursor:pointer;" title="Foto löschen">
+                                                    <input type="checkbox" class="form-check-input m-0" name="delete_gallery_image[]" value="{{ image.id }}" style="width:16px;height:16px;">
+                                                </label>
+                                            </div>
+                                        {% endfor %}
+                                    {% endif %}
+                                </div>
                             </div>
                             <input type="hidden" id="gallery-order" name="gallery_order">
                             <small class="form-text text-muted d-block">

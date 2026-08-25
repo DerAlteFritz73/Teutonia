@@ -154,13 +154,12 @@ pageLoad(function () {
     const galleryPicker     = document.getElementById('gallery-picker');
     const galleryFilesInput = document.getElementById('post-gallery-files') || document.getElementById('post_galleryFiles');
     const galleryThumbsEl   = document.getElementById('gallery-thumbs');
+    const galleryDropzone   = document.getElementById('gallery-dropzone');
 
     document.getElementById('add-gallery-photos-btn')?.addEventListener('click', () => galleryPicker?.click());
 
-    galleryPicker?.addEventListener('change', function (e) {
-        const files = Array.from(e.target.files || []);
-        this.value = '';
-        files.forEach(function (file) {
+    function processIncomingGalleryFiles(fileList) {
+        Array.from(fileList || []).forEach(function (file) {
             if (!file.type.startsWith('image/')) {
                 // PDFs and other non-image files are uploaded as-is (server converts PDFs)
                 addGalleryFile(file, null);
@@ -170,7 +169,34 @@ pageLoad(function () {
             reader.onload = function (event) { addGalleryFile(file, event.target.result); };
             reader.readAsDataURL(file);
         });
+    }
+
+    galleryPicker?.addEventListener('change', function (e) {
+        processIncomingGalleryFiles(e.target.files);
+        this.value = '';
     });
+
+    if (galleryDropzone) {
+        ['dragenter', 'dragover'].forEach(function (evtName) {
+            galleryDropzone.addEventListener(evtName, function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                galleryDropzone.style.borderColor = '#0d6efd';
+                galleryDropzone.style.backgroundColor = '#e7f1ff';
+            });
+        });
+        ['dragleave', 'drop'].forEach(function (evtName) {
+            galleryDropzone.addEventListener(evtName, function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                galleryDropzone.style.borderColor = '#adb5bd';
+                galleryDropzone.style.backgroundColor = '#f8f9fa';
+            });
+        });
+        galleryDropzone.addEventListener('drop', function (e) {
+            processIncomingGalleryFiles(e.dataTransfer && e.dataTransfer.files);
+        });
+    }
 
     function addGalleryFile(file, previewDataUrl) {
         const id = ++galleryIdSeq;
