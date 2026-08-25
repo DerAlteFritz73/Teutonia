@@ -167,6 +167,14 @@ document.addEventListener('turbo:load', function() {
         return;
     }
 
+    // This listener stays registered across Turbo visits (document itself
+    // persists), so it re-fires on every navigation back to this page --
+    // guard against initializing the same (fresh, per-visit) table twice.
+    if (tbody.dataset.sortableInitialized) {
+        return;
+    }
+    tbody.dataset.sortableInitialized = '1';
+
     // Initialize SortableJS
     const sortable = new Sortable(tbody, {
         animation: 150,
@@ -265,9 +273,16 @@ document.addEventListener('turbo:load', function() {
 </script>
 <script>
 document.addEventListener('turbo:load', function () {
-    if (typeof jQuery !== 'undefined' && typeof jQuery.fn.footable !== 'undefined') {
-        jQuery('#posts-table').footable();
+    if (typeof jQuery === 'undefined' || typeof jQuery.fn.footable === 'undefined') {
+        return;
     }
-}, { once: true });
+    const $table = jQuery('#posts-table');
+    // Same accumulating-listener issue as the SortableJS init above: guard
+    // against re-running FooTable on a table it already initialized.
+    if ($table.data('footable')) {
+        return;
+    }
+    $table.footable();
+});
 </script>
 {% endblock %}
