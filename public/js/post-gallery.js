@@ -11,12 +11,18 @@
             if (el.swiper) return;
 
             new Swiper(el, {
-                // Deliberately minimal config -- see the CSS comment in
-                // base.html.twig for why. Fixed-size slides, plain "slide"
-                // effect, no autoHeight/offset options.
                 grabCursor: true,
                 centeredSlides: true,
                 slidesPerView: 'auto',
+                // Reserves edge space Swiper itself accounts for in its slide
+                // positioning math, so slides never render under the nav
+                // arrows -- unlike CSS padding on the swiper container, which
+                // Swiper's own clientWidth-based measurements don't respect.
+                // (Tried together with autoHeight before, which broke
+                // scrolling entirely; autoHeight is gone now, this is being
+                // tried alone.)
+                slidesOffsetBefore: 40,
+                slidesOffsetAfter: 40,
                 pagination: {
                     el: el.querySelector('.swiper-pagination'),
                     clickable: true

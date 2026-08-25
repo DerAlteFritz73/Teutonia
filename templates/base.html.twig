@@ -18,13 +18,15 @@
            or crop into. The active slide is only distinguished via opacity +
            a shadow (not a size change): earlier attempts at a size
            difference (CSS transform: scale, then Swiper's autoHeight +
-           slidesOffsetBefore/After) each broke something else (overflow
-           clipping, a scrollbar, then scrolling itself). Nav-arrow clearance
-           is plain CSS padding on the container -- proven not to break
-           scrolling (unlike the JS slidesOffsetBefore/After options, which
-           did). Loaded site-wide since posts_display.html.twig is included
-           from most public pages -- see components/_post_gallery.html.twig. */
-        .post-gallery-swiper { padding: 20px 60px 30px; }
+           slidesOffsetBefore/After together) each broke something else
+           (overflow clipping, a scrollbar, then scrolling itself). Nav-arrow
+           clearance is Swiper's own slidesOffsetBefore/After JS options
+           (post-gallery.js) -- CSS padding on the container doesn't work for
+           this because Swiper measures clientWidth (which includes CSS
+           padding) for its own centering math. Loaded site-wide since
+           posts_display.html.twig is included from most public pages -- see
+           components/_post_gallery.html.twig. */
+        .post-gallery-swiper { padding: 10px 0; }
         .post-gallery-swiper .swiper-slide {
             width: auto;
             height: 270px;
@@ -38,8 +40,12 @@
             box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.15);
         }
         .post-gallery-swiper .swiper-slide img {
-            height: 100%;
-            width: auto;
+            /* !important: overrides the site-wide "img { height: auto
+               !important }" safety rule in app.css, which otherwise defeats
+               fitting the image to this slide's fixed height entirely. */
+            height: 100% !important;
+            width: auto !important;
+            max-width: none !important;
             border-radius: 0.5rem;
             display: block;
         }
