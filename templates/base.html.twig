@@ -12,34 +12,30 @@
         <link rel="stylesheet" href="/css/app.css?v=10">
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css">
         <style>
-        /* Post photo galleries: centered carousel (Swiper) where the active
-           slide is scaled up via plain CSS (not Swiper's 3D "coverflow"
-           effect, which enlarges the front slide via perspective and then
-           gets clipped by the container's necessary horizontal overflow
-           clipping). Loaded site-wide since posts_display.html.twig is
-           included from most public pages -- see
+        /* Post photo galleries: centered carousel (Swiper). The active slide
+           grows via Swiper's own autoHeight (height only, not width -- width
+           changes would drift out of sync with Swiper's slide-position math,
+           which is width-based). Edge clearance for the nav arrows uses
+           Swiper's slidesOffsetBefore/After JS options, not CSS padding on
+           .swiper: Swiper measures its container's clientWidth (which
+           includes CSS padding) for its slide-centering math, so CSS padding
+           there doesn't reserve space the way it looks like it should and
+           fights the layout instead. Loaded site-wide since
+           posts_display.html.twig is included from most public pages -- see
            components/_post_gallery.html.twig. */
-        .post-gallery-swiper {
-            /* Generous vertical padding so the scaled-up active slide (see
-               .swiper-slide-active below) never needs to overflow this box --
-               overflow stays the default "hidden" (both axes; setting only
-               one axis to visible makes browsers silently coerce the other
-               to "auto", which is what caused an unwanted scrollbar here). */
-            padding: 30px 40px 40px;
-        }
+        .post-gallery-swiper { padding: 10px 0; }
         .post-gallery-swiper .swiper-slide {
             width: 220px;
-            height: 190px;
+            height: 150px;
             background-color: #e9ecef;
             border-radius: 0.5rem;
-            opacity: 0.65;
-            transform: scale(0.82);
-            transition: transform 0.3s ease, opacity 0.3s ease;
+            opacity: 0.6;
+            transition: opacity 0.3s ease, height 0.3s ease;
         }
         .post-gallery-swiper .swiper-slide-active {
+            height: 220px;
             opacity: 1;
-            transform: scale(1.15);
-            z-index: 2;
+            box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.15);
         }
         .post-gallery-swiper .swiper-slide img {
             width: 100%;

@@ -12,12 +12,20 @@
 
             new Swiper(el, {
                 // Plain "slide" effect (not 3D "coverflow"): the active-slide
-                // scale-up is done in CSS (.swiper-slide-active), which avoids
-                // coverflow's perspective transform getting clipped by the
-                // container's necessary horizontal overflow clipping.
+                // grows via CSS (.swiper-slide-active, height only) and
+                // autoHeight below, which avoids coverflow's perspective
+                // transform getting clipped by the container's necessary
+                // horizontal overflow clipping.
                 grabCursor: true,
                 centeredSlides: true,
                 slidesPerView: 'auto',
+                autoHeight: true,
+                // Reserves edge space Swiper itself accounts for in its slide
+                // positioning math, so slides never render under the nav
+                // arrows -- unlike CSS padding on the swiper container, which
+                // Swiper's own clientWidth-based measurements don't respect.
+                slidesOffsetBefore: 50,
+                slidesOffsetAfter: 50,
                 pagination: {
                     el: el.querySelector('.swiper-pagination'),
                     clickable: true
