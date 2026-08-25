@@ -32,15 +32,7 @@
                 {% if post.paragraph %}
                     <div class="mt-3 post-paragraph"{% if post.fontParagraph or post.fontParagraphSize or post.fontParagraphBold or post.fontParagraphItalic or post.fontParagraphUnderline %} style="{% if post.fontParagraph and post.fontParagraph != 'default' %}font-family: {{ post.fontParagraph }};{% endif %}{% if post.fontParagraphSize %} font-size: {{ post.fontParagraphSize }}px;{% endif %}{% if post.fontParagraphBold %} font-weight: bold;{% endif %}{% if post.fontParagraphItalic %} font-style: italic;{% endif %}{% if post.fontParagraphUnderline %} text-decoration: underline;{% endif %}"{% endif %}>{{ singerCount is defined ? post.paragraph|replace({'{singer_count}': singerCount})|raw : post.paragraph|raw }}</div>
                 {% endif %}
-                {% if post.images is defined and post.images|length > 0 %}
-                    <div class="row g-2 mt-2 post-gallery">
-                        {% for galleryImage in post.images %}
-                            <div class="col-4 col-sm-3">
-                                <img src="{{ asset(galleryImage.imagePath) }}" alt="" class="img-fluid rounded w-100" style="height: 140px; object-fit: cover;{% if galleryImage.rotation %} transform: rotate({{ galleryImage.rotation }}deg);{% endif %}">
-                            </div>
-                        {% endfor %}
-                    </div>
-                {% endif %}
+                {% include 'components/_post_gallery.html.twig' with {'images': post.images} %}
             </div>
 
             {% set currentLayout = 'side_by_side' %}
@@ -75,15 +67,7 @@
                     {% if post.paragraph %}
                         <div class="mt-3 post-paragraph"{% if post.fontParagraph or post.fontParagraphSize or post.fontParagraphBold or post.fontParagraphItalic or post.fontParagraphUnderline %} style="{% if post.fontParagraph and post.fontParagraph != 'default' %}font-family: {{ post.fontParagraph }};{% endif %}{% if post.fontParagraphSize %} font-size: {{ post.fontParagraphSize }}px;{% endif %}{% if post.fontParagraphBold %} font-weight: bold;{% endif %}{% if post.fontParagraphItalic %} font-style: italic;{% endif %}{% if post.fontParagraphUnderline %} text-decoration: underline;{% endif %}"{% endif %}>{{ singerCount is defined ? post.paragraph|replace({'{singer_count}': singerCount})|raw : post.paragraph|raw }}</div>
                     {% endif %}
-                    {% if post.images is defined and post.images|length > 0 %}
-                        <div class="row g-2 mt-2 post-gallery">
-                            {% for galleryImage in post.images %}
-                                <div class="col-4 col-sm-3 col-md-2">
-                                    <img src="{{ asset(galleryImage.imagePath) }}" alt="" class="img-fluid rounded w-100" style="height: 140px; object-fit: cover;{% if galleryImage.rotation %} transform: rotate({{ galleryImage.rotation }}deg);{% endif %}">
-                                </div>
-                            {% endfor %}
-                        </div>
-                    {% endif %}
+                    {% include 'components/_post_gallery.html.twig' with {'images': post.images} %}
                 </div>
             </div>
 

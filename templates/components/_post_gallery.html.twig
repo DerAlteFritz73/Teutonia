@@ -1,0 +1,19 @@
+{# Renders a post's gallery photos (PostImage collection) as a Swiper carousel
+   with the active slide centered and enlarged. Usage:
+   {% include 'components/_post_gallery.html.twig' with {'images': post.images} %} #}
+{% if images is defined and images|length > 0 %}
+    <div class="swiper post-gallery-swiper mt-3">
+        <div class="swiper-wrapper">
+            {% for galleryImage in images %}
+                <div class="swiper-slide">
+                    <img src="{{ asset(galleryImage.imagePath) }}" alt=""{% if galleryImage.rotation %} style="transform: rotate({{ galleryImage.rotation }}deg);"{% endif %}>
+                </div>
+            {% endfor %}
+        </div>
+        {% if images|length > 1 %}
+            <div class="swiper-pagination"></div>
+            <div class="swiper-button-prev"></div>
+            <div class="swiper-button-next"></div>
+        {% endif %}
+    </div>
+{% endif %}
