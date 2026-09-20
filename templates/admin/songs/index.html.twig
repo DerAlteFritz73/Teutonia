@@ -154,7 +154,7 @@
                     {# ── Parent row ──────────────────────────────────── #}
                     {% set prefix = song.etikett ? song.etikett|split(' ')|first|lower : '' %}
                     {% set badgeClass = {
-                        'blau':     'bg-primary text-white',
+                        'blau':     'badge-etikett-blau',
                         'gelb':     'bg-warning text-dark',
                         'rosa':     'bg-danger-subtle text-danger-emphasis border border-danger-subtle',
                         'extrabox': 'bg-secondary text-white'
@@ -283,7 +283,7 @@
                     {% for child in song.sortedChildren %}
                         {% set prefix = child.etikett ? child.etikett|split(' ')|first|lower : '' %}
                         {% set badgeClass = {
-                            'blau':     'bg-primary text-white',
+                            'blau':     'badge-etikett-blau',
                             'gelb':     'bg-warning text-dark',
                             'rosa':     'bg-danger-subtle text-danger-emphasis border border-danger-subtle',
                             'extrabox': 'bg-secondary text-white'

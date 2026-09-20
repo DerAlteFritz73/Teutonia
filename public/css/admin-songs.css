@@ -29,6 +29,14 @@
     min-height: 1.4em;
 }
 
+/* Etikett "Blau" badge: pinned to the summer theme's blue so it always reads as
+   blue, regardless of the seasonal site theme (bg-primary tracks --site-primary,
+   which is only blue during summer). */
+.badge-etikett-blau {
+    background-color: #1f7f9e !important;
+    color: #fff !important;
+}
+
 /* Movement row drag & drop */
 .drag-handle {
     cursor: grab;
