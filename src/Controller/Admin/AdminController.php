@@ -326,11 +326,9 @@ class AdminController extends AbstractController
 
         $styleId = $request->query->getInt('style', 0);
         $filters = [
-            'style'           => $styleId > 0 ? $styleId : '',
-            'composer'        => $request->query->get('composer', ''),
-            'arrangeur'       => $request->query->get('arrangeur', ''),
-            'etikett'         => $request->query->get('etikett', ''),
-            'compositionYear' => $request->query->get('compositionYear', ''),
+            'style'    => $styleId > 0 ? $styleId : '',
+            'composer' => $request->query->get('composer', ''),
+            'etikett'  => $request->query->get('etikett', ''),
         ];
         $hasFilters = trim($search) !== '' || count(array_filter($filters, fn($v) => trim((string) $v) !== '')) > 0;
 

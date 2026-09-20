@@ -53,7 +53,7 @@ class SongKeywordRepository extends ServiceEntityRepository
     }
 
     /**
-     * @param array{style?: int|string, composer?: string, arrangeur?: string, etikett?: string, compositionYear?: string} $filters
+     * @param array{style?: int|string, composer?: string, etikett?: string} $filters
      */
     public function findPaginated(int $page, int $limit, string $sort = 'songName', string $dir = 'ASC', string $search = '', array $filters = []): array
     {
@@ -84,7 +84,7 @@ class SongKeywordRepository extends ServiceEntityRepository
     }
 
     /**
-     * @param array{style?: int|string, composer?: string, arrangeur?: string, etikett?: string, compositionYear?: string} $filters
+     * @param array{style?: int|string, composer?: string, etikett?: string} $filters
      */
     public function countFiltered(string $search, array $filters): int
     {
@@ -94,7 +94,7 @@ class SongKeywordRepository extends ServiceEntityRepository
     }
 
     /**
-     * @param array{style?: int|string, composer?: string, arrangeur?: string, etikett?: string, compositionYear?: string} $filters
+     * @param array{style?: int|string, composer?: string, etikett?: string} $filters
      */
     private function buildFilterQuery(string $search, array $filters): \Doctrine\ORM\QueryBuilder
     {
@@ -126,7 +126,7 @@ class SongKeywordRepository extends ServiceEntityRepository
      * The "style" filter matches either the song's own style or one of its movements'
      * styles, matching how a top-level song row represents its children in the list.
      *
-     * @param array{style?: int|string, composer?: string, arrangeur?: string, etikett?: string, compositionYear?: string} $filters
+     * @param array{style?: int|string, composer?: string, etikett?: string} $filters
      */
     private function applyFilters(\Doctrine\ORM\QueryBuilder $qb, array $filters): void
     {
@@ -142,22 +142,10 @@ class SongKeywordRepository extends ServiceEntityRepository
                ->setParameter('filterComposer', '%' . $composer . '%');
         }
 
-        $arrangeur = trim((string) ($filters['arrangeur'] ?? ''));
-        if ($arrangeur !== '') {
-            $qb->andWhere('s.arrangeur LIKE :filterArrangeur OR c.arrangeur LIKE :filterArrangeur')
-               ->setParameter('filterArrangeur', '%' . $arrangeur . '%');
-        }
-
         $etikett = trim((string) ($filters['etikett'] ?? ''));
         if ($etikett !== '') {
             $qb->andWhere('s.etikett LIKE :filterEtikett')
                ->setParameter('filterEtikett', '%' . $etikett . '%');
-        }
-
-        $year = trim((string) ($filters['compositionYear'] ?? ''));
-        if ($year !== '') {
-            $qb->andWhere('s.compositionYear LIKE :filterYear OR c.compositionYear LIKE :filterYear')
-               ->setParameter('filterYear', '%' . $year . '%');
         }
     }
 
