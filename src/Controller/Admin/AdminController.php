@@ -324,7 +324,9 @@ class AdminController extends AbstractController
                             : 'songName';
         $dir          = strtoupper($request->query->get('dir', 'ASC')) === 'DESC' ? 'DESC' : 'ASC';
 
-        $styleId = $request->query->getInt('style', 0);
+        // Not query->getInt(): that throws a 400 when style="" (present but empty),
+        // which every sort-column link sends whenever no style filter is selected.
+        $styleId = (int) $request->query->get('style', '0');
         $filters = [
             'style'    => $styleId > 0 ? $styleId : '',
             'composer' => $request->query->get('composer', ''),
