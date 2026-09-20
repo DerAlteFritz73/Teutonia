@@ -313,7 +313,7 @@ class AdminController extends AbstractController
     // ==================== SONGS ====================
 
     #[Route('/songs', name: 'admin_songs')]
-    public function songs(SongKeywordRepository $songRepository, Request $request): Response
+    public function songs(SongKeywordRepository $songRepository, StyleRepository $styleRepository, Request $request): Response
     {
         $search       = $request->query->get('q', '');
         $page         = max(1, $request->query->getInt('page', 1));
@@ -324,13 +324,18 @@ class AdminController extends AbstractController
                             : 'songName';
         $dir          = strtoupper($request->query->get('dir', 'ASC')) === 'DESC' ? 'DESC' : 'ASC';
 
-        if (trim($search) !== '') {
-            $songs = $songRepository->searchPaginated($search, $page, $limit, $sort, $dir);
-            $total = $songRepository->countSearch($search);
-        } else {
-            $songs = $songRepository->findPaginated($page, $limit, $sort, $dir);
-            $total = $songRepository->countAll();
-        }
+        $styleId = $request->query->getInt('style', 0);
+        $filters = [
+            'style'           => $styleId > 0 ? $styleId : '',
+            'composer'        => $request->query->get('composer', ''),
+            'arrangeur'       => $request->query->get('arrangeur', ''),
+            'etikett'         => $request->query->get('etikett', ''),
+            'compositionYear' => $request->query->get('compositionYear', ''),
+        ];
+        $hasFilters = trim($search) !== '' || count(array_filter($filters, fn($v) => trim((string) $v) !== '')) > 0;
+
+        $songs = $songRepository->findPaginated($page, $limit, $sort, $dir, $search, $filters);
+        $total = $songRepository->countFiltered($search, $filters);
 
         $totalPages = max(1, (int) ceil($total / $limit));
         $page       = min($page, $totalPages);
@@ -338,6 +343,9 @@ class AdminController extends AbstractController
         return $this->render('admin/songs/index.html.twig', [
             'songs'       => $songs,
             'search'      => $search,
+            'filters'     => $filters,
+            'hasFilters'  => $hasFilters,
+            'styles'      => $styleRepository->findBy([], ['name' => 'ASC']),
             'currentPage' => $page,
             'totalPages'  => $totalPages,
             'total'       => $total,

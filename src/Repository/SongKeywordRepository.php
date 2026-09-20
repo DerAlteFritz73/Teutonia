@@ -52,10 +52,12 @@ class SongKeywordRepository extends ServiceEntityRepository
             ->getSingleScalarResult();
     }
 
-    public function findPaginated(int $page, int $limit, string $sort = 'songName', string $dir = 'ASC'): array
+    /**
+     * @param array{style?: int|string, composer?: string, arrangeur?: string, etikett?: string, compositionYear?: string} $filters
+     */
+    public function findPaginated(int $page, int $limit, string $sort = 'songName', string $dir = 'ASC', string $search = '', array $filters = []): array
     {
-        $qb = $this->createQueryBuilder('s')
-            ->andWhere('s.parent IS NULL');
+        $qb = $this->buildFilterQuery($search, $filters)->groupBy('s.id');
         $this->applySongSort($qb, $sort, $dir);
         return $qb->setFirstResult(($page - 1) * $limit)
                   ->setMaxResults($limit)
@@ -73,15 +75,6 @@ class SongKeywordRepository extends ServiceEntityRepository
         }
     }
 
-    public function countAll(): int
-    {
-        return (int) $this->createQueryBuilder('s')
-            ->select('COUNT(s.id)')
-            ->andWhere('s.parent IS NULL')
-            ->getQuery()
-            ->getSingleScalarResult();
-    }
-
     public function countAllIncludingMovements(): int
     {
         return (int) $this->createQueryBuilder('s')
@@ -90,32 +83,29 @@ class SongKeywordRepository extends ServiceEntityRepository
             ->getSingleScalarResult();
     }
 
-    public function searchPaginated(string $term, int $page, int $limit, string $sort = 'songName', string $dir = 'ASC'): array
+    /**
+     * @param array{style?: int|string, composer?: string, arrangeur?: string, etikett?: string, compositionYear?: string} $filters
+     */
+    public function countFiltered(string $search, array $filters): int
     {
-        $qb = $this->createQueryBuilder('s')
-            ->leftJoin('s.styles', 'st')
-            ->leftJoin('s.children', 'c')
-            ->leftJoin('c.styles', 'cst')
-            ->where('s.parent IS NULL')
-            ->groupBy('s.id');
-        $this->applyWordSearch($qb, $term);
-        $this->applySongSort($qb, $sort, $dir);
-        return $qb->setFirstResult(($page - 1) * $limit)
-                  ->setMaxResults($limit)
-                  ->getQuery()
-                  ->getResult();
+        $qb = $this->buildFilterQuery($search, $filters)
+            ->select('COUNT(DISTINCT s.id)');
+        return (int) $qb->getQuery()->getSingleScalarResult();
     }
 
-    public function countSearch(string $term): int
+    /**
+     * @param array{style?: int|string, composer?: string, arrangeur?: string, etikett?: string, compositionYear?: string} $filters
+     */
+    private function buildFilterQuery(string $search, array $filters): \Doctrine\ORM\QueryBuilder
     {
         $qb = $this->createQueryBuilder('s')
-            ->select('COUNT(DISTINCT s.id)')
             ->leftJoin('s.styles', 'st')
             ->leftJoin('s.children', 'c')
             ->leftJoin('c.styles', 'cst')
             ->where('s.parent IS NULL');
-        $this->applyWordSearch($qb, $term);
-        return (int) $qb->getQuery()->getSingleScalarResult();
+        $this->applyWordSearch($qb, $search);
+        $this->applyFilters($qb, $filters);
+        return $qb;
     }
 
     private function applyWordSearch(\Doctrine\ORM\QueryBuilder $qb, string $term): void
@@ -128,6 +118,46 @@ class SongKeywordRepository extends ServiceEntityRepository
                 s.songName LIKE :$p OR s.composer LIKE :$p OR s.arrangeur LIKE :$p OR s.compositionYear LIKE :$p OR s.etikett LIKE :$p OR st.name LIKE :$p
                 OR c.songName LIKE :$p OR c.composer LIKE :$p OR c.arrangeur LIKE :$p OR c.compositionYear LIKE :$p OR c.etikett LIKE :$p OR cst.name LIKE :$p
             ")->setParameter($p, '%' . $word . '%');
+        }
+    }
+
+    /**
+     * Column-scoped filters that combine with AND, on top of the free-word search above.
+     * The "style" filter matches either the song's own style or one of its movements'
+     * styles, matching how a top-level song row represents its children in the list.
+     *
+     * @param array{style?: int|string, composer?: string, arrangeur?: string, etikett?: string, compositionYear?: string} $filters
+     */
+    private function applyFilters(\Doctrine\ORM\QueryBuilder $qb, array $filters): void
+    {
+        $styleId = (int) ($filters['style'] ?? 0);
+        if ($styleId > 0) {
+            $qb->andWhere('st.id = :filterStyle OR cst.id = :filterStyle')
+               ->setParameter('filterStyle', $styleId);
+        }
+
+        $composer = trim((string) ($filters['composer'] ?? ''));
+        if ($composer !== '') {
+            $qb->andWhere('s.composer LIKE :filterComposer OR c.composer LIKE :filterComposer')
+               ->setParameter('filterComposer', '%' . $composer . '%');
+        }
+
+        $arrangeur = trim((string) ($filters['arrangeur'] ?? ''));
+        if ($arrangeur !== '') {
+            $qb->andWhere('s.arrangeur LIKE :filterArrangeur OR c.arrangeur LIKE :filterArrangeur')
+               ->setParameter('filterArrangeur', '%' . $arrangeur . '%');
+        }
+
+        $etikett = trim((string) ($filters['etikett'] ?? ''));
+        if ($etikett !== '') {
+            $qb->andWhere('s.etikett LIKE :filterEtikett')
+               ->setParameter('filterEtikett', '%' . $etikett . '%');
+        }
+
+        $year = trim((string) ($filters['compositionYear'] ?? ''));
+        if ($year !== '') {
+            $qb->andWhere('s.compositionYear LIKE :filterYear OR c.compositionYear LIKE :filterYear')
+               ->setParameter('filterYear', '%' . $year . '%');
         }
     }
 

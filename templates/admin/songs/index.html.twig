@@ -2,10 +2,10 @@
 
 {% block title %}Lieder verwalten - {{ parent() }}{% endblock %}
 
-{% macro sort_th(label, field, sort, dir, search, cssStyle, extraAttrs) %}
+{% macro sort_th(label, field, sort, dir, search, filters, cssStyle, extraAttrs) %}
     {% set nextDir = (sort == field and dir == 'ASC') ? 'DESC' : 'ASC' %}
     <th{% if cssStyle %} style="{{ cssStyle }}"{% endif %}{% if extraAttrs %} {{ extraAttrs|raw }}{% endif %}>
-        <a href="{{ path('admin_songs', {sort: field, dir: nextDir, q: search, page: 1}) }}"
+        <a href="{{ path('admin_songs', filters|merge({sort: field, dir: nextDir, q: search, page: 1})) }}"
            class="text-white text-decoration-none d-flex align-items-center gap-1 user-select-none">
             {{- label -}}
             {% if sort == field %}
@@ -27,8 +27,8 @@
     <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
         <div>
             <h1 class="d-inline-block">Lieder
-                <span class="badge bg-secondary fs-6">{{ search|trim != '' ? total : totalAll }}</span>
-                {% if search|trim != '' %}<small class="text-muted fs-6 fw-normal">von {{ totalAll }}</small>{% endif %}
+                <span class="badge bg-secondary fs-6">{{ hasFilters ? total : totalAll }}</span>
+                {% if hasFilters %}<small class="text-muted fs-6 fw-normal">von {{ totalAll }}</small>{% endif %}
             </h1>
             <button id="btn-delete-selected" class="btn btn-danger ms-3" style="display:none">
                 <i class="bi bi-trash me-1"></i><span id="delete-count">0</span> löschen
@@ -77,12 +77,52 @@
         <div class="alert alert-success alert-dismissible fade show">{{ message }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
     {% endfor %}
 
-    {# Search filter #}
-    <input type="search" id="songsSearch" class="form-control form-control-sm mb-3"
-           placeholder="Lied suchen…"
-           autocomplete="off"
-           value="{{ search|e('html_attr') }}"
-           style="max-width:500px;">
+    {# Search + column filters #}
+    <div class="row gy-2 gx-2 align-items-end mb-2">
+        <div class="col-12 col-md-4">
+            <label for="songsSearch" class="form-label small text-muted mb-1">Suche</label>
+            <input type="search" id="songsSearch" class="form-control form-control-sm"
+                   placeholder="Lied suchen…"
+                   autocomplete="off"
+                   value="{{ search|e('html_attr') }}">
+        </div>
+        <div class="col-6 col-md-2">
+            <label for="filterStyle" class="form-label small text-muted mb-1">Stil</label>
+            <select id="filterStyle" class="form-select form-select-sm">
+                <option value="">Alle</option>
+                {% for style in styles %}
+                    <option value="{{ style.id }}"{{ filters.style == style.id ? ' selected' : '' }}>{{ style.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-6 col-md-2">
+            <label for="filterComposer" class="form-label small text-muted mb-1">Komponist</label>
+            <input type="text" id="filterComposer" class="form-control form-control-sm"
+                   value="{{ filters.composer|e('html_attr') }}" placeholder="Komponist">
+        </div>
+        <div class="col-6 col-md-2">
+            <label for="filterArrangeur" class="form-label small text-muted mb-1">Arrangeur</label>
+            <input type="text" id="filterArrangeur" class="form-control form-control-sm"
+                   value="{{ filters.arrangeur|e('html_attr') }}" placeholder="Arrangeur">
+        </div>
+        <div class="col-6 col-md-1">
+            <label for="filterYear" class="form-label small text-muted mb-1">Jahr</label>
+            <input type="text" id="filterYear" class="form-control form-control-sm"
+                   value="{{ filters.compositionYear|e('html_attr') }}" placeholder="Jahr">
+        </div>
+        <div class="col-6 col-md-1">
+            <label for="filterEtikett" class="form-label small text-muted mb-1">Etikett</label>
+            <input type="text" id="filterEtikett" class="form-control form-control-sm"
+                   value="{{ filters.etikett|e('html_attr') }}" placeholder="Etikett">
+        </div>
+    </div>
+    {% if hasFilters %}
+        <div class="mb-2">
+            <a href="{{ path('admin_songs', {sort: sort, dir: dir}) }}" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-x-circle me-1"></i>Filter zurücksetzen
+            </a>
+        </div>
+    {% endif %}
     <p class="text-muted small mb-2">
         <i class="bi bi-pencil-square me-1"></i>Auf eine Zelle klicken zum direkten Bearbeiten.
         <kbd>Enter</kbd> speichern &middot; <kbd>Esc</kbd> abbrechen.
@@ -96,14 +136,14 @@
                     <th style="width:40px" class="text-center">
                         <input type="checkbox" id="selectAllCheckbox" class="form-check-input" title="Alle auswählen">
                     </th>
-                    {{ _self.sort_th('Etikett',           'etikett',       sort, dir, search, 'width:115px', 'class="d-none d-md-table-cell"') }}
-                    {{ _self.sort_th('Liedtitel',          'songName',      sort, dir, search, null,         '') }}
-                    {{ _self.sort_th('Komponist',          'composer',      sort, dir, search, 'width:190px', 'class="d-none d-md-table-cell"') }}
-                    {{ _self.sort_th('Arrangeur',          'arrangeur',     sort, dir, search, 'width:170px', 'class="d-none d-lg-table-cell"') }}
-                    {{ _self.sort_th('Jahr',               'compositionYear', sort, dir, search, 'width:90px', 'class="d-none d-lg-table-cell"') }}
+                    {{ _self.sort_th('Etikett',           'etikett',       sort, dir, search, filters, 'width:115px', 'class="d-none d-md-table-cell"') }}
+                    {{ _self.sort_th('Liedtitel',          'songName',      sort, dir, search, filters, null,         '') }}
+                    {{ _self.sort_th('Komponist',          'composer',      sort, dir, search, filters, 'width:190px', 'class="d-none d-md-table-cell"') }}
+                    {{ _self.sort_th('Arrangeur',          'arrangeur',     sort, dir, search, filters, 'width:170px', 'class="d-none d-lg-table-cell"') }}
+                    {{ _self.sort_th('Jahr',               'compositionYear', sort, dir, search, filters, 'width:90px', 'class="d-none d-lg-table-cell"') }}
                     <th class="d-none d-md-table-cell">Stile</th>
-                    {{ _self.sort_th('Letzte Aufführung',  'latestKonzert', sort, dir, search, 'width:130px', 'class="d-none d-md-table-cell"') }}
-                    {{ _self.sort_th('Dropbox',            'dropboxlink',   sort, dir, search, 'width:40px',  'class="d-none d-md-table-cell"') }}
+                    {{ _self.sort_th('Letzte Aufführung',  'latestKonzert', sort, dir, search, filters, 'width:130px', 'class="d-none d-md-table-cell"') }}
+                    {{ _self.sort_th('Dropbox',            'dropboxlink',   sort, dir, search, filters, 'width:40px',  'class="d-none d-md-table-cell"') }}
                     <th class="d-none d-md-table-cell" style="width:100px">Aktuell in Proben</th>
                     <th class="text-end" style="width:80px">Aktionen</th>
                 </tr>
@@ -358,24 +398,25 @@
     </div>
 
     {% if totalPages > 1 %}
+        {% set qp = filters|merge({q: search, sort: sort, dir: dir}) %}
         <nav aria-label="Seitennavigation" class="mt-3">
             <ul class="pagination justify-content-center flex-wrap mb-2">
                 <li class="page-item{{ currentPage == 1 ? ' disabled' : '' }}">
-                    <a class="page-link" href="{{ path('admin_songs', {page: currentPage - 1, q: search, sort: sort, dir: dir}) }}">
+                    <a class="page-link" href="{{ path('admin_songs', qp|merge({page: currentPage - 1})) }}">
                         <i class="bi bi-chevron-left"></i>
                     </a>
                 </li>
                 {% for p in 1..totalPages %}
                     {% if p == 1 or p == totalPages or (p >= currentPage - 2 and p <= currentPage + 2) %}
                         <li class="page-item{{ p == currentPage ? ' active' : '' }}">
-                            <a class="page-link" href="{{ path('admin_songs', {page: p, q: search, sort: sort, dir: dir}) }}">{{ p }}</a>
+                            <a class="page-link" href="{{ path('admin_songs', qp|merge({page: p})) }}">{{ p }}</a>
                         </li>
                     {% elseif p == currentPage - 3 or p == currentPage + 3 %}
                         <li class="page-item disabled"><span class="page-link">…</span></li>
                     {% endif %}
                 {% endfor %}
                 <li class="page-item{{ currentPage == totalPages ? ' disabled' : '' }}">
-                    <a class="page-link" href="{{ path('admin_songs', {page: currentPage + 1, q: search, sort: sort, dir: dir}) }}">
+                    <a class="page-link" href="{{ path('admin_songs', qp|merge({page: currentPage + 1})) }}">
                         <i class="bi bi-chevron-right"></i>
                     </a>
                 </li>
@@ -415,15 +456,28 @@ window.SONGS_CONFIG = {
 <script>
 (function () {
     'use strict';
-    var input = document.getElementById('songsSearch');
+    var input       = document.getElementById('songsSearch');
+    var styleSelect = document.getElementById('filterStyle');
+    var textFilters = [
+        { el: document.getElementById('filterComposer'), param: 'composer' },
+        { el: document.getElementById('filterArrangeur'), param: 'arrangeur' },
+        { el: document.getElementById('filterYear'), param: 'compositionYear' },
+        { el: document.getElementById('filterEtikett'), param: 'etikett' },
+    ].filter(function (f) { return f.el; });
     if (!input) return;
 
     var debounceTimer;
 
+    function setOrDelete(url, name, value) {
+        if (value && value.trim()) { url.searchParams.set(name, value); } else { url.searchParams.delete(name); }
+    }
+
     function doVisit() {
         var q   = window._songsQ !== undefined ? window._songsQ : input.value;
         var url = new URL(window.location.href);
-        if (q.trim()) { url.searchParams.set('q', q); } else { url.searchParams.delete('q'); }
+        setOrDelete(url, 'q', q);
+        if (styleSelect) { setOrDelete(url, 'style', styleSelect.value); }
+        textFilters.forEach(function (f) { setOrDelete(url, f.param, f.el.value); });
         url.searchParams.set('page', '1');
         if (window.Turbo) { Turbo.visit(url.toString()); } else { window.location.href = url.toString(); }
     }
@@ -444,6 +498,17 @@ window.SONGS_CONFIG = {
         clearTimeout(debounceTimer);
         debounceTimer = setTimeout(doVisit, 350);
     });
+
+    textFilters.forEach(function (f) {
+        f.el.addEventListener('input', function () {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(doVisit, 350);
+        });
+    });
+
+    if (styleSelect) {
+        styleSelect.addEventListener('change', doVisit);
+    }
 }());
 </script>
 <script src="{{ asset('js/admin-songs.js') }}"></script>
