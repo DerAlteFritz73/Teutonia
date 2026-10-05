@@ -59,13 +59,11 @@ FROM base AS dev
 
 COPY docker/php/php.dev.ini $PHP_INI_DIR/conf.d/app.ini
 
-# vendor/ is pre-copied from the Pi (Mini PC migration, 2026-08-06): rather than
-# download dependencies over this network's flaky composer/GitHub path, vendor was
-# copied from the Pi's running dev container (identical composer.lock; PHP packages
-# are platform-independent) and is brought into the image by `COPY . .` below (see
-# the .dockerignore note). `composer dump-autoload` then regenerates the autoloader
-# locally — no network. Restore the composer-install step once the network is
-# reliable again.
+# Install dependencies first (layer cache)
+COPY composer.json composer.lock symfony.lock ./
+RUN --mount=type=cache,target=/composer/cache \
+    COMPOSER_HOME=/composer composer install --no-scripts --no-autoloader --prefer-dist --no-interaction
+
 COPY . .
 RUN composer dump-autoload
 
@@ -81,13 +79,8 @@ COPY docker/php/zzz-clear-env.conf /usr/local/etc/php-fpm.d/zzz-clear-env.conf
 
 # Install dependencies first (layer cache) — keep dev deps for the test runner
 COPY composer.json composer.lock symfony.lock ./
-# Same resilient wrapper as the dev stage — see note there.
 RUN --mount=type=cache,target=/composer/cache \
-    i=0; until timeout -k 10 900 env COMPOSER_HOME=/composer COMPOSER_MAX_PARALLEL_HTTP=1 \
-        composer install --no-scripts --no-autoloader --prefer-dist --no-interaction; do \
-        i=$((i+1)); [ "$i" -ge 12 ] && echo "composer failed after $i attempts" && exit 1; \
-        echo "composer stalled/failed (flaky network), retry $i..."; sleep 3; \
-    done
+    COMPOSER_HOME=/composer composer install --no-scripts --no-autoloader --prefer-dist --no-interaction
 
 # Copy application
 COPY . .
