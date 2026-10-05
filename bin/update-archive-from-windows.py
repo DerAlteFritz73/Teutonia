@@ -12,7 +12,8 @@ same names as the website's "Noten" folders, so they are paired by name:
 Windows is the master:
   - a file the website has is replaced when the Windows copy is newer and different;
   - a file the website lacks is copied if it's a type the website shows (PDF,
-    audio, video, MusicXML) — new song folders included;
+    audio, video, MusicXML) — new song folders included, except those whose
+    name starts with "_" (kept off the website, like in "Ordner abgleichen");
   - in song folders that exist on both sides, website files that are no longer
     on Windows (deleted or renamed there) are removed. Exception: files directly
     in a song folder are kept if removing them would leave the song with nothing
@@ -75,9 +76,13 @@ def remove_empty_dirs(folder: str) -> None:
 
 
 def windows_files():
-    """Paths relative to WINDOWS_NOTEN, skipping hidden, Office lock and system files."""
+    """Paths relative to WINDOWS_NOTEN, skipping hidden, Office lock and system files
+    and song folders starting with "_"."""
     for d, dirs, files in os.walk(WINDOWS_NOTEN):
-        dirs[:] = sorted(x for x in dirs if not x.startswith('.'))
+        top = d == WINDOWS_NOTEN
+        dirs[:] = sorted(x for x in dirs if not x.startswith('.') and not (top and x.startswith('_')))
+        if top:
+            files = []  # loose files belong to no song
         for f in sorted(files):
             if f.startswith(('.', '~$')) or f.lower() in IGNORED_FILES:
                 continue
