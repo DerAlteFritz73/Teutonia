@@ -59,6 +59,23 @@
        can resolve the score + voice recordings on click.                   */
     const PARTITUR_CACHE = {};
 
+    // Voice recordings are recognised by their leading prefix only, independent
+    // of the song name: an order number, optional separator, then the voice token —
+    //   "1S - Foo", "1-S Foo", "2A -Foo", "3M -Foo"   → S / A / M
+    //   "1 - S1 - Foo", "5 - T2 - Foo", "4 - A2 - Foo" → S1 / T2 / A2 (divisi)
+    // "M" is a combined Männer (Tenor+Bass) track. The voice token must be
+    // followed by a separator/end so a title like "1. Bumerang" or "5 - Foo"
+    // is not misread as a voice.
+    function voiceOf(name) {
+        const m = name.match(/^\s*\d+\s*[-.\s]*([SATBM][12]?)(?=[\s.\-]|$)/i);
+        return m ? m[1].toUpperCase() : null;
+    }
+
+    // A "Tutti …" file is the full-ensemble mix (no matching score staff).
+    function isTutti(name) {
+        return /^\s*tutti/i.test(name);
+    }
+
     function buildFilesHtml(files, archivePath) {
         const score = files.find(function (f) { return f.type === 'score'; });
         if (!score) {
@@ -66,8 +83,12 @@
         }
         PARTITUR_CACHE[archivePath] = files;
         // The voice/Tutti MP3s drive the Partitur — don't also offer them (or
-        // the score file itself) as individual rows. Keep PDFs and anything else.
-        const rest = files.filter(function (f) { return f.type !== 'score' && f.type !== 'audio'; });
+        // the score file itself) as individual rows. Other recordings stay listed:
+        // the score may cover only part of the song (e.g. just the Kyrie of a Mass).
+        const rest = files.filter(function (f) {
+            if (f.type === 'score') return false;
+            return f.type !== 'audio' || (!voiceOf(f.name) && !isTutti(f.name));
+        });
         const btn =
             '<div class="list-group-item d-flex flex-wrap align-items-center gap-2">' +
                 '<button type="button" class="btn btn-primary btn-sm open-partitur" data-archive-path="' + escHtml(archivePath) + '">' +
@@ -96,21 +117,13 @@
         const score = files.find(function (f) { return f.type === 'score'; });
         if (!score) return;
 
-        // Map voice recordings from the leading prefix only, independent of the
-        // song name: an order number, optional separator, then the voice token —
-        //   "1S - Foo", "1-S Foo", "2A -Foo", "3M -Foo"   → S / A / M
-        //   "1 - S1 - Foo", "5 - T2 - Foo", "4 - A2 - Foo" → S1 / T2 / A2 (divisi)
-        // "M" is a combined Männer (Tenor+Bass) track. A "Tutti …" file is the
-        // full-ensemble mix (no matching score staff). The voice token must be
-        // followed by a separator/end so a title like "1. Bumerang" or "5 - Foo"
-        // is not misread as a voice.
         const voicePath = {};
         let tuttiPath = null;
         const otherAudio = [];
         files.filter(function (f) { return f.type === 'audio'; }).forEach(function (f) {
-            const m = f.name.match(/^\s*\d+\s*[-.\s]*([SATBM][12]?)(?=[\s.\-]|$)/i);
-            if (m) { voicePath[m[1].toUpperCase()] = f.path; }
-            else if (/^\s*tutti/i.test(f.name)) { tuttiPath = f.path; }
+            const voice = voiceOf(f.name);
+            if (voice) { voicePath[voice] = f.path; }
+            else if (isTutti(f.name)) { tuttiPath = f.path; }
             else { otherAudio.push(f); }
         });
         // Songs without split voice tracks (e.g. a canon, or a single combined
