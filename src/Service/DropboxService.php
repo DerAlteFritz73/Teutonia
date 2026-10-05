@@ -7,7 +7,10 @@ use Spatie\Dropbox\Exceptions\BadRequest;
 
 class DropboxService
 {
-    private Client $client;
+    /** Built lazily by client(), so a missing or broken Dropbox config can't break service construction. */
+    private ?Client $client = null;
+    /** Why the client couldn't be built this request; remembered so we don't retry the token refresh per call. */
+    private ?\RuntimeException $clientError = null;
     private const ALLOWED_EXTENSIONS = ['pdf', 'mp3', 'mp4', 'wav', 'ogg', 'flac', 'm4a', 'aac', 'wma', 'webm', 'avi', 'mov', 'mkv', 'mxl', 'musicxml'];
     private const EXCLUDED_FOLDERS = ['-= Scans - Originale =-'];
 
@@ -20,30 +23,61 @@ class DropboxService
     private ?array $structureTree = null;
 
     public function __construct(
-        string $dropboxAccessToken,
-        string $dropboxRefreshToken,
-        string $dropboxAppKey,
-        string $dropboxAppSecret,
+        ?string $dropboxAccessToken,
+        ?string $dropboxRefreshToken,
+        ?string $dropboxAppKey,
+        ?string $dropboxAppSecret,
         string $projectDir
     ) {
-        $this->refreshToken = $dropboxRefreshToken;
-        $this->appKey = $dropboxAppKey;
-        $this->appSecret = $dropboxAppSecret;
+        $this->refreshToken = (string) $dropboxRefreshToken;
+        $this->appKey = (string) $dropboxAppKey;
+        $this->appSecret = (string) $dropboxAppSecret;
         $cacheDir = $projectDir . '/var/cache/dropbox';
         if (!is_dir($cacheDir)) {
             @mkdir($cacheDir, 0755, true);
         }
         $this->tokenCacheFile = $cacheDir . '/token_cache.json';
+    }
 
-        // Get a valid access token (will refresh if needed)
-        $accessToken = $this->getValidAccessToken($dropboxAccessToken);
-        $this->client = new Client($accessToken);
+    /**
+     * The Dropbox client, created on first use with a valid access token.
+     *
+     * @throws \RuntimeException when Dropbox isn't configured or the token refresh fails
+     */
+    private function client(): Client
+    {
+        if ($this->client === null) {
+            if ($this->clientError !== null) {
+                throw $this->clientError;
+            }
+            try {
+                $this->client = new Client($this->getValidAccessToken());
+            } catch (\RuntimeException $e) {
+                $this->clientError = $e;
+                throw $e;
+            }
+        }
+        return $this->client;
+    }
+
+    /**
+     * True when Dropbox is configured and an access token could be obtained.
+     * Lets pages show a notice instead of silently empty file lists.
+     */
+    public function isAvailable(): bool
+    {
+        try {
+            $this->client();
+            return true;
+        } catch (\RuntimeException $e) {
+            return false;
+        }
     }
 
     /**
      * Get a valid access token, refreshing if necessary
      */
-    private function getValidAccessToken(string $initialToken): string
+    private function getValidAccessToken(): string
     {
         // Check if we have a cached token
         $cachedToken = $this->getTokenFromCache();
@@ -105,6 +139,11 @@ class DropboxService
      */
     private function refreshAccessToken(): string
     {
+        if ($this->refreshToken === '' || $this->appKey === '' || $this->appSecret === '') {
+            error_log('Dropbox: not configured (DROPBOX_REFRESH_TOKEN / DROPBOX_APP_KEY / DROPBOX_APP_SECRET missing)');
+            throw new \RuntimeException('Dropbox is not configured');
+        }
+
         error_log("Dropbox: Refreshing access token...");
 
         $ch = curl_init('https://api.dropbox.com/oauth2/token');
@@ -214,13 +253,13 @@ class DropboxService
     private function listFolderRecursive(string $path): array
     {
         $allEntries = [];
-        $result = $this->client->listFolder($path, true);
+        $result = $this->client()->listFolder($path, true);
 
         $allEntries = array_merge($allEntries, $result['entries']);
 
         // Handle pagination if there are more results
         while (isset($result['has_more']) && $result['has_more']) {
-            $result = $this->client->listFolderContinue($result['cursor']);
+            $result = $this->client()->listFolderContinue($result['cursor']);
             $allEntries = array_merge($allEntries, $result['entries']);
         }
 
@@ -644,10 +683,10 @@ class DropboxService
                 }
             };
 
-            $result = $this->client->listFolder($folderPath, false);
+            $result = $this->client()->listFolder($folderPath, false);
             $collect($result['entries'] ?? []);
             while ($result['has_more'] ?? false) {
-                $result = $this->client->listFolderContinue($result['cursor']);
+                $result = $this->client()->listFolderContinue($result['cursor']);
                 $collect($result['entries'] ?? []);
             }
 
@@ -681,7 +720,7 @@ class DropboxService
     public function listSubfolders(string $path): array
     {
         $fetch = function () use ($path): array {
-            $result  = $this->client->listFolder($path, false);
+            $result  = $this->client()->listFolder($path, false);
             $folders = [];
             foreach ($result['entries'] as $entry) {
                 if ($entry['.tag'] === 'folder') {
@@ -689,7 +728,7 @@ class DropboxService
                 }
             }
             while ($result['has_more'] ?? false) {
-                $result = $this->client->listFolderContinue($result['cursor']);
+                $result = $this->client()->listFolderContinue($result['cursor']);
                 foreach ($result['entries'] as $entry) {
                     if ($entry['.tag'] === 'folder') {
                         $folders[] = $entry['name'];
@@ -719,7 +758,7 @@ class DropboxService
     {
         try {
             // getTemporaryLink() returns a string directly, not an array
-            $link = $this->client->getTemporaryLink($path);
+            $link = $this->client()->getTemporaryLink($path);
             return $link;
         } catch (\Exception $e) {
             // Check if it's an authentication error
@@ -729,7 +768,7 @@ class DropboxService
 
                 // Retry once after token refresh
                 try {
-                    return $this->client->getTemporaryLink($path);
+                    return $this->client()->getTemporaryLink($path);
                 } catch (\Exception $retryError) {
                     error_log("Error getting temporary link after retry for {$path}: " . $retryError->getMessage());
                     return null;
@@ -760,7 +799,7 @@ class DropboxService
     public function getFirstAudioDuration(string $folderPath): ?string
     {
         try {
-            $result = $this->client->rpcEndpointRequest('files/list_folder', [
+            $result = $this->client()->rpcEndpointRequest('files/list_folder', [
                 'path'               => $folderPath,
                 'recursive'          => false,
                 'include_media_info' => true,
@@ -927,7 +966,7 @@ class DropboxService
     public function copyFile(string $fromPath, string $toPath): bool
     {
         try {
-            $this->client->copy($fromPath, $toPath);
+            $this->client()->copy($fromPath, $toPath);
             error_log("Dropbox: Copied $fromPath to $toPath");
             return true;
         } catch (\Exception $e) {
@@ -935,7 +974,7 @@ class DropboxService
                 error_log('Dropbox: auth error copying file, refreshing token…');
                 $this->refreshAccessToken();
                 try {
-                    $this->client->copy($fromPath, $toPath);
+                    $this->client()->copy($fromPath, $toPath);
                     error_log("Dropbox: Successfully copied after token refresh");
                     return true;
                 } catch (\Exception $retryError) {
@@ -954,7 +993,7 @@ class DropboxService
     public function deleteFile(string $path): bool
     {
         try {
-            $this->client->delete($path);
+            $this->client()->delete($path);
             error_log("Dropbox: Deleted $path");
             return true;
         } catch (BadRequest $e) {
@@ -970,7 +1009,7 @@ class DropboxService
                 error_log('Dropbox: auth error deleting file, refreshing token…');
                 $this->refreshAccessToken();
                 try {
-                    $this->client->delete($path);
+                    $this->client()->delete($path);
                     error_log("Dropbox: Successfully deleted after token refresh");
                     return true;
                 } catch (\Exception $retryError) {

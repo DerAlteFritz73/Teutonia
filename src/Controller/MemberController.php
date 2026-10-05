@@ -77,6 +77,7 @@ class MemberController extends AbstractController
             'aktuelleProben' => $songs,
             'childCounts'    => $this->parentFileCounts($songs, $dropbox),
             'probenPaths'    => $this->probenPaths($songs, $dropbox),
+            'dropboxAvailable' => $dropbox->isAvailable(),
         ]);
     }
 
@@ -118,6 +119,7 @@ class MemberController extends AbstractController
         return $this->render('member/noten.html.twig', [
             'notenSongs'  => $songs,
             'childCounts' => $this->parentFileCounts($songs, $dropbox),
+            'dropboxAvailable' => $dropbox->isAvailable(),
         ]);
     }
 

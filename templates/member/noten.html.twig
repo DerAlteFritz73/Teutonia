@@ -14,6 +14,13 @@
             Hier findet Ihr unsere Noten (PDF) und Aufnahmen (MP3).
         </p>
 
+        {% if not dropboxAvailable|default(true) %}
+        <div class="alert alert-warning" role="alert">
+            <i class="bi bi-exclamation-triangle me-1"></i>
+            Die Noten- und Übungsdateien aus Dropbox sind gerade nicht erreichbar. Bitte versuche es später noch einmal.
+        </div>
+        {% endif %}
+
         {% if notenSongs is not empty %}
         <section class="mt-4">
             <input type="search" id="notenSearch" class="form-control form-control-sm mb-3"

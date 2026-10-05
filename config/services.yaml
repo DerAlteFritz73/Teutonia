@@ -32,10 +32,10 @@ services:
 
     App\Service\DropboxService:
         arguments:
-            $dropboxAccessToken: '%env(DROPBOX_ACCESS_TOKEN)%'
-            $dropboxRefreshToken: '%env(DROPBOX_REFRESH_TOKEN)%'
-            $dropboxAppKey: '%env(DROPBOX_APP_KEY)%'
-            $dropboxAppSecret: '%env(DROPBOX_APP_SECRET)%'
+            $dropboxAccessToken: '%env(default::DROPBOX_ACCESS_TOKEN)%'
+            $dropboxRefreshToken: '%env(default::DROPBOX_REFRESH_TOKEN)%'
+            $dropboxAppKey: '%env(default::DROPBOX_APP_KEY)%'
+            $dropboxAppSecret: '%env(default::DROPBOX_APP_SECRET)%'
             $projectDir: '%kernel.project_dir%'
 
     App\Service\AktuelleProbenSyncService:

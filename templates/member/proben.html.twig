@@ -10,6 +10,13 @@
         <h1 id="page-title">Aktuelle Proben</h1>
         <p class="lead" id="page-lead">Hier findest du alle Noten und Übungsdateien für die aktuellen Proben.</p>
 
+        {% if not dropboxAvailable|default(true) %}
+        <div class="alert alert-warning" role="alert">
+            <i class="bi bi-exclamation-triangle me-1"></i>
+            Die Noten- und Übungsdateien aus Dropbox sind gerade nicht erreichbar. Bitte versuche es später noch einmal.
+        </div>
+        {% endif %}
+
         {# Aktuelle Proben Section #}
         {% if aktuelleProben is not empty %}
         <section class="mb-5">
