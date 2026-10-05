@@ -75,13 +75,13 @@ document.addEventListener('click', async (e) => {
 });
 
 document.addEventListener('click', async (e) => {
-    if (!e.target.closest('#btn-sync-dropbox-dash')) return;
+    if (!e.target.closest('#btn-sync-archive-dash')) return;
 
     const cfg   = window.DASHBOARD_CONFIG || {};
     const body  = document.getElementById('syncModalDashBody');
     const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('syncModalDash'));
 
-    body.innerHTML = '<div class="text-center py-3"><div class="spinner-border text-primary" role="status"></div><p class="mt-2 mb-0">Verbindung zu Dropbox…</p></div>';
+    body.innerHTML = '<div class="text-center py-3"><div class="spinner-border text-primary" role="status"></div><p class="mt-2 mb-0">Archiv wird gelesen…</p></div>';
     modal.show();
 
     try {

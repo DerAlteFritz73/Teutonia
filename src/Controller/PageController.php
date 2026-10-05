@@ -7,12 +7,14 @@ use App\Repository\PostRepository;
 use App\Repository\ScoreSyncAnchorsRepository;
 use App\Repository\SongKeywordRepository;
 use App\Repository\StyleRepository;
-use App\Service\DropboxService;
+use App\Service\ArchiveService;
 use App\Service\PdfEtikettStamper;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\ResponseHeaderBag;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Contracts\Cache\CacheInterface;
@@ -107,9 +109,9 @@ class PageController extends AbstractController
         ]);
     }
 
-    #[Route('/api/dropbox/song-files', name: 'api_dropbox_song_files', methods: ['GET'])]
+    #[Route('/api/files/song-files', name: 'api_files_song_files', methods: ['GET'])]
     #[IsGranted('ROLE_USER')]
-    public function getSongFiles(Request $request, DropboxService $dropboxService): JsonResponse
+    public function getSongFiles(Request $request, ArchiveService $archive): JsonResponse
     {
         $path = $request->query->get('path');
 
@@ -117,7 +119,7 @@ class PageController extends AbstractController
             return new JsonResponse(['error' => 'Path is required'], 400);
         }
 
-        $result = $dropboxService->getFilesForFolder($path);
+        $result = $archive->getFilesForFolder($path);
 
         return new JsonResponse([
             'files'         => $result['files'],
@@ -125,9 +127,10 @@ class PageController extends AbstractController
         ]);
     }
 
-    #[Route('/api/dropbox/link', name: 'api_dropbox_link', methods: ['POST'])]
+    /** URL the browser can load a file from (audio player src, download link). */
+    #[Route('/api/files/link', name: 'api_files_link', methods: ['POST'])]
     #[IsGranted('ROLE_USER')]
-    public function getDropboxLink(Request $request, DropboxService $dropboxService): JsonResponse
+    public function getFileLink(Request $request, ArchiveService $archive): JsonResponse
     {
         $data = json_decode($request->getContent(), true);
         $path = $data['path'] ?? null;
@@ -136,20 +139,18 @@ class PageController extends AbstractController
             return new JsonResponse(['error' => 'Path is required'], 400);
         }
 
-        $link = $dropboxService->getTemporaryLink($path);
-
-        if (!$link) {
-            return new JsonResponse(['error' => 'Could not generate link'], 500);
+        if ($archive->getLocalPath($path) === null) {
+            return new JsonResponse(['error' => 'Datei nicht gefunden'], 404);
         }
 
-        return new JsonResponse(['link' => $link]);
+        return new JsonResponse(['link' => $this->generateUrl('api_files_view', ['path' => $path])]);
     }
 
-    #[Route('/api/dropbox/view', name: 'api_dropbox_view', methods: ['GET'])]
+    #[Route('/api/files/view', name: 'api_files_view', methods: ['GET'])]
     #[IsGranted('ROLE_USER')]
-    public function viewDropboxFile(
+    public function viewFile(
         Request $request,
-        DropboxService $dropboxService,
+        ArchiveService $archive,
         SongKeywordRepository $songRepo,
         PdfEtikettStamper $stamper,
     ): Response {
@@ -159,18 +160,10 @@ class PageController extends AbstractController
             throw $this->createNotFoundException('Path is required');
         }
 
-        // Get temporary link from Dropbox
-        $link = $dropboxService->getTemporaryLink($path);
+        $localPath = $archive->getLocalPath($path);
 
-        if (!$link) {
-            throw $this->createNotFoundException('Could not generate link');
-        }
-
-        // Fetch the file content from Dropbox
-        $fileContent = @file_get_contents($link);
-
-        if ($fileContent === false) {
-            throw $this->createNotFoundException('Could not fetch file');
+        if ($localPath === null) {
+            throw $this->createNotFoundException('File not found');
         }
 
         // Determine content type based on file extension
@@ -179,45 +172,64 @@ class PageController extends AbstractController
             'pdf' => 'application/pdf',
             'mp3' => 'audio/mpeg',
             'mp4' => 'video/mp4',
+            'm4a' => 'audio/mp4',
             'wav' => 'audio/wav',
             'ogg' => 'audio/ogg',
+            'flac' => 'audio/flac',
             'webm' => 'video/webm',
             'mxl' => 'application/vnd.recordare.musicxml',
             'musicxml' => 'application/vnd.recordare.musicxml+xml',
             default => 'application/octet-stream'
         };
 
+        if ($extension !== 'pdf') {
+            // Streamed from disk with Range support, so audio/video can seek.
+            $response = new BinaryFileResponse($localPath);
+            $response->headers->set('Content-Type', $contentType);
+            $response->setContentDisposition(
+                ResponseHeaderBag::DISPOSITION_INLINE,
+                basename($localPath),
+                $this->asciiFilename(basename($localPath))
+            );
+            return $response;
+        }
+
+        $fileContent = @file_get_contents($localPath);
+
+        if ($fileContent === false) {
+            throw $this->createNotFoundException('Could not read file');
+        }
+
         // Overlay the song's Etikett on page 1 of Noten PDFs.
-        // The original in Dropbox is never modified.
-        if ($extension === 'pdf') {
-            $song = $songRepo->findOneByFolder(\dirname($path));
-            if ($song) {
-                // Movements (child songs) usually carry no Etikett of their own —
-                // fall back to the parent's, just like the rest of the app does.
-                $etikett = trim((string) $song->getEtikett());
-                if ($etikett === '' && $song->getParent() !== null) {
-                    $etikett = trim((string) $song->getParent()->getEtikett());
-                }
-                if ($etikett !== '') {
-                    $fileContent = $stamper->stamp($fileContent, $etikett);
-                }
+        // The original in the archive is never modified.
+        $song = $songRepo->findOneByFolder(\dirname($path));
+        if ($song) {
+            // Movements (child songs) usually carry no Etikett of their own —
+            // fall back to the parent's, just like the rest of the app does.
+            $etikett = trim((string) $song->getEtikett());
+            if ($etikett === '' && $song->getParent() !== null) {
+                $etikett = trim((string) $song->getParent()->getEtikett());
+            }
+            if ($etikett !== '') {
+                $fileContent = $stamper->stamp($fileContent, $etikett);
             }
         }
 
-        // Create response with inline content disposition for PDFs
         $response = new Response($fileContent);
         $response->headers->set('Content-Type', $contentType);
 
-        if ($extension === 'pdf') {
-            // inline to view in the browser; attachment (?dl=1) to download a stamped copy
-            $disposition = $request->query->getBoolean('dl') ? 'attachment' : 'inline';
-            $response->headers->set('Content-Disposition', $disposition . '; filename="' . basename($path) . '"');
-        } else {
-            // For other files, allow default behavior
-            $response->headers->set('Content-Disposition', 'inline; filename="' . basename($path) . '"');
-        }
+        // inline to view in the browser; attachment (?dl=1) to download a stamped copy
+        $disposition = $request->query->getBoolean('dl') ? 'attachment' : 'inline';
+        $response->headers->set('Content-Disposition', $disposition . '; filename="' . basename($path) . '"');
 
         return $response;
+    }
+
+    /** ASCII fallback for Content-Disposition (umlauts etc. go in filename*). */
+    private function asciiFilename(string $name): string
+    {
+        $ascii = preg_replace('/[^\x20-\x7E]|[\/\\\\%"]/', '_', $name) ?? 'datei';
+        return $ascii !== '' ? $ascii : 'datei';
     }
 
     #[Route('/api/sync-anchors', name: 'api_sync_anchors', methods: ['GET'])]

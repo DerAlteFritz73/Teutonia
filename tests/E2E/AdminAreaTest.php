@@ -407,7 +407,7 @@ class AdminAreaTest extends AbstractE2ETestCase
         $this->assertTrue($checkbox->isSelected(), '"Aktuelle Proben" checkbox should remain checked after saving.');
     }
 
-    public function testDropboxLinkSavesAndPersists(): void
+    public function testArchivePathSavesAndPersists(): void
     {
         $client = $this->createLoggedInClient(AppFixtures::ADMIN_USERNAME, AppFixtures::PASSWORD);
         $client->request('GET', '/admin/songs');
@@ -422,24 +422,24 @@ class AdminAreaTest extends AbstractE2ETestCase
         }
 
         $client->request('GET', '/admin/songs/' . $songId . '/edit');
-        $client->waitFor('#song_keyword_dropboxlink');
+        $client->waitFor('#song_keyword_archivePath');
 
-        $dropboxInput = $client->getWebDriver()->findElement(
-            \Facebook\WebDriver\WebDriverBy::id('song_keyword_dropboxlink')
+        $pathInput = $client->getWebDriver()->findElement(
+            \Facebook\WebDriver\WebDriverBy::id('song_keyword_archivePath')
         );
-        $dropboxInput->clear();
-        $dropboxInput->sendKeys('/Chorgemeinschaft Teutonia/Noten/Test');
+        $pathInput->clear();
+        $pathInput->sendKeys('/Chorgemeinschaft Teutonia/Noten/Test');
 
         $client->getWebDriver()->findElement(\Facebook\WebDriver\WebDriverBy::cssSelector('button[type="submit"]'))->click();
         $client->waitFor('#songs-table');
 
         $client->request('GET', '/admin/songs/' . $songId . '/edit');
-        $client->waitFor('#song_keyword_dropboxlink');
+        $client->waitFor('#song_keyword_archivePath');
 
         $val = $client->getWebDriver()->findElement(
-            \Facebook\WebDriver\WebDriverBy::id('song_keyword_dropboxlink')
+            \Facebook\WebDriver\WebDriverBy::id('song_keyword_archivePath')
         )->getAttribute('value');
-        $this->assertEquals('/Chorgemeinschaft Teutonia/Noten/Test', $val, 'Dropbox link should be persisted after saving.');
+        $this->assertEquals('/Chorgemeinschaft Teutonia/Noten/Test', $val, 'Archive path should be persisted after saving.');
     }
 
     public function testParentSearchFiltersDropdownOptions(): void

@@ -34,7 +34,7 @@
         const sizeStr = file.size > 0 ? `<small class="text-muted">${formatBytes(file.size)}</small>` : '';
 
         return `<a href="#"
-            class="dropbox-file-link list-group-item list-group-item-action d-flex justify-content-between align-items-center"
+            class="archive-file-link list-group-item list-group-item-action d-flex justify-content-between align-items-center"
             data-file-path="${escHtml(file.path)}"
             data-file-name="${escHtml(file.name)}"
             data-file-type="${escHtml(file.type)}">
@@ -59,18 +59,18 @@
        can resolve the score + voice recordings on click.                   */
     const PARTITUR_CACHE = {};
 
-    function buildFilesHtml(files, dropboxPath) {
+    function buildFilesHtml(files, archivePath) {
         const score = files.find(function (f) { return f.type === 'score'; });
         if (!score) {
             return files.map(fileItemHtml).join('');
         }
-        PARTITUR_CACHE[dropboxPath] = files;
+        PARTITUR_CACHE[archivePath] = files;
         // The voice/Tutti MP3s drive the Partitur — don't also offer them (or
         // the score file itself) as individual rows. Keep PDFs and anything else.
         const rest = files.filter(function (f) { return f.type !== 'score' && f.type !== 'audio'; });
         const btn =
             '<div class="list-group-item d-flex flex-wrap align-items-center gap-2">' +
-                '<button type="button" class="btn btn-primary btn-sm open-partitur" data-dropbox-path="' + escHtml(dropboxPath) + '">' +
+                '<button type="button" class="btn btn-primary btn-sm open-partitur" data-archive-path="' + escHtml(archivePath) + '">' +
                     '<i class="bi bi-music-note-list me-1"></i>Partitur abspielen' +
                 '</button>' +
                 '<small class="text-muted">Scrollende Noten mit Stimmen-Wiedergabe zum Mitsingen</small>' +
@@ -78,7 +78,7 @@
         return btn + rest.map(fileItemHtml).join('');
     }
 
-    function dropboxLink(path) {
+    function fileLink(path) {
         const cfg = window.PROBEN_CONFIG || {};
         return fetch(cfg.linkUrl, {
             method: 'POST',
@@ -91,7 +91,7 @@
         e.preventDefault();
         const btn   = e.currentTarget;
         const cfg   = window.PROBEN_CONFIG || {};
-        const files = PARTITUR_CACHE[btn.dataset.dropboxPath];
+        const files = PARTITUR_CACHE[btn.dataset.archivePath];
         if (!files) return;
         const score = files.find(function (f) { return f.type === 'score'; });
         if (!score) return;
@@ -141,8 +141,8 @@
         btn.disabled = true;
         Promise.all(
             Object.keys(voicePath).map(function (c) {
-                return dropboxLink(voicePath[c]).then(function (l) { return [c, l]; });
-            }).concat(tuttiPath ? [dropboxLink(tuttiPath).then(function (l) { return ['__tutti', l]; })] : [])
+                return fileLink(voicePath[c]).then(function (l) { return [c, l]; });
+            }).concat(tuttiPath ? [fileLink(tuttiPath).then(function (l) { return ['__tutti', l]; })] : [])
         ).then(function (pairs) {
             const audioByVoice = {};
             let tuttiUrl = '';
@@ -246,7 +246,7 @@
         root.querySelectorAll('.open-partitur').forEach(function (btn) {
             btn.addEventListener('click', openPartitur);
         });
-        root.querySelectorAll('.dropbox-file-link').forEach(function (link) {
+        root.querySelectorAll('.archive-file-link').forEach(function (link) {
             link.addEventListener('click', function (e) {
                 e.preventDefault();
                 const cfg      = window.PROBEN_CONFIG || {};
@@ -316,13 +316,13 @@
        container so opening the accordion is instant.                     */
     function prefetchAccordionBtn(btn) {
         const cfg         = window.PROBEN_CONFIG || {};
-        const dropboxPath = btn.dataset.dropboxPath;
+        const archivePath = btn.dataset.archivePath;
         const badgeSpan   = btn.querySelector('.file-count-badges');
         const targetId    = btn.dataset.bsTarget;
         const panel       = targetId && document.querySelector(targetId);
         const container   = panel && panel.querySelector('.song-files-container');
 
-        fetch(cfg.filesUrl + '?path=' + encodeURIComponent(dropboxPath))
+        fetch(cfg.filesUrl + '?path=' + encodeURIComponent(archivePath))
             .then(function (r) { return r.json(); })
             .then(function (data) {
                 const files  = data.files || [];
@@ -349,7 +349,7 @@
                         // Cache files so score-sync.js can find the PDF path
                         const songId = container.dataset.songId;
                         if (songId) (window.PROBEN_STATE || {}).currentFilesBySongId && (window.PROBEN_STATE.currentFilesBySongId[songId] = files);
-                        container.innerHTML = buildFilesHtml(files, dropboxPath);
+                        container.innerHTML = buildFilesHtml(files, archivePath);
                         attachFileHandlers(container);
                     }
                 }
@@ -357,7 +357,7 @@
             .catch(function (err) {
                 // Background prefetch only — the lazy loader (show.bs.collapse)
                 // re-fetches and shows a visible error if the user opens the panel.
-                console.warn('Dropbox prefetch failed for', dropboxPath, err);
+                console.warn('File list prefetch failed for', archivePath, err);
             });
     }
 
@@ -365,7 +365,7 @@
     (function () {
         const cfg = window.PROBEN_CONFIG || {};
         if (!cfg.filesUrl) return;
-        document.querySelectorAll('#probenAccordion .accordion-btn-files[data-dropbox-path]').forEach(prefetchAccordionBtn);
+        document.querySelectorAll('#probenAccordion .accordion-btn-files[data-archive-path]').forEach(prefetchAccordionBtn);
     }());
 
     /* ── Noten und Aufnahmen: IntersectionObserver pre-fetch ───────────
@@ -381,7 +381,7 @@
         if (!('IntersectionObserver' in window)) {
             // Fallback: eager-fetch if IntersectionObserver not supported
             items.forEach(function (item) {
-                const btn = item.querySelector('.accordion-btn-files[data-dropbox-path]');
+                const btn = item.querySelector('.accordion-btn-files[data-archive-path]');
                 if (btn) prefetchAccordionBtn(btn);
             });
             return;
@@ -391,7 +391,7 @@
             entries.forEach(function (entry) {
                 if (!entry.isIntersecting) return;
                 observer.unobserve(entry.target);
-                const btn = entry.target.querySelector('.accordion-btn-files[data-dropbox-path]');
+                const btn = entry.target.querySelector('.accordion-btn-files[data-archive-path]');
                 if (btn) prefetchAccordionBtn(btn);
             });
         }, { rootMargin: '300px' });
@@ -412,13 +412,13 @@
             if (!container || container.dataset.loaded) return;
 
             const cfg         = window.PROBEN_CONFIG || {};
-            const dropboxPath = container.dataset.dropboxPath;
-            if (!dropboxPath) {
-                container.innerHTML = '<p class="text-muted p-3">Kein Dropbox-Pfad hinterlegt.</p>';
+            const archivePath = container.dataset.archivePath;
+            if (!archivePath) {
+                container.innerHTML = '<p class="text-muted p-3">Kein Archiv-Ordner hinterlegt.</p>';
                 return;
             }
 
-            fetch(cfg.filesUrl + '?path=' + encodeURIComponent(dropboxPath))
+            fetch(cfg.filesUrl + '?path=' + encodeURIComponent(archivePath))
                 .then(r => r.json())
                 .then(data => {
                     container.dataset.loaded = '1';
@@ -436,14 +436,14 @@
                         return;
                     }
 
-                    container.innerHTML = buildFilesHtml(files, dropboxPath);
+                    container.innerHTML = buildFilesHtml(files, archivePath);
 
                     // Cache files for score-sync.js
                     const songId = container.dataset.songId;
                     if (songId && window.PROBEN_STATE) window.PROBEN_STATE.currentFilesBySongId[songId] = files;
 
                     const header   = panel.previousElementSibling;
-                    const btn      = header && header.querySelector('[data-dropbox-path]');
+                    const btn      = header && header.querySelector('[data-archive-path]');
                     if (btn) {
                         const badgeSpan = btn.querySelector('.file-count-badges');
                         const pdfs   = files.filter(f => f.type === 'pdf').length;

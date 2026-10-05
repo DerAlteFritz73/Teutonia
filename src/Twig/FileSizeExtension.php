@@ -2,7 +2,7 @@
 
 namespace App\Twig;
 
-use App\Service\DropboxService;
+use App\Service\ArchiveService;
 use Twig\Extension\AbstractExtension;
 use Twig\TwigFilter;
 
@@ -20,7 +20,7 @@ class FileSizeExtension extends AbstractExtension
 
     public function formatBytes(int $bytes): string
     {
-        return DropboxService::formatFileSize($bytes);
+        return ArchiveService::formatFileSize($bytes);
     }
 
     /**

@@ -10,7 +10,7 @@ use App\Repository\PostRepository;
 use App\Repository\SongKeywordRepository;
 use App\Repository\SongSuggestionLikeRepository;
 use App\Repository\SongSuggestionRepository;
-use App\Service\DropboxService;
+use App\Service\ArchiveService;
 use App\Service\GoogleCalendarService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -69,23 +69,23 @@ class MemberController extends AbstractController
     }
 
     #[Route('/aktuelle-proben', name: 'member_proben')]
-    public function proben(SongKeywordRepository $songRepo, DropboxService $dropbox): Response
+    public function proben(SongKeywordRepository $songRepo, ArchiveService $archive): Response
     {
         $songs = $songRepo->findByFolderTopLevel('Aktuelle Proben');
 
         return $this->render('member/proben.html.twig', [
             'aktuelleProben' => $songs,
-            'childCounts'    => $this->parentFileCounts($songs, $dropbox),
-            'probenPaths'    => $this->probenPaths($songs, $dropbox),
-            'dropboxAvailable' => $dropbox->isAvailable(),
+            'childCounts'    => $this->parentFileCounts($songs, $archive),
+            'probenPaths'    => $this->probenPaths($songs, $archive),
+            'archiveAvailable' => $archive->isAvailable(),
         ]);
     }
 
     /**
-     * Effective Dropbox folder for each Aktuelle-Proben song's own file listing,
+     * Effective archive folder for each Aktuelle-Proben song's own file listing,
      * keyed by song id.
      *
-     * A song's dedicated "Aktuelle Proben" copy (aktuelleDropboxlink) is used
+     * A song's dedicated "Aktuelle Proben" copy (aktuelleArchivePath) is used
      * normally, but that copy is sometimes empty or stale (an incomplete push —
      * e.g. Mambo, whose copy holds none of the Noten folder's files, not even the
      * MusicXML score). When the copy has no files or subfolders we fall back to the
@@ -95,15 +95,15 @@ class MemberController extends AbstractController
      * @param SongKeyword[] $songs
      * @return array<int, string|null>
      */
-    private function probenPaths(array $songs, DropboxService $dropbox): array
+    private function probenPaths(array $songs, ArchiveService $archive): array
     {
         $paths = [];
         foreach ($songs as $song) {
-            $akt   = $song->getAktuelleDropboxlink();
-            $noten = $song->getDropboxlink();
+            $akt   = $song->getAktuelleArchivePath();
+            $noten = $song->getArchivePath();
 
             $path = $akt ?? $noten;
-            if ($akt && $noten && $akt !== $noten && !$dropbox->folderHasContent($akt)) {
+            if ($akt && $noten && $akt !== $noten && !$archive->folderHasContent($akt)) {
                 $path = $noten;
             }
             $paths[$song->getId()] = $path;
@@ -112,14 +112,14 @@ class MemberController extends AbstractController
     }
 
     #[Route('/noten', name: 'member_noten')]
-    public function noten(SongKeywordRepository $songRepo, DropboxService $dropbox): Response
+    public function noten(SongKeywordRepository $songRepo, ArchiveService $archive): Response
     {
         $songs = $songRepo->findAllExcept('Aktuelle Proben');
 
         return $this->render('member/noten.html.twig', [
             'notenSongs'  => $songs,
-            'childCounts' => $this->parentFileCounts($songs, $dropbox),
-            'dropboxAvailable' => $dropbox->isAvailable(),
+            'childCounts' => $this->parentFileCounts($songs, $archive),
+            'archiveAvailable' => $archive->isAvailable(),
         ]);
     }
 
@@ -132,7 +132,7 @@ class MemberController extends AbstractController
      * @param SongKeyword[] $songs
      * @return array<int, array{pdf:int,audio:int}>
      */
-    private function parentFileCounts(array $songs, DropboxService $dropbox): array
+    private function parentFileCounts(array $songs, ArchiveService $archive): array
     {
         $counts = [];
         foreach ($songs as $song) {
@@ -145,18 +145,18 @@ class MemberController extends AbstractController
 
             // Parent's own (immediate) files — its folder's direct files only;
             // child folders are summed separately below to avoid double counting.
-            $parentPath = $song->getDropboxlink() ?? $song->getAktuelleDropboxlink();
+            $parentPath = $song->getArchivePath() ?? $song->getAktuelleArchivePath();
             if ($parentPath) {
-                $c = $dropbox->getImmediateCounts($parentPath);
+                $c = $archive->getImmediateCounts($parentPath);
                 $pdf   += $c['pdf'];
                 $audio += $c['audio'];
             }
 
             // Each child song's files (recursive, in case a movement has subfolders).
             foreach ($song->getChildren() as $child) {
-                $childPath = $child->getDropboxlink() ?? $child->getAktuelleDropboxlink();
+                $childPath = $child->getArchivePath() ?? $child->getAktuelleArchivePath();
                 if ($childPath) {
-                    $c = $dropbox->getRecursiveCounts($childPath);
+                    $c = $archive->getRecursiveCounts($childPath);
                     $pdf   += $c['pdf'];
                     $audio += $c['audio'];
                 }

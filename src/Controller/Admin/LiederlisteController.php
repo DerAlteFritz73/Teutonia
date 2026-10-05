@@ -6,7 +6,7 @@ use App\Entity\Liederliste;
 use App\Repository\LiederlisteRepository;
 use App\Repository\SongKeywordRepository;
 use App\Service\AktuelleProbenSyncService;
-use App\Service\DropboxService;
+use App\Service\ArchiveService;
 use Doctrine\ORM\EntityManagerInterface;
 use PhpOffice\PhpWord\PhpWord;
 use PhpOffice\PhpWord\SimpleType\Jc;
@@ -172,7 +172,7 @@ class LiederlisteController extends AbstractController
                 $already++;
                 continue;
             }
-            // Always succeeds — the flag is set even when the song isn't on Dropbox.
+            // Always succeeds — the flag is set even when the song has no archive folder.
             $syncService->pushSongToAktuelleProben($song);
             $added++;
         }
@@ -490,7 +490,7 @@ class LiederlisteController extends AbstractController
     public function fetchDuration(
         Request $request,
         SongKeywordRepository $songRepo,
-        DropboxService $dropboxService,
+        ArchiveService $archive,
         EntityManagerInterface $em,
     ): JsonResponse {
         $songId = (int) $request->query->get('songId', 0);
@@ -503,17 +503,17 @@ class LiederlisteController extends AbstractController
             return $this->json(['error' => 'Song nicht gefunden'], 404);
         }
 
-        // Use the cached value; computing it (Dropbox audio download / YouTube
+        // Use the cached value; computing it (archive audio read / YouTube
         // scrape) is expensive, so only do it once per song — unless the caller
         // explicitly asks to recompute ("neu berechnen").
         if (!$request->query->getBoolean('force') && !empty($song->getDuration())) {
             return $this->json(['duration' => $song->getDuration()]);
         }
 
-        // Try Dropbox first
-        $folderPath = $song->getAktuelleDropboxlink() ?? $song->getDropboxlink();
+        // Try the archive first
+        $folderPath = $song->getAktuelleArchivePath() ?? $song->getArchivePath();
         if ($folderPath !== null) {
-            $duration = $dropboxService->getFirstAudioDuration($folderPath);
+            $duration = $archive->getFirstAudioDuration($folderPath);
             if ($duration !== null) {
                 $song->setDuration($duration);
                 $em->flush();
@@ -600,7 +600,7 @@ class LiederlisteController extends AbstractController
                 'composer' => $song->getComposer() ?? '',
                 'title'    => $song->getSongName() ?? '',
                 'etikett'  => $song->getEtikett() ?? '',
-                'hasDropbox' => $song->getDropboxlink() !== null || $song->getAktuelleDropboxlink() !== null,
+                'hasFolder' => $song->getArchivePath() !== null || $song->getAktuelleArchivePath() !== null,
                 'hasLinks'   => !$song->getLinks()->isEmpty(),
             ];
         }

@@ -3,7 +3,7 @@
 namespace App\Command;
 
 use App\Entity\SongKeyword;
-use App\Service\DropboxService;
+use App\Service\ArchiveService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
@@ -14,7 +14,7 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 
 #[AsCommand(
     name: 'app:populate-durations',
-    description: 'Fill in the cached playing time for songs from Dropbox audio (or a YouTube link)',
+    description: 'Fill in the cached playing time for songs from archive audio (or a YouTube link)',
 )]
 class PopulateDurationsCommand extends Command
 {
@@ -25,7 +25,7 @@ class PopulateDurationsCommand extends Command
 
     public function __construct(
         private EntityManagerInterface $entityManager,
-        private DropboxService $dropboxService,
+        private ArchiveService $archive,
     ) {
         parent::__construct();
     }
@@ -68,13 +68,13 @@ class PopulateDurationsCommand extends Command
     }
 
     /**
-     * Mirrors LiederlisteController::fetchDuration(): Dropbox audio first, then YouTube links.
+     * Mirrors LiederlisteController::fetchDuration(): archive audio first, then YouTube links.
      */
     private function computeDuration(SongKeyword $song): ?string
     {
-        $folderPath = $song->getAktuelleDropboxlink() ?? $song->getDropboxlink();
+        $folderPath = $song->getAktuelleArchivePath() ?? $song->getArchivePath();
         if ($folderPath !== null) {
-            $duration = $this->plausible($this->dropboxService->getFirstAudioDuration($folderPath));
+            $duration = $this->plausible($this->archive->getFirstAudioDuration($folderPath));
             if ($duration !== null) {
                 return $duration;
             }

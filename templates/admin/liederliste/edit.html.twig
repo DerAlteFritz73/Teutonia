@@ -322,7 +322,7 @@ window.FETCH_URL    = '{{ path('admin_liederlisten_fetch_duration') }}';
     const READ_ONLY = {{ canEdit ? 'false' : 'true' }};
 
     // ── Data ──────────────────────────────────────────────────────────────
-    const allSongs = window.ALL_SONGS || [];  // [{id, parentId, composer, title, hasDropbox, hasLinks}]
+    const allSongs = window.ALL_SONGS || [];  // [{id, parentId, composer, title, hasFolder, hasLinks}]
     const songById = new Map(allSongs.map(s => [s.id, s]));
 
     // parentId -> [child song, …] (movements), in catalog order
@@ -491,7 +491,7 @@ window.FETCH_URL    = '{{ path('admin_liederlisten_fetch_duration') }}';
 
             if (!isCustom && item.songId != null) {
                 const song = songById.get(item.songId);
-                if (song && (song.hasDropbox || song.hasLinks)) {
+                if (song && (song.hasFolder || song.hasLinks)) {
                     const recalcBtn = document.createElement('button');
                     recalcBtn.type = 'button';
                     recalcBtn.className = 'btn-recalc-item';
@@ -651,7 +651,7 @@ window.FETCH_URL    = '{{ path('admin_liederlisten_fetch_duration') }}';
     // ── Auto-fetch duration when a song is added ───────────────────────────
     function fetchDuration(item, force) {
         const song = item.songId ? songById.get(item.songId) : null;
-        if (!song || (!song.hasDropbox && !song.hasLinks)) return;
+        if (!song || (!song.hasFolder && !song.hasLinks)) return;
 
         function getRow() { return rightListEl.querySelector('[data-uid="' + item.uid + '"]'); }
 

@@ -25,7 +25,6 @@ test_*.php
 debug_*.php
 check_*.php
 verify_*.php
-dropbox_debug.json
 
 # IDE/Editor files
 .claude/
@@ -33,7 +32,6 @@ dropbox_debug.json
 # Sensitive / local files
 dump.sql
 .env.test
-/populate_dropbox_links.php
 /import_songs.php
 /import_songs_csv.php
 /enrich_songs.php

@@ -7,7 +7,7 @@ use Symfony\Component\Process\Process;
 /**
  * Stamps a song's "Etikett" (filing label, e.g. "Rosa 155") onto the top-right of
  * the first page of a PDF — used to overlay the label when serving Noten PDFs,
- * without touching the originals in Dropbox.
+ * without touching the originals in the archive.
  *
  * Pipeline (vector-preserving, handles any PDF version):
  *   1. read the first page's MediaBox via Ghostscript,

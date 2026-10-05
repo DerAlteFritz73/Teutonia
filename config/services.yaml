@@ -30,16 +30,13 @@ services:
         arguments:
             $apiKey: '%env(GOOGLE_CALENDAR_API_KEY)%'
 
-    App\Service\DropboxService:
+    App\Service\ArchiveService:
         arguments:
-            $dropboxAccessToken: '%env(default::DROPBOX_ACCESS_TOKEN)%'
-            $dropboxRefreshToken: '%env(default::DROPBOX_REFRESH_TOKEN)%'
-            $dropboxAppKey: '%env(default::DROPBOX_APP_KEY)%'
-            $dropboxAppSecret: '%env(default::DROPBOX_APP_SECRET)%'
-            $projectDir: '%kernel.project_dir%'
+            # Container path of the song file archive (bind-mounted in compose.yaml).
+            $archiveDir: '%env(ARCHIVE_DIR)%'
 
     App\Service\AktuelleProbenSyncService:
         arguments:
-            # Only prod may write to Dropbox: dev (the Pi) shares the same Dropbox
-            # account as prod, so a copy/delete there would collide with prod.
+            # Only prod may write to the archive: dev reads the same archive folder
+            # as prod, so a copy/delete there would collide with prod.
             $appEnv: '%kernel.environment%'

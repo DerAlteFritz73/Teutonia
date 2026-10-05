@@ -15,6 +15,9 @@ services:
       - assets:/var/assets
       - pdfs:/var/www/html/public/pdfs
       - liederlisten:/var/www/html/public/liederlisten
+      # Song files (Noten, Aktuelle Proben). Only the choir folder is mounted, so
+      # nothing else in the archive is reachable from the site.
+      - ${HOME}/dropbox-archive/Chorgemeinschaft Teutonia:/var/archive/Chorgemeinschaft Teutonia
     depends_on:
       database:
         condition: service_healthy

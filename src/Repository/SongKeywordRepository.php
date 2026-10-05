@@ -21,7 +21,7 @@ class SongKeywordRepository extends ServiceEntityRepository
     public function findOneByFolder(string $folder): ?SongKeyword
     {
         return $this->createQueryBuilder('s')
-            ->where('s.dropboxlink = :f OR s.aktuelleDropboxlink = :f')
+            ->where('s.archivePath = :f OR s.aktuelleArchivePath = :f')
             ->setParameter('f', $folder)
             ->setMaxResults(1)
             ->getQuery()
@@ -185,7 +185,7 @@ class SongKeywordRepository extends ServiceEntityRepository
      * Return all top-level songs for the Noten section, sorted by song name.
      * Includes songs that are also in Aktuelle Proben.
      * When multiple DB rows share the same name (duplicates before dedup-sync runs),
-     * keep the one with the highest score: children > isAktuelleProben > dropbox link.
+     * keep the one with the highest score: children > isAktuelleProben > archive folder.
      */
     public function findAllExcept(string $excludeFolder): array
     {
@@ -204,7 +204,7 @@ class SongKeywordRepository extends ServiceEntityRepository
             }
             $score = fn($s) => ($s->getChildren()->count() > 0 ? 4 : 0)
                              + ($s->isAktuelleProben()          ? 2 : 0)
-                             + ($s->getDropboxlink()            ? 1 : 0);
+                             + ($s->getArchivePath()            ? 1 : 0);
             if ($score($song) > $score($byName[$name])) {
                 $byName[$name] = $song;
             }

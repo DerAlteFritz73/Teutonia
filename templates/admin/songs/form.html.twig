@@ -69,10 +69,10 @@
                     {{ form_label(form.duration) }}
                     <div class="input-group">
                         {{ form_widget(form.duration) }}
-                        {% if not isNew and (song.dropboxlink or song.aktuelleDropboxlink or song.links|length > 0) %}
+                        {% if not isNew and (song.archivePath or song.aktuelleArchivePath or song.links|length > 0) %}
                         <button type="button" id="btn-recalc-duration" class="btn btn-outline-secondary"
                                 data-song-id="{{ song.id }}"
-                                data-tooltip="Dauer aus Dropbox/YouTube neu berechnen">
+                                data-tooltip="Dauer aus Archiv/YouTube neu berechnen">
                             <i class="bi bi-arrow-clockwise"></i>
                         </button>
                         {% endif %}
@@ -173,11 +173,11 @@
         </div>
     </div>
 
-    {% if not isNew and (song.dropboxlink or song.aktuelleDropboxlink or song.children|length > 0) %}
+    {% if not isNew and (song.archivePath or song.aktuelleArchivePath or song.children|length > 0) %}
     <div class="card mb-4">
-        <div class="card-header fw-semibold"><i class="bi bi-folder2-open me-2"></i>Dateien (Dropbox)</div>
+        <div class="card-header fw-semibold"><i class="bi bi-folder2-open me-2"></i>Dateien (Archiv)</div>
         <div class="card-body p-0">
-            {% set mainPath = song.dropboxlink ?? song.aktuelleDropboxlink %}
+            {% set mainPath = song.archivePath ?? song.aktuelleArchivePath %}
             {% if mainPath %}
             <div class="accordion" id="editFilesAccordion">
                 <div class="accordion-item border-0">
@@ -186,8 +186,8 @@
                                 type="button"
                                 data-bs-toggle="collapse"
                                 data-bs-target="#editFilesMain"
-                                data-dropbox-path="{{ mainPath }}"
-                                data-tooltip="Notenmaterial aus Dropbox laden">
+                                data-archive-path="{{ mainPath }}"
+                                data-tooltip="Notenmaterial aus dem Archiv laden">
                             <i class="bi bi-folder2-open me-2 text-warning"></i>
                             Notenmaterial
                             <span class="ps-3 d-flex gap-1 file-count-badges"></span>
@@ -195,7 +195,7 @@
                     </h2>
                     <div id="editFilesMain" class="accordion-collapse collapse">
                         <div class="accordion-body pt-2 pb-3">
-                            <div class="list-group song-files-container" data-dropbox-path="{{ mainPath }}">
+                            <div class="list-group song-files-container" data-archive-path="{{ mainPath }}">
                                 <div class="text-center text-muted py-3 file-loading-spinner">
                                     <span class="spinner-border spinner-border-sm me-2" role="status"></span>
                                     Lade Dateien…
@@ -209,30 +209,30 @@
             {% if song.children|length > 0 %}
             <div class="accordion {% if mainPath %}border-top{% endif %}" id="editMovementsAccordion">
                 {% for movement in song.sortedChildren %}
-                    {% set movHasDropbox = movement.dropboxlink is not null and movement.dropboxlink != '' %}
+                    {% set movHasFolder = movement.archivePath is not null and movement.archivePath != '' %}
                     <div class="accordion-item border-0">
                         <h2 class="accordion-header">
-                            <button class="accordion-button collapsed {% if movHasDropbox %}accordion-btn-files{% endif %} py-2"
+                            <button class="accordion-button collapsed {% if movHasFolder %}accordion-btn-files{% endif %} py-2"
                                     type="button"
-                                    {% if movHasDropbox %}
+                                    {% if movHasFolder %}
                                     data-bs-toggle="collapse"
                                     data-bs-target="#editMov{{ movement.id }}"
-                                    data-dropbox-path="{{ movement.dropboxlink }}"
+                                    data-archive-path="{{ movement.archivePath }}"
                                     data-tooltip="Dateien für diesen Satz laden"
                                     {% endif %}>
                                 <i class="bi bi-music-note me-2 text-primary"></i>
                                 <span class="flex-grow-1">{{ movement.songName }}</span>
-                                {% if movHasDropbox %}
+                                {% if movHasFolder %}
                                     <span class="ps-3 d-flex gap-1 file-count-badges"></span>
                                 {% else %}
-                                    <span class="badge bg-secondary ms-2 fw-normal">kein Dropbox-Pfad</span>
+                                    <span class="badge bg-secondary ms-2 fw-normal">kein Archiv-Ordner</span>
                                 {% endif %}
                             </button>
                         </h2>
-                        {% if movHasDropbox %}
+                        {% if movHasFolder %}
                         <div id="editMov{{ movement.id }}" class="accordion-collapse collapse">
                             <div class="accordion-body py-2">
-                                <div class="list-group song-files-container" data-dropbox-path="{{ movement.dropboxlink }}">
+                                <div class="list-group song-files-container" data-archive-path="{{ movement.archivePath }}">
                                     <div class="text-center text-muted py-3 file-loading-spinner">
                                         <span class="spinner-border spinner-border-sm me-2" role="status"></span>
                                         Lade Dateien…
@@ -246,7 +246,7 @@
             </div>
             {% endif %}
             {% if not mainPath and song.children|length == 0 %}
-                <p class="text-muted p-3 mb-0"><i class="bi bi-info-circle me-1"></i>Kein Dropbox-Pfad hinterlegt.</p>
+                <p class="text-muted p-3 mb-0"><i class="bi bi-info-circle me-1"></i>Kein Archiv-Ordner hinterlegt.</p>
             {% endif %}
         </div>
     </div>
@@ -329,9 +329,9 @@
 
 <script>
 window.PROBEN_CONFIG = {
-    filesUrl: '{{ path('api_dropbox_song_files') }}',
-    linkUrl:  '{{ path('api_dropbox_link') }}',
-    viewUrl:  '{{ path('api_dropbox_view') }}'
+    filesUrl: '{{ path('api_files_song_files') }}',
+    linkUrl:  '{{ path('api_files_link') }}',
+    viewUrl:  '{{ path('api_files_view') }}'
 };
 </script>
 <script src="{{ asset('js/member-proben.js') }}?v=8"></script>

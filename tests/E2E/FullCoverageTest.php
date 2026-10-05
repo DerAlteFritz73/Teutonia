@@ -153,7 +153,7 @@ class FullCoverageTest extends AbstractE2ETestCase
             $client->waitFor('#' . $panelId . '.show');
 
             // Wait for any file-loading spinner to be replaced (files, "Keine Dateien", or error).
-            // Songs with no Dropbox path have no spinner at all, so this returns immediately.
+            // Songs with no archive folder have no spinner at all, so this returns immediately.
             $this->waitForSpinnerGone($client->getWebDriver(), '#' . $panelId);
 
             // Panel must be open — content may be empty for songs with no files/links/movements
@@ -162,13 +162,13 @@ class FullCoverageTest extends AbstractE2ETestCase
         }
     }
 
-    public function testSongWithoutDropboxPathAccordionOpens(): void
+    public function testSongWithoutArchiveFolderAccordionOpens(): void
     {
         $client = $this->createLoggedInClient(AppFixtures::MEMBER_USERNAME, AppFixtures::PASSWORD);
         $client->request('GET', '/mitglieder/aktuelle-proben');
         $client->waitFor('#probenAccordion');
 
-        // "Dona Nobis Pacem" has no Dropbox path — the accordion should open cleanly
+        // "Dona Nobis Pacem" has no archive folder — the accordion should open cleanly
         $btn = $client->findElement(
             WebDriverBy::xpath('//*[@id="probenAccordion"]//button[contains(., "Dona Nobis Pacem")]')
         );
@@ -368,7 +368,7 @@ class FullCoverageTest extends AbstractE2ETestCase
     {
         // Use direct-child combinators so we only watch the spinner in THIS panel's
         // own song-files-container, not spinners inside nested movement sub-panels.
-        // 15 s covers slow Dropbox token refresh / network failures on the Pi.
+        // 15 s covers slow file reads on the Pi.
         $selector = $panelSelector . ' > .accordion-body > .song-files-container .file-loading-spinner';
         $driver->wait(15, 300)->until(function ($d) use ($selector) {
             return empty($d->findElements(WebDriverBy::cssSelector($selector)));

@@ -110,7 +110,7 @@ export default class extends Controller {
 
     // Fetch the score and hand OSMD the right kind of content. We fetch the
     // bytes ourselves (instead of letting OSMD fetch the URL) because the real
-    // Dropbox proxy URL (/api/dropbox/view?path=…) carries no .mxl/.musicxml
+    // File proxy URL (/api/files/view?path=…) carries no .mxl/.musicxml
     // extension for OSMD to sniff. We detect a compressed MXL by its zip magic
     // ("PK") and pass it as a binary string; otherwise decoded MusicXML text.
     async fetchScore(url) {

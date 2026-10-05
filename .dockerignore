@@ -17,12 +17,9 @@ test_*.php
 debug_*.php
 check_*.php
 verify_*.php
-dropbox_debug.json
 dump.sql
 enrich_songs.php
 import_songs*.php
-populate_dropbox_links.php
-generate_dropbox_token.php
 
 # Docs
 *.md

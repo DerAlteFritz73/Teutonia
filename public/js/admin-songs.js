@@ -23,7 +23,7 @@ if (!window._adminSongsInit) {
                           extrabox:'bg-secondary text-white' };
             const cls = map[value.split(' ')[0].toLowerCase()] ?? 'bg-light text-dark border';
             d.innerHTML = `<span class="badge ${cls} fw-normal">${esc(value)}</span>`;
-        } else if (field === 'dropboxlink') {
+        } else if (field === 'archivePath') {
             d.innerHTML = value
                 ? `<i class="bi bi-folder-check text-success" title="${escAttr(value)}"></i>`
                 : '<i class="bi bi-folder-x text-muted"></i>';
@@ -246,12 +246,12 @@ if (!window._adminSongsInit) {
     });
 }());
 
-/* ── Dropbox sync ───────────────────────────────────────────────────── */
+/* ── Archive folder sync ────────────────────────────────────────────────── */
 /* Uses event delegation on document so the button works even after Turbo
    replaces the body and the original button element is gone.            */
 (function () {
     document.addEventListener('click', async (e) => {
-        if (!e.target.closest('#btn-sync-dropbox')) return;
+        if (!e.target.closest('#btn-sync-archive')) return;
 
         const cfg       = window.SONGS_CONFIG || {};
         const body      = document.getElementById('syncResultBody');
@@ -261,7 +261,7 @@ if (!window._adminSongsInit) {
         body.innerHTML = `
             <div class="text-center py-3">
                 <div class="spinner-border text-primary" role="status"></div>
-                <p class="mt-2 mb-0">Verbindung zu Dropbox wird hergestellt…</p>
+                <p class="mt-2 mb-0">Archiv wird gelesen…</p>
             </div>`;
         reloadBtn.classList.add('d-none');
         modal.show();
@@ -273,7 +273,7 @@ if (!window._adminSongsInit) {
             // Update spinner text after a short delay so the user sees progress
             const progressTimer = setTimeout(() => {
                 if (body.querySelector('.spinner-border')) {
-                    body.querySelector('p').textContent = 'Dropbox-Ordner werden abgeglichen…';
+                    body.querySelector('p').textContent = 'Archiv-Ordner werden abgeglichen…';
                 }
             }, 1500);
 

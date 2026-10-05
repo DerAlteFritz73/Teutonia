@@ -10,10 +10,10 @@
         <h1 id="page-title">Aktuelle Proben</h1>
         <p class="lead" id="page-lead">Hier findest du alle Noten und Übungsdateien für die aktuellen Proben.</p>
 
-        {% if not dropboxAvailable|default(true) %}
+        {% if not archiveAvailable|default(true) %}
         <div class="alert alert-warning" role="alert">
             <i class="bi bi-exclamation-triangle me-1"></i>
-            Die Noten- und Übungsdateien aus Dropbox sind gerade nicht erreichbar. Bitte versuche es später noch einmal.
+            Die Noten- und Übungsdateien sind gerade nicht erreichbar. Bitte versuche es später noch einmal.
         </div>
         {% endif %}
 
@@ -36,8 +36,8 @@
                                     data-bs-toggle="collapse"
                                     data-bs-target="#{{ folderId }}"
                                     aria-expanded="false"
-                                    {% set probenPath = probenPaths[song.id]|default(song.aktuelleDropboxlink ?? song.dropboxlink) %}
-                    {% if probenPath %}data-dropbox-path="{{ probenPath }}"{% endif %}{% if hasMovements and childCounts[song.id] is defined %} data-server-counts="1"{% endif %}>
+                                    {% set probenPath = probenPaths[song.id]|default(song.aktuelleArchivePath ?? song.archivePath) %}
+                    {% if probenPath %}data-archive-path="{{ probenPath }}"{% endif %}{% if hasMovements and childCounts[song.id] is defined %} data-server-counts="1"{% endif %}>
                                 <i class="bi bi-folder2-open me-2 d-none d-sm-inline"></i>
                                 <span class="d-flex flex-column lh-sm flex-grow-1">
                                     {{ song.songName }}
@@ -107,7 +107,7 @@
                                     </div>
                                 {% endif %}
                                 {% if probenPath %}
-                                    <div class="list-group song-files-container {% if hasMovements %}mb-3{% endif %}" data-dropbox-path="{{ probenPath }}" data-song-id="{{ song.id }}"{% if hasMovements %} data-has-movements="true"{% endif %}>
+                                    <div class="list-group song-files-container {% if hasMovements %}mb-3{% endif %}" data-archive-path="{{ probenPath }}" data-song-id="{{ song.id }}"{% if hasMovements %} data-has-movements="true"{% endif %}>
                                         <div class="text-center text-muted py-3 file-loading-spinner">
                                             <span class="spinner-border spinner-border-sm me-2" role="status"></span>
                                             Lade Dateien…
@@ -115,7 +115,7 @@
                                     </div>
                                 {% elseif not hasMovements %}
                                     <p class="text-muted mb-0">
-                                        <i class="bi bi-info-circle me-1"></i>Keine Dateien in Dropbox verfügbar.
+                                        <i class="bi bi-info-circle me-1"></i>Keine Dateien verfügbar.
                                     </p>
                                 {% endif %}
                                 {% if hasMovements %}
@@ -128,7 +128,7 @@
                                                             type="button"
                                                             data-bs-toggle="collapse"
                                                             data-bs-target="#{{ movId }}"
-                                                            {% if movement.dropboxlink %}data-dropbox-path="{{ movement.dropboxlink }}"{% endif %}>
+                                                            {% if movement.archivePath %}data-archive-path="{{ movement.archivePath }}"{% endif %}>
                                                         <i class="bi bi-music-note me-2 text-primary d-none d-sm-inline"></i>
                                                         {{ movement.songName }}
                                                         <span class="ps-3 me-3 d-flex align-items-center gap-2 accordion-btn-badges">
@@ -138,8 +138,8 @@
                                                 </h2>
                                                 <div id="{{ movId }}" class="accordion-collapse collapse">
                                                     <div class="accordion-body py-2">
-                                                        {% if movement.dropboxlink %}
-                                                            <div class="list-group song-files-container" data-dropbox-path="{{ movement.dropboxlink }}" data-song-id="{{ movement.id }}">
+                                                        {% if movement.archivePath %}
+                                                            <div class="list-group song-files-container" data-archive-path="{{ movement.archivePath }}" data-song-id="{{ movement.id }}">
                                                                 <div class="text-center text-muted py-3 file-loading-spinner">
                                                                     <span class="spinner-border spinner-border-sm me-2" role="status"></span>
                                                                     Lade Dateien…

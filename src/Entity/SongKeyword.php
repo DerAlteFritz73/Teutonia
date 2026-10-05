@@ -30,7 +30,7 @@ class SongKeyword
     #[ORM\Column(name: 'composition_year', length: 30, nullable: true)]
     private ?string $compositionYear = null;
 
-    /** Cached playing time as "M:SS"; computed once from Dropbox audio or a YouTube link. */
+    /** Cached playing time as "M:SS"; computed once from archive audio or a YouTube link. */
     #[ORM\Column(length: 20, nullable: true)]
     private ?string $duration = null;
 
@@ -54,13 +54,13 @@ class SongKeyword
     private ?string $folder = null;
 
     #[ORM\Column(length: 500, nullable: true)]
-    private ?string $dropboxlink = null;
+    private ?string $archivePath = null;
 
     #[ORM\Column(options: ['default' => false])]
     private bool $isAktuelleProben = false;
 
     #[ORM\Column(length: 500, nullable: true)]
-    private ?string $aktuelleDropboxlink = null;
+    private ?string $aktuelleArchivePath = null;
 
     #[ORM\Column(name: 'sort_order', options: ['default' => 0])]
     private int $sortOrder = 0;
@@ -259,22 +259,22 @@ class SongKeyword
         return $this;
     }
 
-    public function getDropboxlink(): ?string
+    public function getArchivePath(): ?string
     {
-        return $this->dropboxlink;
+        return $this->archivePath;
     }
 
-    public function setDropboxlink(?string $dropboxlink): static
+    public function setArchivePath(?string $archivePath): static
     {
-        $this->dropboxlink = $dropboxlink;
+        $this->archivePath = $archivePath;
         return $this;
     }
 
     public function isAktuelleProben(): bool { return $this->isAktuelleProben; }
     public function setIsAktuelleProben(bool $isAktuelleProben): static { $this->isAktuelleProben = $isAktuelleProben; return $this; }
 
-    public function getAktuelleDropboxlink(): ?string { return $this->aktuelleDropboxlink; }
-    public function setAktuelleDropboxlink(?string $aktuelleDropboxlink): static { $this->aktuelleDropboxlink = $aktuelleDropboxlink; return $this; }
+    public function getAktuelleArchivePath(): ?string { return $this->aktuelleArchivePath; }
+    public function setAktuelleArchivePath(?string $aktuelleArchivePath): static { $this->aktuelleArchivePath = $aktuelleArchivePath; return $this; }
 
     public function getSortOrder(): int { return $this->sortOrder; }
     public function setSortOrder(int $sortOrder): static { $this->sortOrder = $sortOrder; return $this; }

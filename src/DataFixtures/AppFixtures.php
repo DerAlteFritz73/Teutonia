@@ -54,33 +54,33 @@ class AppFixtures extends Fixture
         $style->setColor('#7c3aed');
         $manager->persist($style);
 
-        // Song in Noten (no Dropbox link)
+        // Song in Noten (no archive folder)
         $song = new SongKeyword();
         $song->setSongName('Amazing Grace');
         $song->setComposer('John Newton');
         $song->setFolder('Noten');
         $manager->persist($song);
 
-        // Song in Noten with Dropbox link (tests API call flow)
-        $songWithDropbox = new SongKeyword();
-        $songWithDropbox->setSongName('Ave Maria');
-        $songWithDropbox->setComposer('Franz Schubert');
-        $songWithDropbox->setFolder('Noten');
-        $songWithDropbox->setDropboxlink('/Noten/Ave Maria');
-        $manager->persist($songWithDropbox);
+        // Song in Noten with archive folder (tests API call flow)
+        $songWithFolder = new SongKeyword();
+        $songWithFolder->setSongName('Ave Maria');
+        $songWithFolder->setComposer('Franz Schubert');
+        $songWithFolder->setFolder('Noten');
+        $songWithFolder->setArchivePath('/Noten/Ave Maria');
+        $manager->persist($songWithFolder);
 
         // Song with child movements
         $parentSong = new SongKeyword();
         $parentSong->setSongName('Requiem');
         $parentSong->setComposer('Wolfgang A. Mozart');
         $parentSong->setFolder('Noten');
-        $parentSong->setDropboxlink('/Noten/Requiem');
+        $parentSong->setArchivePath('/Noten/Requiem');
         $manager->persist($parentSong);
 
         $movement1 = new SongKeyword();
         $movement1->setSongName('I. Introitus');
         $movement1->setFolder('Noten');
-        $movement1->setDropboxlink('/Noten/Requiem/Introitus');
+        $movement1->setArchivePath('/Noten/Requiem/Introitus');
         $movement1->setParent($parentSong);
         $movement1->setSortOrder(1);
         $manager->persist($movement1);
@@ -88,12 +88,12 @@ class AppFixtures extends Fixture
         $movement2 = new SongKeyword();
         $movement2->setSongName('II. Kyrie');
         $movement2->setFolder('Noten');
-        $movement2->setDropboxlink('/Noten/Requiem/Kyrie');
+        $movement2->setArchivePath('/Noten/Requiem/Kyrie');
         $movement2->setParent($parentSong);
         $movement2->setSortOrder(2);
         $manager->persist($movement2);
 
-        // Aktuelle Proben song (no Dropbox)
+        // Aktuelle Proben song (no archive folder)
         $probenSong = new SongKeyword();
         $probenSong->setSongName('Dona Nobis Pacem');
         $probenSong->setComposer('Traditional');
@@ -101,14 +101,14 @@ class AppFixtures extends Fixture
         $probenSong->setIsAktuelleProben(true);
         $manager->persist($probenSong);
 
-        // Aktuelle Proben song with Dropbox link
-        $probenSongWithDropbox = new SongKeyword();
-        $probenSongWithDropbox->setSongName('Halleluja Chorus');
-        $probenSongWithDropbox->setComposer('Georg F. Händel');
-        $probenSongWithDropbox->setFolder('Aktuelle Proben');
-        $probenSongWithDropbox->setIsAktuelleProben(true);
-        $probenSongWithDropbox->setAktuelleDropboxlink('/Aktuelle Proben/Halleluja Chorus');
-        $manager->persist($probenSongWithDropbox);
+        // Aktuelle Proben song with archive folder
+        $probenSongWithFolder = new SongKeyword();
+        $probenSongWithFolder->setSongName('Halleluja Chorus');
+        $probenSongWithFolder->setComposer('Georg F. Händel');
+        $probenSongWithFolder->setFolder('Aktuelle Proben');
+        $probenSongWithFolder->setIsAktuelleProben(true);
+        $probenSongWithFolder->setAktuelleArchivePath('/Aktuelle Proben/Halleluja Chorus');
+        $manager->persist($probenSongWithFolder);
 
         $konzert = new Konzert();
         $konzert->setName('Sommerkonzert 2024');

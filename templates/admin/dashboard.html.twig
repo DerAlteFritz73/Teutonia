@@ -118,11 +118,11 @@
             </div>
         </div>
         <div class="col-md-4 mb-4">
-            <div class="card h-100 position-relative" style="border-color:#0061ff;cursor:pointer" id="card-dropbox-dash">
+            <div class="card h-100 position-relative" style="border-color:#0061ff;cursor:pointer" id="card-archive-dash">
                 <div class="card-body">
-                    <h5 class="card-title" style="color:#0061ff"><i class="bi bi-cloud-arrow-down me-1"></i>Dropbox</h5>
-                    <p class="card-text text-muted small">Dropbox-Ordner mit Lied-Einträgen abgleichen und fehlende Verknüpfungen automatisch setzen.</p>
-                    <button id="btn-sync-dropbox-dash" class="btn btn-outline-primary btn-sm">
+                    <h5 class="card-title" style="color:#0061ff"><i class="bi bi-folder-symlink me-1"></i>Notenarchiv</h5>
+                    <p class="card-text text-muted small">Archiv-Ordner mit Lied-Einträgen abgleichen und fehlende Verknüpfungen automatisch setzen.</p>
+                    <button id="btn-sync-archive-dash" class="btn btn-outline-primary btn-sm">
                         <i class="bi bi-cloud-arrow-down me-1"></i>Jetzt synchronisieren
                     </button>
                     <div id="sync-dash-result" class="mt-2 small"></div>
@@ -136,13 +136,13 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title"><i class="bi bi-cloud-arrow-down me-2"></i>Dropbox-Synchronisation</h5>
+                <h5 class="modal-title"><i class="bi bi-folder-symlink me-2"></i>Ordner-Abgleich</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body" id="syncModalDashBody">
                 <div class="text-center py-3">
                     <div class="spinner-border text-primary" role="status"></div>
-                    <p class="mt-2 mb-0">Verbindung zu Dropbox…</p>
+                    <p class="mt-2 mb-0">Archiv wird gelesen…</p>
                 </div>
             </div>
             <div class="modal-footer">
@@ -153,9 +153,9 @@
 </div>
 
 <script>
-document.getElementById('card-dropbox-dash').addEventListener('click', function(e) {
+document.getElementById('card-archive-dash').addEventListener('click', function(e) {
     if (!e.target.closest('button')) {
-        document.getElementById('btn-sync-dropbox-dash').click();
+        document.getElementById('btn-sync-archive-dash').click();
     }
 });
 document.getElementById('card-cache-clear').addEventListener('click', function(e) {
@@ -167,8 +167,8 @@ document.getElementById('card-cache-clear').addEventListener('click', function(e
 
 <script>
 window.DASHBOARD_CONFIG = {
-    csrfToken:      '{{ csrf_token('sync_dropbox') }}',
-    syncUrl:        '{{ path('admin_songs_sync_dropbox') }}',
+    csrfToken:      '{{ csrf_token('sync_archive') }}',
+    syncUrl:        '{{ path('admin_songs_sync_archive') }}',
     cacheClearToken: '{{ csrf_token('cache_clear') }}',
     cacheClearUrl:  '{{ path('admin_cache_clear') }}'
 };

@@ -166,9 +166,9 @@
 
 <script>
 window.PROBEN_CONFIG = {
-    filesUrl:    '{{ path('api_dropbox_song_files') }}',
-    linkUrl:     '{{ path('api_dropbox_link') }}',
-    viewUrl:     '{{ path('api_dropbox_view') }}',
+    filesUrl:    '{{ path('api_files_song_files') }}',
+    linkUrl:     '{{ path('api_files_link') }}',
+    viewUrl:     '{{ path('api_files_view') }}',
     syncUrl:     '{{ path('api_sync_anchors') }}',
     isAdmin:     {{ is_granted('ROLE_ADMIN') ? 'true' : 'false' }},
     syncCsrfToken: '{{ csrf_token('sync_anchors') }}'

@@ -25,6 +25,8 @@ services:
       - .:/var/www/html
       - /var/www/html/vendor
       - ./public/assets:/var/www/html/public/assets
+      # Read-only: dev must never change prod's song files.
+      - ${HOME}/dropbox-archive/Chorgemeinschaft Teutonia:/var/archive/Chorgemeinschaft Teutonia:ro
 
   database:
     container_name: teutonia-db-dev

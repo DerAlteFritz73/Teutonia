@@ -3,7 +3,7 @@
 namespace App\Command;
 
 use App\Entity\SongKeyword;
-use App\Service\DropboxService;
+use App\Service\ArchiveService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
@@ -13,7 +13,7 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 
 #[AsCommand(
     name: 'app:populate-song-keywords',
-    description: 'Create missing song entries from Dropbox folders ("[title] #[composer]" naming)',
+    description: 'Create missing song entries from archive folders ("[title] #[composer]" naming)',
 )]
 class PopulateSongKeywordsCommand extends Command
 {
@@ -21,7 +21,7 @@ class PopulateSongKeywordsCommand extends Command
 
     public function __construct(
         private EntityManagerInterface $entityManager,
-        private DropboxService $dropboxService
+        private ArchiveService $archive
     ) {
         parent::__construct();
     }
@@ -29,18 +29,18 @@ class PopulateSongKeywordsCommand extends Command
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $io = new SymfonyStyle($input, $output);
-        $io->title('Populating Song Keywords from Dropbox');
+        $io->title('Populating Song Keywords from the archive');
 
         // Preload existing songs once so we never create a duplicate of a song
-        // that already exists — either by Dropbox path or by normalised title.
-        $linkedPaths   = []; // lowercased dropbox path => true
+        // that already exists — either by archive path or by normalised title.
+        $linkedPaths   = []; // lowercased archive path => true
         $existingNorms = []; // normalised song title => true
         foreach ($this->entityManager->getRepository(SongKeyword::class)->findAll() as $song) {
-            if ($song->getDropboxlink()) {
-                $linkedPaths[mb_strtolower(rtrim($song->getDropboxlink(), '/'))] = true;
+            if ($song->getArchivePath()) {
+                $linkedPaths[mb_strtolower(rtrim($song->getArchivePath(), '/'))] = true;
             }
-            if ($song->getAktuelleDropboxlink()) {
-                $linkedPaths[mb_strtolower(rtrim($song->getAktuelleDropboxlink(), '/'))] = true;
+            if ($song->getAktuelleArchivePath()) {
+                $linkedPaths[mb_strtolower(rtrim($song->getAktuelleArchivePath(), '/'))] = true;
             }
             $existingNorms[$this->normalize($song->getSongName())] = true;
         }
@@ -63,13 +63,13 @@ class PopulateSongKeywordsCommand extends Command
      * @param array<string,bool> $existingNorms shared across calls, updated in place
      */
     private function processFolder(
-        string $dropboxPath,
+        string $folderPath,
         string $folderLabel,
         array &$linkedPaths,
         array &$existingNorms,
         SymfonyStyle $io
     ): void {
-        $files = $this->dropboxService->getFileStructure($dropboxPath, false);
+        $files = $this->archive->getFileStructure($folderPath);
         $count = 0;
 
         foreach ($files as $folderName => $folderData) {
@@ -78,7 +78,7 @@ class PopulateSongKeywordsCommand extends Command
             }
 
             [$title, $composer] = $this->parseFolderName($folderName);
-            $path = $dropboxPath . '/' . $folderName;
+            $path = $folderPath . '/' . $folderName;
 
             // Skip folders already linked to a song, or whose title already exists.
             if (isset($linkedPaths[mb_strtolower($path)])) {
@@ -94,7 +94,7 @@ class PopulateSongKeywordsCommand extends Command
             $song->setComposer($composer);
             $song->setFolder($folderLabel);
             $song->setKeywords($composer !== null ? [$composer] : []);
-            $song->setDropboxlink($path);
+            $song->setArchivePath($path);
             $this->entityManager->persist($song);
 
             // Register immediately so duplicates inside this run are skipped too.
@@ -125,7 +125,7 @@ class PopulateSongKeywordsCommand extends Command
 
     /**
      * Mirror of AdminController::normalizeForSync — "/" and "," are treated as
-     * equivalent (Dropbox replaces "/" with "," in folder names) so titles match
+     * equivalent (folder names can't contain "/", so "," stands in for it) so titles match
      * regardless of which character is used.
      */
     private function normalize(string $s): string
