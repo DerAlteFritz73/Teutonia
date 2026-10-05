@@ -345,7 +345,6 @@ class FullCoverageTest extends AbstractE2ETestCase
             'beitraege' => ['/admin/beitraege',    'Beiträge'],
             'styles'    => ['/admin/styles',       'Stile'],
             'logs'      => ['/admin/logs',         'Logs'],
-            'tests'     => ['/admin/tests',        'Tests'],
         ];
     }
 
@@ -355,7 +354,7 @@ class FullCoverageTest extends AbstractE2ETestCase
         $client->request('GET', '/admin');
         // Symfony returns 403 at the same URL — verify admin dashboard content is NOT shown
         $source = $client->getWebDriver()->getPageSource();
-        $this->assertStringNotContainsString('btn-hetzner-terminal', $source,
+        $this->assertStringNotContainsString('btn-cache-clear', $source,
             'Regular member should not see the admin dashboard');
     }
 

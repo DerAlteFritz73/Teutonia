@@ -91,7 +91,6 @@
                     <div class="d-flex gap-2 mt-2">
                         <a href="{{ path('admin_logs') }}" class="btn btn-light btn-sm stretched-link position-relative"><i class="bi bi-file-text me-1"></i>Logs anzeigen</a>
                         <a href="{{ path('admin_logs', {env: 'dev'}) }}" class="btn btn-outline-light btn-sm position-relative" style="z-index:2"><i class="bi bi-bug me-1"></i>Dev Logs</a>
-                        <button type="button" class="btn btn-outline-light btn-sm position-relative" id="btn-hetzner-terminal" style="z-index:2"><i class="bi bi-terminal me-1"></i>Prod Terminal</button>
                     </div>
                 </div>
             </div>
@@ -103,17 +102,7 @@
                     <p class="card-text">MariaDB verwalten</p>
                     <div class="d-flex flex-wrap gap-2">
                         <a href="/phpmyadmin" target="_blank" class="btn btn-light stretched-link"><i class="bi bi-database me-1"></i>PHPMyAdmin öffnen</a>
-                        <button type="button" id="btn-prod-sync" class="btn btn-outline-light position-relative" style="z-index:2"><i class="bi bi-cloud-download me-1"></i>Von Prod kopieren</button>
                     </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4 mb-4">
-            <div class="card text-white h-100 position-relative" style="background:linear-gradient(135deg,#0d6efd,#0dcaf0);cursor:pointer">
-                <div class="card-body">
-                    <h5 class="card-title"><i class="bi bi-play-circle me-1"></i>Tests</h5>
-                    <p class="card-text">E2E-Tests starten und Ergebnisse einsehen</p>
-                    <a href="{{ path('admin_tests') }}" class="btn btn-light stretched-link"><i class="bi bi-play-circle me-1"></i>Zu den Tests</a>
                 </div>
             </div>
         </div>
@@ -176,107 +165,12 @@ document.getElementById('card-cache-clear').addEventListener('click', function(e
 });
 </script>
 
-<!-- Hetzner SSH Terminal Modal -->
-<div class="modal fade" id="hetznerTerminalModal" tabindex="-1" data-bs-backdrop="static">
-    <div class="modal-dialog modal-xl modal-dialog-centered">
-        <div class="modal-content bg-dark text-white border-0">
-            <div class="modal-header border-secondary py-2">
-                <span class="modal-title small"><i class="bi bi-terminal me-2"></i>root@teutonia-willstaett.de</span>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body p-0">
-                <div id="hetzner-terminal" style="height:500px;background:#0d0d0d"></div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@5.3.0/css/xterm.min.css">
-<script src="https://cdn.jsdelivr.net/npm/xterm@5.3.0/lib/xterm.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/xterm-addon-fit@0.8.0/lib/xterm-addon-fit.min.js"></script>
-
-<script>
-(function () {
-    const modal   = document.getElementById('hetznerTerminalModal');
-    const termEl  = document.getElementById('hetzner-terminal');
-    let term      = null;
-    let fitAddon  = null;
-    let sessionId = null;
-    let evtSource = null;
-
-    function initTerminal() {
-        if (term) { term.dispose(); }
-        termEl.innerHTML = '';
-        term = new Terminal({
-            cursorBlink:     true,
-            fontFamily:      'Menlo, Consolas, "Courier New", monospace',
-            fontSize:        13,
-            theme:           { background: '#0d0d0d' },
-            convertEol:      true,
-            scrollback:      2000,
-        });
-        fitAddon = new FitAddon.FitAddon();
-        term.loadAddon(fitAddon);
-        term.open(termEl);
-        fitAddon.fit();
-
-        term.onData(data => {
-            if (!sessionId) return;
-            fetch('{{ path('admin_hetzner_terminal_input', {'id': '__ID__'}) }}'.replace('__ID__', sessionId), {
-                method:  'POST',
-                body:    data,
-                headers: { 'Content-Type': 'application/octet-stream' },
-            });
-        });
-    }
-
-    function connect() {
-        fetch('{{ path('admin_hetzner_terminal_connect') }}', { method: 'POST' })
-            .then(r => r.json())
-            .then(({ id }) => {
-                sessionId = id;
-                evtSource = new EventSource('{{ path('admin_hetzner_terminal_stream', {'id': '__ID__'}) }}'.replace('__ID__', id));
-                evtSource.onmessage = e => term.write(Uint8Array.from(atob(e.data), c => c.charCodeAt(0)));
-                evtSource.addEventListener('close', () => {
-                    term.writeln('\r\n\x1b[33m[Verbindung getrennt]\x1b[0m');
-                    evtSource.close();
-                });
-                evtSource.onerror = () => {
-                    term.writeln('\r\n\x1b[31m[Verbindungsfehler]\x1b[0m');
-                    evtSource.close();
-                };
-            })
-            .catch(() => term.writeln('\x1b[31m[Fehler beim Verbindungsaufbau]\x1b[0m'));
-    }
-
-    function disconnect() {
-        if (evtSource) { evtSource.close(); evtSource = null; }
-        sessionId = null;
-    }
-
-    document.getElementById('btn-hetzner-terminal').addEventListener('click', () => {
-        const bsModal = new bootstrap.Modal(modal);
-        bsModal.show();
-    });
-
-    modal.addEventListener('shown.bs.modal', () => {
-        initTerminal();
-        connect();
-        window.addEventListener('resize', () => fitAddon && fitAddon.fit());
-    });
-
-    modal.addEventListener('hidden.bs.modal', disconnect);
-})();
-</script>
-
 <script>
 window.DASHBOARD_CONFIG = {
     csrfToken:      '{{ csrf_token('sync_dropbox') }}',
     syncUrl:        '{{ path('admin_songs_sync_dropbox') }}',
     cacheClearToken: '{{ csrf_token('cache_clear') }}',
-    cacheClearUrl:  '{{ path('admin_cache_clear') }}',
-    prodSyncToken:  '{{ csrf_token('prod_sync_copy') }}',
-    prodSyncUrl:    '{{ path('admin_prod_sync_copy') }}'
+    cacheClearUrl:  '{{ path('admin_cache_clear') }}'
 };
 </script>
 <script src="{{ asset('js/admin-dashboard.js') }}"></script>

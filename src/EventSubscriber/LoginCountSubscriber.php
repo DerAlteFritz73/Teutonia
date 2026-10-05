@@ -7,6 +7,7 @@ use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpFoundation\RedirectResponse;
+use Symfony\Component\HttpFoundation\UriSigner;
 use Symfony\Component\Mailer\MailerInterface;
 use Symfony\Component\Mime\Email;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
@@ -22,6 +23,7 @@ class LoginCountSubscriber implements EventSubscriberInterface
         private LoggerInterface $securityLogger,
         private MailerInterface $mailer,
         private Environment $twig,
+        private UriSigner $uriSigner,
     ) {}
 
     public static function getSubscribedEvents(): array
@@ -69,12 +71,11 @@ class LoginCountSubscriber implements EventSubscriberInterface
         ]);
 
         try {
-            // Generate token for email-based blacklisting (valid for today)
-            $token = hash('sha256', $ip . $_ENV['APP_SECRET'] . date('Y-m-d'));
-            $blacklistUrl = $this->urlGenerator->generate('blacklist_ip_from_email',
-                ['token' => $token],
-                UrlGeneratorInterface::ABSOLUTE_URL
-            ) . '?ip=' . urlencode($ip);
+            // Signed one-click blacklist link for the email (valid for one day)
+            $blacklistUrl = $this->uriSigner->sign(
+                $this->urlGenerator->generate('blacklist_ip_from_email', ['ip' => $ip], UrlGeneratorInterface::ABSOLUTE_URL),
+                new \DateInterval('P1D'),
+            );
 
             $email = (new Email())
                 ->from('chor.teutonia@gmail.com')

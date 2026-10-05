@@ -34,6 +34,7 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
+use Symfony\Component\HttpFoundation\UriSigner;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Contracts\Cache\CacheInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
@@ -183,26 +184,25 @@ class AdminController extends AbstractController
         return new JsonResponse(['success' => true, 'message' => "IP $ipAddress blacklisted"]);
     }
 
-    #[Route('/blacklist-ip-from-email/{token}', name: 'blacklist_ip_from_email', methods: ['GET'])]
+    #[Route('/blacklist-ip-from-email', name: 'blacklist_ip_from_email', methods: ['GET'])]
     public function blacklistIpFromEmail(
-        string $token,
         Request $request,
+        UriSigner $uriSigner,
         BlacklistedIpRepository $blacklistedIpRepository,
     ): Response {
-        // Verify token format (token should be: hash(ip + secret + timestamp)
+        // The link comes from the failed-login email (LoginCountSubscriber),
+        // signed over the whole URL including ?ip= and valid for one day.
+        if (!$uriSigner->checkRequest($request)) {
+            return $this->render('admin/blacklist_error.html.twig', [
+                'error' => 'Invalid or expired token'
+            ]);
+        }
+
         $ipAddress = $request->query->get('ip');
 
         if (!$ipAddress || !filter_var($ipAddress, FILTER_VALIDATE_IP)) {
             return $this->render('admin/blacklist_error.html.twig', [
                 'error' => 'Invalid IP address'
-            ]);
-        }
-
-        // Verify token (token should match: hash of ip + secret + date)
-        $expectedToken = hash('sha256', $ipAddress . $_ENV['APP_SECRET'] . date('Y-m-d'));
-        if (!hash_equals($token, $expectedToken)) {
-            return $this->render('admin/blacklist_error.html.twig', [
-                'error' => 'Invalid or expired token'
             ]);
         }
 

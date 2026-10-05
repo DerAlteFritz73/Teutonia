@@ -1,5 +1,5 @@
-# Dev stack for teutonia (this project has no prod build on the Mini PC yet -- real
-# prod is on Hetzner, at teutonia-willstaett.de). Deliberately NOT named
+# Dev stack for teutonia (prod runs from /var/www/prod/teutonia on this same host,
+# see compose.yaml). Deliberately NOT named
 # compose.override.yaml, matching the fix applied to continuo/dhamien/jason: that
 # name auto-merges into plain `docker compose up`. Invoked explicitly:
 # `docker compose -f compose.yaml -f compose.dev.yaml -p teutonia-dev up`.
@@ -25,7 +25,6 @@ services:
       - .:/var/www/html
       - /var/www/html/vendor
       - ./public/assets:/var/www/html/public/assets
-      - /home/joel/.ssh/hetzner_admin_key:/run/hetzner_key:ro
 
   database:
     container_name: teutonia-db-dev

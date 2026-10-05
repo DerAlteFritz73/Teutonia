@@ -18,7 +18,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         ghostscript \
         qpdf \
         imagemagick \
-        openssh-client \
         chromium \
         chromium-driver \
         libicu-dev \
@@ -45,9 +44,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     # Alpine). Narrow sed on the rights+pattern avoids escaping the self-closing tag.
     && sed -i 's/rights="none" pattern="PDF"/rights="read|write" pattern="PDF"/' \
         /etc/ImageMagick-6/policy.xml || true
-
-# Pre-create the SSH key target so Docker bind-mounts it as a file (not a directory)
-RUN touch /run/hetzner_key
 
 # Install Composer
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
