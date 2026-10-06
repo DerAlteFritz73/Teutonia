@@ -419,10 +419,15 @@ export default class extends Controller {
         // Switching source: stop whatever is currently playing.
         if (this.playing) this.stop();
         this.currentAudioUrl = url;
+        // Until this track is measured, time the cursor from 0:00 (the
+        // loadedmetadata duration calibration still applies meanwhile).
+        this.audioOffset = 0;
+        this.timingRefinedFor = null;
         if (this.audioEl) {
             this.audioEl.src = url || '';
             this.audioEl.playbackRate = this.playbackRate; // re-apply across sources
         }
+        if (url) this.refineTimingFromAudio();
     }
 
     // Change playback speed (the cursor follows automatically — it's driven by
@@ -501,6 +506,9 @@ export default class extends Controller {
         const sheet = this.osmd?.Sheet;
         const bpm = sheet && sheet.HasBPMInfo ? sheet.DefaultStartTempoInBpm : null;
         this.bpm = bpm && bpm > 0 ? bpm : 120;
+        // Kept apart from this.bpm: refineTimingFromAudio prefers it whenever the
+        // recording's audible span confirms it.
+        this.notatedBpm = bpm && bpm > 0 ? bpm : null;
         // Notated source length in whole notes (no repeats expanded).
         this.scoreWholeNotes = sheet?.SheetEndTimestamp?.RealValue || 0;
         this.hasRepeats = (sheet?.Repetitions?.length || 0) > 0;
@@ -517,7 +525,12 @@ export default class extends Controller {
     // notes (the last enrolled timestamp). The cursor iterator follows repeats and
     // voltas, so this equals the recording's musical length even for repeated
     // pieces. Runs once at load, before playback resets the cursor.
+    //
+    // Also records, per staff, where its first note starts and its last note ends
+    // (enrolled whole notes) in this.staffSpans, so refineTimingFromAudio knows
+    // which musical span the audible part of a recording corresponds to.
     computeEnrolledLength() {
+        this.staffSpans = {};
         const cur = this.osmd?.cursor;
         if (!cur) return this.scoreWholeNotes;
         try {
@@ -525,6 +538,16 @@ export default class extends Controller {
             let last = 0, steps = 0;
             while (!cur.Iterator.EndReached && steps < 100000) {
                 last = cur.Iterator.CurrentEnrolledTimestamp.RealValue;
+                for (const ve of (cur.Iterator.CurrentVoiceEntries || [])) {
+                    const staff = ve.ParentSourceStaffEntry?.ParentStaff?.idInMusicSheet;
+                    if (staff === undefined) continue;
+                    for (const note of (ve.Notes || [])) {
+                        if (note.isRest()) continue;
+                        const end = last + (note.Length?.RealValue || 0);
+                        const span = this.staffSpans[staff] || (this.staffSpans[staff] = { first: last, lastEnd: end });
+                        span.lastEnd = Math.max(span.lastEnd, end);
+                    }
+                }
                 cur.next();
                 steps++;
             }
@@ -620,12 +643,89 @@ export default class extends Controller {
     // so this now calibrates repeated pieces too, which previously ran at the
     // notated placeholder tempo and drifted badly.
     calibrateTempoFromAudio() {
+        // A finished refineTimingFromAudio for this track already set a better tempo.
+        if (this.timingRefinedFor === this.currentAudioUrl) return;
         const dur = this.audioEl?.duration;
         const len = this.effectiveWholeNotes || this.enrolledWholeNotes || this.scoreWholeNotes;
         if (!len || !dur || !isFinite(dur)) return;
         const bpm = len * 240 / dur;
         if (!(bpm > 0) || !isFinite(bpm)) return;
         this.bpm = bpm;
+        this.applyBpmBounds();
+        this.updateSpeedLabel();
+    }
+
+    // Measure where the music in a recording actually starts and ends, ignoring
+    // silence and quiet fade-out at either end (exports often carry a few seconds
+    // of reverb tail or silence that calibrateTempoFromAudio would otherwise count
+    // as music, making the cursor drift late). Decodes the file with Web Audio and
+    // takes the first/last 20 ms window louder than −40 dB below the loudest one.
+    // Results are cached per URL; very large files are skipped (decoding them
+    // would need hundreds of MB) and keep the duration-based calibration.
+    async measureAudio(url) {
+        this.audioMeasurements = this.audioMeasurements || new Map();
+        if (this.audioMeasurements.has(url)) return this.audioMeasurements.get(url);
+        const job = (async () => {
+            const resp = await fetch(url);
+            if (!resp.ok) return null;
+            const data = await resp.arrayBuffer();
+            if (data.byteLength > 25 * 1024 * 1024) return null;
+            const Ctx = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+            if (!Ctx) return null;
+            const buf = await new Ctx(1, 1, 44100).decodeAudioData(data);
+            const win = Math.max(1, Math.round(buf.sampleRate * 0.02));
+            const channels = [...Array(buf.numberOfChannels).keys()].map((c) => buf.getChannelData(c));
+            const rms = [];
+            for (let i = 0; i < buf.length; i += win) {
+                let sum = 0, n = 0;
+                for (const ch of channels) {
+                    for (let j = i; j < Math.min(i + win, buf.length); j++) { sum += ch[j] * ch[j]; n++; }
+                }
+                rms.push(Math.sqrt(sum / Math.max(1, n)));
+            }
+            const threshold = Math.max(...rms) * 0.01; // −40 dB
+            const first = rms.findIndex((v) => v > threshold);
+            if (first < 0) return null;
+            let last = rms.length - 1;
+            while (last > first && rms[last] <= threshold) last--;
+            return { start: first * win / buf.sampleRate, end: (last + 1) * win / buf.sampleRate };
+        })().catch(() => null);
+        this.audioMeasurements.set(url, job);
+        return job;
+    }
+
+    // Tie the cursor to the music actually heard in the current recording: the
+    // first audible sound is the piece's first note, the last one its final note.
+    // That holds for the voice tracks too: they are practice mixes with every
+    // part audible (the selected one louder), not the bare part, so a voice that
+    // enters late does NOT mean silence at the start of its track. If the
+    // notated tempo explains that audible span
+    // (allowing for a reverb tail of a few seconds), the notated tempo is used —
+    // it is exact, while any measured span is slightly stretched by the tail.
+    // Otherwise the tempo is derived from the audible span. Either way the cursor
+    // starts when the music starts (this.audioOffset), not at 0:00.
+    async refineTimingFromAudio() {
+        const url = this.currentAudioUrl;
+        if (!url || !this.staffSpans) return;
+        const m = await this.measureAudio(url);
+        if (!m || url !== this.currentAudioUrl) return;
+
+        const spans = Object.values(this.staffSpans);
+        if (!spans.length) return;
+        const firstPos = this.effectivePos(Math.min(...spans.map((s) => s.first)));
+        const lastPos = this.effectivePos(Math.max(...spans.map((s) => s.lastEnd)));
+        const musicLen = lastPos - firstPos; // effective whole notes
+        const heard = m.end - m.start; // seconds
+        if (!(musicLen > 0) || !(heard > 1)) return;
+
+        let bpm = musicLen * 240 / heard;
+        if (this.notatedBpm) {
+            const notated = musicLen * 240 / this.notatedBpm;
+            if (heard >= notated * 0.97 && heard <= notated * 1.03 + 4) bpm = this.notatedBpm;
+        }
+        this.bpm = bpm;
+        this.audioOffset = m.start - firstPos * 240 / bpm;
+        this.timingRefinedFor = url;
         this.applyBpmBounds();
         this.updateSpeedLabel();
     }
@@ -641,7 +741,7 @@ export default class extends Controller {
         // Target is in effective (fermata-stretched) whole notes, and we compare
         // the cursor's position mapped into the same space, so the cursor dwells
         // through a held fermata instead of running ahead of the recording.
-        const target = a.currentTime * this.bpm / 240;
+        const target = Math.max(0, a.currentTime - (this.audioOffset || 0)) * this.bpm / 240;
         const cur = this.osmd.cursor;
         const pos = () => this.effectivePos(cur.Iterator.CurrentEnrolledTimestamp.RealValue);
         if (!cur.Iterator.EndReached && pos() > target + 1e-6) {
