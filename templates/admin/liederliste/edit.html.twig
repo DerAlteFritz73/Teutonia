@@ -18,82 +18,86 @@
         <input type="hidden" name="_token" value="{{ csrf_token('liederliste') }}">
         <input type="hidden" name="items_json" id="items-json-input" value="">
 
-        <div class="d-flex justify-content-between align-items-start mb-4">
-            <div class="d-flex flex-column gap-2 flex-grow-1">
+        <div class="d-flex justify-content-end flex-wrap gap-2 mb-3">
+            <a href="{{ path('admin_liederlisten') }}" class="btn btn-secondary">
+                <i class="bi bi-x-lg me-1"></i>Abbrechen
+            </a>
+            {% if not isNew %}
+            <a href="{{ path('admin_liederlisten_download', {id: liste.id}) }}"
+               class="btn btn-outline-success" title="Word herunterladen (.docx)">
+                <i class="bi bi-file-earmark-word me-1"></i>Word
+            </a>
+            <a href="{{ path('admin_liederlisten_download_odt', {id: liste.id}) }}"
+               class="btn btn-outline-success" title="LibreOffice herunterladen (.odt)">
+                <i class="bi bi-file-earmark-text me-1"></i>ODT
+            </a>
+            <a href="{{ path('admin_liederlisten_download_pdf', {id: liste.id}) }}"
+               class="btn btn-outline-danger" target="_blank" title="PDF öffnen (.pdf)">
+                <i class="bi bi-file-earmark-pdf me-1"></i>PDF
+            </a>
+            {% endif %}
+            {% if canEdit and not isNew %}
+            <button type="submit" form="add-proben-form" class="btn btn-info"
+                    title="Alle Lieder dieser Liste zu „Aktuelle Proben" hinzufügen"
+                    onclick="return confirm('Alle Lieder dieser Liste zu „Aktuelle Proben“ hinzufügen?')">
+                <i class="bi bi-collection-play me-1"></i>Zu aktuellen Proben hinzufügen
+            </button>
+            {% endif %}
+            {% if canEdit %}
+            <button type="submit" class="btn btn-primary" id="save-btn">
+                <i class="bi bi-check-lg me-1"></i>{{ isNew ? 'Erstellen' : 'Speichern' }}
+            </button>
+            {% endif %}
+        </div>
+
+        {# ── Export header preview: laid out like the top of the PDF/Word page
+              (name as heading, title in italics below, logo top right). ── #}
+        <div class="ll-paper mb-2">
+            <div class="ll-paper-text">
                 <input type="text" name="liste_name" id="liste-name"
-                       class="form-control form-control-lg fw-semibold"
-                       style="max-width:420px"
+                       class="ll-paper-name"
                        placeholder="Name der Liederliste"
                        value="{{ liste.name }}"
                        {{ canEdit ? 'required' : 'readonly' }}>
                 <input type="text" name="liste_title" id="liste-title"
-                       class="form-control"
-                       style="max-width:420px"
-                       placeholder="Titel (erscheint im Word-Dokument)"
+                       class="ll-paper-subtitle"
+                       placeholder="Untertitel (optional)"
                        value="{{ liste.title ?? '' }}"
                        {{ canEdit ? '' : 'readonly' }}>
-                <div class="form-check">
-                    <input type="checkbox" name="show_etikett" id="show-etikett"
-                           class="form-check-input"
-                           {{ liste.isShowEtikett() ? 'checked' : '' }}
-                           {{ canEdit ? '' : 'disabled' }}>
-                    <label class="form-check-label small" for="show-etikett">Etikett-Spalte in Export anzeigen</label>
-                </div>
+            </div>
 
-                {# ── Logo (image or PDF) shown in the export's upper-right corner ── #}
-                <div class="d-flex align-items-start gap-2" style="max-width:420px">
-                    {% if liste.imagePath %}
-                    <img src="{{ asset(liste.imagePath) }}" alt="Logo"
-                         class="border rounded" style="height:56px;width:auto;object-fit:contain">
-                    {% endif %}
-                    <div class="flex-grow-1">
-                        <label for="liste-image" class="form-label small mb-1">
-                            Logo (Bild oder PDF, erscheint oben rechts im Export)
-                        </label>
-                        <input type="file" name="liste_image" id="liste-image"
-                               class="form-control form-control-sm"
-                               accept="image/*,application/pdf"
-                               {{ canEdit ? '' : 'disabled' }}>
-                        {% if liste.imagePath and canEdit %}
-                        <div class="form-check mt-1">
-                            <input type="checkbox" name="remove_image" id="remove-image" class="form-check-input">
-                            <label class="form-check-label small text-danger" for="remove-image">Logo entfernen</label>
-                        </div>
-                        {% endif %}
-                    </div>
-                </div>
+            {# Logo (image or PDF) in the export's upper-right corner #}
+            <label for="liste-image" class="ll-paper-logo{{ canEdit ? ' editable' : '' }}{{ liste.imagePath ? ' has-image' : '' }}"
+                   title="{{ canEdit ? 'Logo ändern (Bild oder PDF)' : 'Logo' }}">
+                <img id="logo-preview" alt="Logo"
+                     src="{{ liste.imagePath ? asset(liste.imagePath) : '' }}"
+                     class="{{ liste.imagePath ? '' : 'd-none' }}">
+                <span id="logo-placeholder" class="ll-paper-logo-empty{{ liste.imagePath ? ' d-none' : '' }}">
+                    {% if canEdit %}<i class="bi bi-image"></i><span>Logo</span>{% endif %}
+                </span>
+            </label>
+            <input type="file" name="liste_image" id="liste-image" class="d-none"
+                   accept="image/*,application/pdf"
+                   {{ canEdit ? '' : 'disabled' }}>
+        </div>
+
+        <div class="d-flex flex-wrap align-items-center gap-3 mb-4 small">
+            <div class="form-check mb-0">
+                <input type="checkbox" name="show_etikett" id="show-etikett"
+                       class="form-check-input"
+                       {{ liste.isShowEtikett() ? 'checked' : '' }}
+                       {{ canEdit ? '' : 'disabled' }}>
+                <label class="form-check-label" for="show-etikett">Etikett-Spalte in Export anzeigen</label>
             </div>
-            <div class="d-flex gap-2 ms-3 mt-1">
-                <a href="{{ path('admin_liederlisten') }}" class="btn btn-secondary">
-                    <i class="bi bi-x-lg me-1"></i>Abbrechen
-                </a>
-                {% if not isNew %}
-                <a href="{{ path('admin_liederlisten_download', {id: liste.id}) }}"
-                   class="btn btn-outline-success" title="Word herunterladen (.docx)">
-                    <i class="bi bi-file-earmark-word me-1"></i>Word
-                </a>
-                <a href="{{ path('admin_liederlisten_download_odt', {id: liste.id}) }}"
-                   class="btn btn-outline-success" title="LibreOffice herunterladen (.odt)">
-                    <i class="bi bi-file-earmark-text me-1"></i>ODT
-                </a>
-                <a href="{{ path('admin_liederlisten_download_pdf', {id: liste.id}) }}"
-                   class="btn btn-outline-danger" target="_blank" title="PDF öffnen (.pdf)">
-                    <i class="bi bi-file-earmark-pdf me-1"></i>PDF
-                </a>
-                {% endif %}
-                {% if canEdit and not isNew %}
-                <button type="submit" form="add-proben-form" class="btn btn-info"
-                        title="Alle Lieder dieser Liste zu „Aktuelle Proben" hinzufügen"
-                        onclick="return confirm('Alle Lieder dieser Liste zu „Aktuelle Proben“ hinzufügen?')">
-                    <i class="bi bi-collection-play me-1"></i>Zu aktuellen Proben hinzufügen
-                </button>
-                {% endif %}
-                {% if canEdit %}
-                <button type="submit" class="btn btn-primary" id="save-btn">
-                    <i class="bi bi-check-lg me-1"></i>{{ isNew ? 'Erstellen' : 'Speichern' }}
-                </button>
-                {% endif %}
+            {% if liste.imagePath and canEdit %}
+            <div class="form-check mb-0">
+                <input type="checkbox" name="remove_image" id="remove-image" class="form-check-input">
+                <label class="form-check-label text-danger" for="remove-image">Logo entfernen</label>
             </div>
+            {% endif %}
+            {% if canEdit %}
+            <span class="text-muted"><i class="bi bi-info-circle me-1"></i>Logo anklicken, um ein Bild oder PDF hochzuladen.</span>
+            {% endif %}
         </div>
 
         {# ── Dual-list song picker ──────────────────────────────────────────── #}
@@ -194,6 +198,50 @@
 </div>
 
 <style>
+/* Export header preview — mirrors the PDF header (pdf.html.twig) */
+.ll-paper {
+    display: flex; align-items: center; gap: 1rem;
+    background: #fff; color: #212529;
+    border: 1px solid #dee2e6; border-radius: .25rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,.08);
+    padding: 1.75rem 2.25rem;
+    font-family: "DejaVu Sans", Verdana, sans-serif;
+}
+.ll-paper-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: .25rem; }
+.ll-paper-name, .ll-paper-subtitle {
+    width: 100%; border: 1px dashed transparent; border-radius: .2rem;
+    background: transparent; color: inherit; padding: 0 .25rem; margin-left: -.25rem;
+    font-family: inherit; outline: none;
+}
+.ll-paper-name     { font-size: 1.6rem; font-weight: 700; line-height: 1.3; }
+.ll-paper-subtitle { font-size: 1.2rem; font-style: italic; color: #555; }
+.ll-paper-name:not([readonly]):hover,
+.ll-paper-subtitle:not([readonly]):hover { border-color: #ced4da; }
+.ll-paper-name:not([readonly]):focus,
+.ll-paper-subtitle:not([readonly]):focus { border-color: #86b7fe; background: #f8fbff; }
+.ll-paper-name::placeholder, .ll-paper-subtitle::placeholder { color: #c0c4c8; }
+.ll-paper-logo {
+    flex: 0 0 auto; width: 120px; height: 120px; margin: 0;
+    display: flex; align-items: center; justify-content: flex-end;
+}
+.ll-paper-logo img { max-width: 120px; max-height: 120px; object-fit: contain; }
+.ll-paper-logo.editable { cursor: pointer; border-radius: .25rem; }
+.ll-paper-logo.editable:hover { outline: 1px dashed #86b7fe; outline-offset: 4px; }
+.ll-paper-logo-empty {
+    width: 100%; height: 100%;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    color: #adb5bd; font-size: .8rem;
+}
+.ll-paper-logo.editable .ll-paper-logo-empty { border: 1px dashed #ced4da; border-radius: .25rem; }
+.ll-paper-logo-empty .bi { font-size: 1.6rem; }
+.ll-paper-logo.removed img { opacity: .25; }
+@media (max-width: 575.98px) {
+    .ll-paper { padding: 1rem; }
+    .ll-paper-name { font-size: 1.25rem; }
+    .ll-paper-subtitle { font-size: 1rem; }
+    .ll-paper-logo, .ll-paper-logo img { width: 72px; height: 72px; max-width: 72px; max-height: 72px; }
+}
+
 .ll-list-wrap {
     border: 1px solid #dee2e6;
     border-radius: .375rem;
@@ -820,6 +868,33 @@ window.FETCH_URL    = '{{ path('admin_liederlisten_fetch_duration') }}';
             customTitleEl.value    = '';
             customDurEl.value      = '';
         }
+    });
+
+    // ── Logo preview ──────────────────────────────────────────────────────
+    const logoInput       = document.getElementById('liste-image');
+    const logoPreview     = document.getElementById('logo-preview');
+    const logoPlaceholder = document.getElementById('logo-placeholder');
+    const logoBox         = logoPreview.closest('.ll-paper-logo');
+    const removeLogoEl    = document.getElementById('remove-image');
+    logoInput.addEventListener('change', () => {
+        const file = logoInput.files[0];
+        if (!file) return;
+        if (removeLogoEl) removeLogoEl.checked = false;
+        logoBox.classList.remove('removed');
+        if (file.type.startsWith('image/')) {
+            logoPreview.src = URL.createObjectURL(file);
+            logoPreview.classList.remove('d-none');
+            logoPlaceholder.classList.add('d-none');
+        } else {
+            // PDFs are converted server-side; show a marker until saved.
+            logoPreview.classList.add('d-none');
+            logoPlaceholder.classList.remove('d-none');
+            logoPlaceholder.innerHTML = '<i class="bi bi-file-earmark-pdf"></i><span>' + escHtml(file.name) + '</span>';
+        }
+    });
+    removeLogoEl?.addEventListener('change', () => {
+        logoBox.classList.toggle('removed', removeLogoEl.checked);
+        if (removeLogoEl.checked) logoInput.value = '';
     });
 
     // ── Etikett toggle ────────────────────────────────────────────────────
