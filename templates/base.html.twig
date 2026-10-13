@@ -157,8 +157,11 @@
                 {r: 'member_archiv',          l: 'Archiv'},
                 {r: 'member_social',          l: 'Geselliges'},
             ] %}
+            {% if is_granted('ROLE_ADMIN') %}
+                {% set links = links|merge([{r: 'admin_liederlisten', l: 'Liederlisten', prefix: 'admin_liederlisten'}]) %}
+            {% endif %}
             {% for link in links %}
-                {% set isActive = currentRoute in (link.active ?? [link.r]) %}
+                {% set isActive = link.prefix is defined ? (currentRoute starts with link.prefix) : currentRoute in (link.active ?? [link.r]) %}
                 <li class="nav-item">
                     <a class="nav-link text-light py-1{{ isActive ? ' text-warning fw-semibold' : '' }}"
                        href="{{ path(link.r) }}">{{ link.l }}</a>
