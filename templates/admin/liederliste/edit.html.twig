@@ -136,7 +136,17 @@
             <div class="flex-grow-1" style="min-width:0">
                 <div class="d-flex justify-content-between align-items-center mb-1">
                     <span class="fw-semibold text-primary">In der Liste</span>
-                    <span class="badge bg-primary" id="right-count">0</span>
+                    <div class="d-flex align-items-center gap-1">
+                        {% if canEdit %}
+                        <button type="button" id="btn-up" class="btn btn-outline-primary btn-sm py-0 px-1" title="Auswahl nach oben verschieben (Alt+↑)">
+                            <i class="bi bi-arrow-up"></i>
+                        </button>
+                        <button type="button" id="btn-down" class="btn btn-outline-primary btn-sm py-0 px-1" title="Auswahl nach unten verschieben (Alt+↓)">
+                            <i class="bi bi-arrow-down"></i>
+                        </button>
+                        {% endif %}
+                        <span class="badge bg-primary" id="right-count">0</span>
+                    </div>
                 </div>
                 <input type="search" id="right-search" class="form-control form-control-sm mb-1"
                        placeholder="Filtern…" autocomplete="off">
@@ -256,6 +266,7 @@
     color: #6c757d; user-select: none;
 }
 .ll-list { height: 420px; overflow-y: auto; }
+.ll-list:focus { outline: none; }
 
 .ll-row {
     display: flex; align-items: center;
@@ -773,6 +784,36 @@ window.FETCH_URL    = '{{ path('admin_liederlisten_fetch_duration') }}';
             }
         }
         render();
+    });
+
+    // ── Move selected right items up / down ───────────────────────────────
+    // Each selected item swaps with its unselected neighbour, so a multi-
+    // selection moves as a block and stops at the list edge.
+    function moveSelected(dir) {
+        if (READ_ONLY) return;
+        const sel = new Set(Array.from(rightListEl.querySelectorAll('.ll-row.selected')).map(r => r.dataset.uid));
+        if (!sel.size) return;
+        const order = dir < 0 ? rightItems.map((_, i) => i) : rightItems.map((_, i) => rightItems.length - 1 - i);
+        let blocked = true;   // an edge-touching selected run can't move
+        order.forEach(i => {
+            if (!sel.has(rightItems[i].uid)) { blocked = false; return; }
+            const j = i + dir;
+            if (blocked || j < 0 || j >= rightItems.length) { blocked = true; return; }
+            [rightItems[i], rightItems[j]] = [rightItems[j], rightItems[i]];
+        });
+        render();
+        const first = rightListEl.querySelector('.ll-row.selected');
+        const rows  = rightListEl.querySelectorAll('.ll-row.selected');
+        (dir < 0 ? first : rows[rows.length - 1])?.scrollIntoView({ block: 'nearest' });
+    }
+
+    if (!READ_ONLY) rightListEl.tabIndex = 0;   // focusable so Alt+↑/↓ reach it
+    document.getElementById('btn-up')?.addEventListener('click',   () => moveSelected(-1));
+    document.getElementById('btn-down')?.addEventListener('click', () => moveSelected(1));
+    rightListEl.addEventListener('keydown', e => {
+        if (!e.altKey || e.target.closest('input')) return;
+        if (e.key === 'ArrowUp')   { e.preventDefault(); moveSelected(-1); }
+        if (e.key === 'ArrowDown') { e.preventDefault(); moveSelected(1); }
     });
 
     // ── Double-click shortcut ──────────────────────────────────────────────
