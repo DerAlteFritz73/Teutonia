@@ -88,6 +88,18 @@
         </div>
         {% if is_granted('ROLE_ADMIN') %}
         <div class="col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <i class="bi bi-music-note-list me-2"></i>
+                        Liederlisten
+                    </h5>
+                    <p class="card-text">Liederlisten für Konzerte und Proben zusammenstellen und als PDF exportieren.</p>
+                    <a href="{{ path('admin_liederlisten') }}" class="btn btn-primary">Zu den Liederlisten</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 mb-4">
             <div class="card h-100 border-warning">
                 <div class="card-body">
                     <h5 class="card-title">
